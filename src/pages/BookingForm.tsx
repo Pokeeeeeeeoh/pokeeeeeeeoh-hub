@@ -1,0 +1,390 @@
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft, Upload, X, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface FormField {
+  id: string;
+  type: "text" | "longtext" | "dropdown" | "checkbox";
+  label: string;
+  required: boolean;
+  options?: string[];
+}
+
+const BookingForm = () => {
+  const [fields, setFields] = useState<FormField[]>([]);
+  const [formData, setFormData] = useState<Record<string, string | boolean>>({});
+  const [clientInfo, setClientInfo] = useState({ name: "", email: "", phone: "" });
+  const [images, setImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    async function fetchConfig() {
+      const { data } = await supabase
+        .from("form_config")
+        .select("fields")
+        .single();
+      
+      if (data?.fields) {
+        const parsedFields = typeof data.fields === 'string' 
+          ? JSON.parse(data.fields) 
+          : data.fields;
+        setFields(parsedFields as FormField[]);
+      }
+      setLoading(false);
+    }
+    fetchConfig();
+  }, []);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter(file => {
+      const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
+      return validTypes.includes(file.type) && file.size <= 10 * 1024 * 1024;
+    });
+
+    if (validFiles.length !== files.length) {
+      toast.error("Some files were skipped. Only JPG, PNG, WEBP, HEIC, PDF under 10MB allowed.");
+    }
+
+    setImages(prev => [...prev, ...validFiles]);
+    
+    validFiles.forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setImagePreviews(prev => [...prev, e.target?.result as string]);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setImagePreviews(prev => [...prev, '/placeholder.svg']);
+      }
+    });
+  };
+
+  const removeImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!clientInfo.name || !clientInfo.email) {
+      toast.error("Please fill in your name and email.");
+      return;
+    }
+
+    if (images.length === 0) {
+      toast.error("Please upload at least one reference image.");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // Create or find client
+      const { data: existingClient } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("email", clientInfo.email)
+        .single();
+
+      let clientId: string;
+
+      if (existingClient) {
+        clientId = existingClient.id;
+        // Update client info
+        await supabase
+          .from("clients")
+          .update({ name: clientInfo.name, phone: clientInfo.phone || null })
+          .eq("id", clientId);
+      } else {
+        const { data: newClient, error: clientError } = await supabase
+          .from("clients")
+          .insert({
+            name: clientInfo.name,
+            email: clientInfo.email,
+            phone: clientInfo.phone || null,
+          })
+          .select("id")
+          .single();
+
+        if (clientError) throw clientError;
+        clientId = newClient.id;
+      }
+
+      // Upload images
+      const imageUrls: string[] = [];
+      for (const image of images) {
+        const fileName = `${clientId}/${Date.now()}-${image.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("booking-images")
+          .upload(fileName, image);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from("booking-images")
+          .getPublicUrl(fileName);
+
+        imageUrls.push(urlData.publicUrl);
+      }
+
+      // Create booking request
+      const { error: requestError } = await supabase
+        .from("booking_requests")
+        .insert({
+          client_id: clientId,
+          form_responses: formData,
+          images: imageUrls,
+          status: "new",
+        });
+
+      if (requestError) throw requestError;
+
+      navigate("/book/confirmation");
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast.error("Failed to submit request. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading form...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-sm">
+        <div className="container mx-auto flex h-16 items-center px-4">
+          <Link 
+            to="/book" 
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Link>
+          <span className="mx-auto font-mono text-sm tracking-widest uppercase">
+            Booking Request
+          </span>
+          <div className="w-16" />
+        </div>
+      </header>
+
+      {/* Form */}
+      <main className="pt-24 pb-12 px-4">
+        <div className="container mx-auto max-w-2xl">
+          <div className="mb-8 animate-fade-in">
+            <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase mb-2">
+              Step 2 of 2
+            </p>
+            <h1 className="text-3xl font-bold tracking-tight mb-2">
+              Tell Us About Your Idea
+            </h1>
+            <p className="text-muted-foreground">
+              Fill out the form below with details about your tattoo concept.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Contact Info */}
+            <section className="space-y-4 animate-fade-in stagger-1">
+              <h2 className="text-lg font-semibold border-b border-border pb-2">
+                Contact Information
+              </h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name *</Label>
+                  <Input
+                    id="name"
+                    value={clientInfo.name}
+                    onChange={(e) => setClientInfo(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Your full name"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={clientInfo.email}
+                    onChange={(e) => setClientInfo(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="your@email.com"
+                    required
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="phone">Phone (optional)</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={clientInfo.phone}
+                    onChange={(e) => setClientInfo(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="Your phone number"
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Dynamic Fields */}
+            <section className="space-y-4 animate-fade-in stagger-2">
+              <h2 className="text-lg font-semibold border-b border-border pb-2">
+                Tattoo Details
+              </h2>
+              <div className="space-y-6">
+                {fields.map((field) => (
+                  <div key={field.id} className="space-y-2">
+                    <Label htmlFor={field.id}>
+                      {field.label} {field.required && "*"}
+                    </Label>
+                    
+                    {field.type === "text" && (
+                      <Input
+                        id={field.id}
+                        value={(formData[field.id] as string) || ""}
+                        onChange={(e) => setFormData(prev => ({ ...prev, [field.id]: e.target.value }))}
+                        required={field.required}
+                      />
+                    )}
+                    
+                    {field.type === "longtext" && (
+                      <Textarea
+                        id={field.id}
+                        value={(formData[field.id] as string) || ""}
+                        onChange={(e) => setFormData(prev => ({ ...prev, [field.id]: e.target.value }))}
+                        rows={4}
+                        required={field.required}
+                      />
+                    )}
+                    
+                    {field.type === "dropdown" && field.options && (
+                      <Select
+                        value={(formData[field.id] as string) || ""}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, [field.id]: value }))}
+                        required={field.required}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select an option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {field.options.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    
+                    {field.type === "checkbox" && (
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id={field.id}
+                          checked={(formData[field.id] as boolean) || false}
+                          onCheckedChange={(checked) => 
+                            setFormData(prev => ({ ...prev, [field.id]: checked as boolean }))
+                          }
+                        />
+                        <label 
+                          htmlFor={field.id} 
+                          className="text-sm text-muted-foreground cursor-pointer"
+                        >
+                          Yes
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Image Upload */}
+            <section className="space-y-4 animate-fade-in stagger-3">
+              <h2 className="text-lg font-semibold border-b border-border pb-2">
+                Reference Images *
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Upload reference images, inspiration, or sketches of your idea.
+              </p>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {imagePreviews.map((preview, index) => (
+                  <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border bg-card">
+                    <img
+                      src={preview}
+                      alt={`Reference ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute top-2 right-2 p-1 rounded-full bg-background/80 hover:bg-background transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+                
+                <label className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center cursor-pointer transition-colors bg-card/50">
+                  <Upload className="h-6 w-6 text-muted-foreground mb-2" />
+                  <span className="text-xs text-muted-foreground">Add Image</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+                    multiple
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </section>
+
+            {/* Submit */}
+            <div className="pt-4">
+              <Button 
+                type="submit" 
+                size="lg" 
+                className="w-full"
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  "Submit Booking Request"
+                )}
+              </Button>
+              <p className="text-xs text-center text-muted-foreground mt-4">
+                By submitting, you agree to our booking policies.
+                Your request will be reviewed within 24-48 hours.
+              </p>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default BookingForm;
