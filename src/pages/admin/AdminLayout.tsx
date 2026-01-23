@@ -9,7 +9,8 @@ import {
   Settings, 
   LogOut,
   Menu,
-  X
+  X,
+  ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -127,14 +128,22 @@ const AdminLayout = () => {
             })}
           </nav>
 
-          <div className="p-4 border-t border-sidebar-border">
+          <div className="p-4 border-t border-sidebar-border space-y-1">
+            <Link
+              to="/"
+              target="_blank"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Visa publik sida
+            </Link>
             <Button
               variant="ghost"
               className="w-full justify-start text-sidebar-foreground hover:text-foreground"
               onClick={handleLogout}
             >
               <LogOut className="h-4 w-4 mr-3" />
-              Sign Out
+              Logga ut
             </Button>
           </div>
         </div>
