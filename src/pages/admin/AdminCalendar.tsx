@@ -14,7 +14,7 @@ import {
   setHours,
   setMinutes,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, X, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X, Clock, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -30,6 +30,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface AvailabilitySlot {
   id: string;
@@ -38,6 +52,13 @@ interface AvailabilitySlot {
   is_blocked: boolean;
   is_booked: boolean;
   notes: string | null;
+}
+
+interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
 }
 
 const AdminCalendar = () => {
@@ -56,9 +77,22 @@ const AdminCalendar = () => {
   });
   const [addingSlot, setAddingSlot] = useState(false);
 
+  // Manual booking state
+  const [showBookingDialog, setShowBookingDialog] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const [clientSearchOpen, setClientSearchOpen] = useState(false);
+  const [newClient, setNewClient] = useState({ name: "", email: "", phone: "" });
+  const [bookingInProgress, setBookingInProgress] = useState(false);
+
   useEffect(() => {
     fetchSlots();
   }, [currentWeekStart]);
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
 
   const fetchSlots = async () => {
     const weekEnd = addDays(currentWeekStart, 7);
@@ -75,6 +109,119 @@ const AdminCalendar = () => {
       setSlots(data || []);
     }
     setLoading(false);
+  };
+
+  const fetchClients = async () => {
+    const { data, error } = await supabase
+      .from("clients")
+      .select("id, name, email, phone")
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching clients:", error);
+    } else {
+      setClients(data || []);
+    }
+  };
+
+  const openBookingDialog = (slot: AvailabilitySlot) => {
+    setSelectedSlot(slot);
+    setSelectedClientId("");
+    setNewClient({ name: "", email: "", phone: "" });
+    setShowBookingDialog(true);
+  };
+
+  const handleManualBooking = async (clientId: string) => {
+    if (!selectedSlot) return;
+    setBookingInProgress(true);
+
+    try {
+      // Create booking request
+      const { data: bookingRequest, error: brError } = await supabase
+        .from("booking_requests")
+        .insert({
+          client_id: clientId,
+          status: "approved",
+          form_responses: { manual_booking: true },
+        })
+        .select()
+        .single();
+
+      if (brError) throw brError;
+
+      // Create appointment
+      const { error: apptError } = await supabase.from("appointments").insert({
+        client_id: clientId,
+        slot_id: selectedSlot.id,
+        booking_request_id: bookingRequest.id,
+        start_time: selectedSlot.start_time,
+        end_time: selectedSlot.end_time,
+      });
+
+      if (apptError) throw apptError;
+
+      // Mark slot as booked
+      const { error: slotError } = await supabase
+        .from("availability_slots")
+        .update({ is_booked: true })
+        .eq("id", selectedSlot.id);
+
+      if (slotError) throw slotError;
+
+      toast.success("Appointment booked successfully");
+      setShowBookingDialog(false);
+      fetchSlots();
+    } catch (err) {
+      console.error("Booking error:", err);
+      toast.error("Failed to book appointment");
+    } finally {
+      setBookingInProgress(false);
+    }
+  };
+
+  const handleBookWithNewClient = async () => {
+    if (!newClient.name || !newClient.email) {
+      toast.error("Name and email are required");
+      return;
+    }
+
+    setBookingInProgress(true);
+
+    try {
+      // Check if client already exists
+      const { data: existingClient } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("email", newClient.email)
+        .maybeSingle();
+
+      let clientId: string;
+
+      if (existingClient) {
+        clientId = existingClient.id;
+      } else {
+        // Create new client
+        const { data: createdClient, error: clientError } = await supabase
+          .from("clients")
+          .insert({
+            name: newClient.name,
+            email: newClient.email,
+            phone: newClient.phone || null,
+          })
+          .select()
+          .single();
+
+        if (clientError) throw clientError;
+        clientId = createdClient.id;
+        fetchClients(); // Refresh client list
+      }
+
+      await handleManualBooking(clientId);
+    } catch (err) {
+      console.error("Error creating client:", err);
+      toast.error("Failed to create client");
+      setBookingInProgress(false);
+    }
   };
 
   const handleAddSlot = async () => {
@@ -253,6 +400,15 @@ const AdminCalendar = () => {
                           </span>
                           {!slot.is_booked && (
                             <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+                              {!slot.is_blocked && (
+                                <button
+                                  onClick={() => openBookingDialog(slot)}
+                                  className="p-0.5 hover:bg-primary/20 rounded text-primary"
+                                  title="Book client"
+                                >
+                                  <UserPlus className="h-3 w-3" />
+                                </button>
+                              )}
                               <button
                                 onClick={() =>
                                   handleBlockSlot(slot.id, !slot.is_blocked)
@@ -406,6 +562,129 @@ const AdminCalendar = () => {
                     {addingSlot ? "Adding..." : "Add Slot"}
                   </Button>
                 </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Manual Booking Dialog */}
+        <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Book Appointment</DialogTitle>
+            </DialogHeader>
+            {selectedSlot && (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Booking slot:{" "}
+                  <span className="text-foreground font-medium">
+                    {format(parseISO(selectedSlot.start_time), "EEEE, MMM d 'at' h:mm a")}
+                  </span>
+                </p>
+
+                <Tabs defaultValue="existing" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="existing">Existing Client</TabsTrigger>
+                    <TabsTrigger value="new">New Client</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="existing" className="space-y-4 pt-4">
+                    <div className="space-y-2">
+                      <Label>Select Client</Label>
+                      <Popover open={clientSearchOpen} onOpenChange={setClientSearchOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={clientSearchOpen}
+                            className="w-full justify-between"
+                          >
+                            {selectedClientId
+                              ? clients.find((c) => c.id === selectedClientId)?.name
+                              : "Search clients..."}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Search by name or email..." />
+                            <CommandList>
+                              <CommandEmpty>No clients found.</CommandEmpty>
+                              <CommandGroup>
+                                {clients.map((client) => (
+                                  <CommandItem
+                                    key={client.id}
+                                    value={`${client.name} ${client.email}`}
+                                    onSelect={() => {
+                                      setSelectedClientId(client.id);
+                                      setClientSearchOpen(false);
+                                    }}
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{client.name}</span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {client.email}
+                                      </span>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    <Button
+                      className="w-full"
+                      onClick={() => handleManualBooking(selectedClientId)}
+                      disabled={!selectedClientId || bookingInProgress}
+                    >
+                      {bookingInProgress ? "Booking..." : "Book Appointment"}
+                    </Button>
+                  </TabsContent>
+
+                  <TabsContent value="new" className="space-y-4 pt-4">
+                    <div className="space-y-2">
+                      <Label>Name *</Label>
+                      <Input
+                        value={newClient.name}
+                        onChange={(e) =>
+                          setNewClient((prev) => ({ ...prev, name: e.target.value }))
+                        }
+                        placeholder="Client name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Email *</Label>
+                      <Input
+                        type="email"
+                        value={newClient.email}
+                        onChange={(e) =>
+                          setNewClient((prev) => ({ ...prev, email: e.target.value }))
+                        }
+                        placeholder="client@email.com"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Phone</Label>
+                      <Input
+                        value={newClient.phone}
+                        onChange={(e) =>
+                          setNewClient((prev) => ({ ...prev, phone: e.target.value }))
+                        }
+                        placeholder="Optional"
+                      />
+                    </div>
+
+                    <Button
+                      className="w-full"
+                      onClick={handleBookWithNewClient}
+                      disabled={!newClient.name || !newClient.email || bookingInProgress}
+                    >
+                      {bookingInProgress ? "Booking..." : "Create & Book"}
+                    </Button>
+                  </TabsContent>
+                </Tabs>
               </div>
             )}
           </DialogContent>
