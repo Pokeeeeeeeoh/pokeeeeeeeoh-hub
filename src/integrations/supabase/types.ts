@@ -254,6 +254,33 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          address: string
+          email: string
+          id: string
+          site_name: string
+          tagline: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string
+          email?: string
+          id?: string
+          site_name?: string
+          tagline?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          email?: string
+          id?: string
+          site_name?: string
+          tagline?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,15 +1,45 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface SiteSettings {
+  site_name: string;
+  tagline: string;
+  email: string;
+  address: string;
+}
 
 const Index = () => {
+  const [settings, setSettings] = useState<SiteSettings>({
+    site_name: "pokeeeeeeeoh",
+    tagline: "Tattoo artist at Something Tattoo, Malmö",
+    email: "pokeeeeeeeoh@gmail.com",
+    address: "Something Tattoo · Amiralsgatan 10 · Malmö",
+  });
+
+  useEffect(() => {
+    async function fetchSettings() {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("site_name, tagline, email, address")
+        .single();
+
+      if (data) {
+        setSettings(data);
+      }
+    }
+    fetchSettings();
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="font-mono text-sm tracking-widest uppercase">
-            pokeeeeeeeoh
+            {settings.site_name}
           </Link>
           <nav className="flex items-center gap-6">
             <Link 
@@ -31,10 +61,10 @@ const Index = () => {
       <section className="relative flex min-h-screen items-center justify-center px-4 pt-16">
         <div className="relative z-10 max-w-2xl text-center">
           <h1 className="mb-8 text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl animate-fade-in">
-            pokeeeeeeeoh
+            {settings.site_name}
           </h1>
           <p className="mb-8 text-lg text-muted-foreground max-w-md mx-auto animate-fade-in stagger-1">
-            Tattoo artist at Something Tattoo, Malmö
+            {settings.tagline}
           </p>
           <div className="animate-fade-in stagger-2">
             <Link to="/book">
@@ -51,10 +81,10 @@ const Index = () => {
       <footer className="border-t border-border py-8 px-4">
         <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <p className="font-mono text-xs tracking-widest">
-            pokeeeeeeeoh@gmail.com
+            {settings.email}
           </p>
           <p className="text-xs">
-            Something Tattoo · Amiralsgatan 10 · Malmö
+            {settings.address}
           </p>
         </div>
       </footer>
