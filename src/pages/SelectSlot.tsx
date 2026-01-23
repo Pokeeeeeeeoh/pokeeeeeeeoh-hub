@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, startOfWeek, addDays, isSameDay, getISOWeek } from "date-fns";
-import { sv } from "date-fns/locale";
+import { enGB } from "date-fns/locale";
 import { toast } from "sonner";
 
 interface AvailableSlot {
@@ -42,7 +42,7 @@ const SelectSlot = () => {
   useEffect(() => {
     async function verifyToken() {
       if (!token) {
-        setError("Ogiltig eller saknad bokningslänk.");
+        setError("Invalid or missing booking link.");
         setLoading(false);
         return;
       }
@@ -62,16 +62,16 @@ const SelectSlot = () => {
         .single();
 
       if (requestError || !requestData) {
-        setError("Bokningsförfrågan hittades inte eller länken har gått ut.");
+        setError("Booking request not found or link has expired.");
         setLoading(false);
         return;
       }
 
       if (requestData.status !== "approved") {
         if (requestData.status === "booked") {
-          setError("Denna förfrågan är redan bokad.");
+          setError("This request has already been booked.");
         } else {
-          setError("Denna förfrågan är inte längre tillgänglig för bokning.");
+          setError("This request is no longer available for booking.");
         }
         setLoading(false);
         return;
@@ -136,7 +136,7 @@ const SelectSlot = () => {
       setBooked(true);
     } catch (err) {
       console.error("Booking error:", err);
-      toast.error("Kunde inte boka tid. Försök igen.");
+      toast.error("Could not book the slot. Please try again.");
     } finally {
       setBooking(false);
     }
@@ -152,7 +152,7 @@ const SelectSlot = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="animate-pulse text-muted-foreground">Verifierar din bokningslänk...</div>
+        <div className="animate-pulse text-muted-foreground">Verifying your booking link...</div>
       </div>
     );
   }
@@ -162,10 +162,10 @@ const SelectSlot = () => {
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="max-w-md text-center">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Kan inte komma åt</h1>
+          <h1 className="text-2xl font-bold mb-2">Cannot Access</h1>
           <p className="text-muted-foreground mb-6">{error}</p>
           <Button variant="outline" onClick={() => navigate("/")}>
-            Tillbaka till start
+            Back to Home
           </Button>
         </div>
       </div>
@@ -181,17 +181,17 @@ const SelectSlot = () => {
             <CheckCircle className="h-10 w-10 text-green-600" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight mb-4">
-            Tid bokad!
+            Appointment Booked!
           </h1>
           <p className="text-muted-foreground mb-6">
-            Din tid är bekräftad. Vi skickar en bekräftelse via e-post med alla detaljer.
+            Your appointment is confirmed. We'll send a confirmation email with all the details.
           </p>
           {bookedSlot && (
             <div className="p-4 rounded-lg border border-border bg-card mb-6 text-left">
               <div className="flex items-center gap-3 mb-2">
                 <Calendar className="h-5 w-5 text-muted-foreground shrink-0" />
                 <span className="font-medium">
-                  {format(parseISO(bookedSlot.start_time), "EEEE d MMMM yyyy", { locale: sv })}
+                  {format(parseISO(bookedSlot.start_time), "EEEE d MMMM yyyy", { locale: enGB })}
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -203,7 +203,7 @@ const SelectSlot = () => {
             </div>
           )}
           <Button variant="outline" onClick={() => navigate("/")}>
-            Tillbaka till start
+            Back to Home
           </Button>
         </div>
       </div>
@@ -214,9 +214,9 @@ const SelectSlot = () => {
     <div className="min-h-screen bg-background overflow-x-hidden">
       <header className="border-b border-border bg-background/80 backdrop-blur-sm p-4">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-xl font-semibold">Välj din tid</h1>
+          <h1 className="text-xl font-semibold">Select Your Appointment</h1>
           <p className="text-sm text-muted-foreground">
-            Välj bland de lediga tiderna nedan
+            Choose from the available slots below
           </p>
         </div>
       </header>
@@ -232,9 +232,9 @@ const SelectSlot = () => {
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <div className="text-center min-w-0">
-            <p className="font-mono text-xs text-muted-foreground">Vecka {weekNumber}</p>
+            <p className="font-mono text-xs text-muted-foreground">Week {weekNumber}</p>
             <p className="text-sm font-medium truncate">
-              {format(currentWeekStart, "d MMM", { locale: sv })} – {format(addDays(currentWeekStart, 6), "d MMM yyyy", { locale: sv })}
+              {format(currentWeekStart, "d MMM", { locale: enGB })} – {format(addDays(currentWeekStart, 6), "d MMM yyyy", { locale: enGB })}
             </p>
           </div>
           <Button 
@@ -259,7 +259,7 @@ const SelectSlot = () => {
               <div key={i} className={`rounded-lg border ${isToday ? 'border-primary' : 'border-border'} overflow-hidden`}>
                 <div className={`p-3 border-b ${isToday ? 'bg-primary/10' : 'bg-muted/30'}`}>
                   <p className="font-medium capitalize">
-                    {format(day, "EEEE d MMMM", { locale: sv })}
+                    {format(day, "EEEE d MMMM", { locale: enGB })}
                   </p>
                 </div>
                 <div className="p-3">
@@ -280,7 +280,7 @@ const SelectSlot = () => {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Inga lediga tider</p>
+                    <p className="text-sm text-muted-foreground">No available slots</p>
                   )}
                 </div>
               </div>
@@ -297,7 +297,7 @@ const SelectSlot = () => {
             return (
               <div key={i} className="min-h-[180px] rounded-lg border border-border overflow-hidden">
                 <div className={`text-center p-2 border-b ${isToday ? 'bg-primary/10' : 'bg-muted/30'}`}>
-                  <p className="text-xs text-muted-foreground capitalize">{format(day, "EEE", { locale: sv })}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{format(day, "EEE", { locale: enGB })}</p>
                   <p className={`text-lg font-semibold ${isToday ? 'text-primary' : ''}`}>
                     {format(day, "d")}
                   </p>
@@ -338,7 +338,7 @@ const SelectSlot = () => {
                   return (
                     <div>
                       <p className="font-medium truncate capitalize">
-                        {format(parseISO(slot.start_time), "EEEE d MMMM", { locale: sv })}
+                        {format(parseISO(slot.start_time), "EEEE d MMMM", { locale: enGB })}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {format(parseISO(slot.start_time), "HH:mm")} – {format(parseISO(slot.end_time), "HH:mm")}
@@ -348,7 +348,7 @@ const SelectSlot = () => {
                 })()}
               </div>
               <Button onClick={handleBookSlot} disabled={booking} className="shrink-0">
-                {booking ? "Bokar..." : "Bekräfta"}
+                {booking ? "Booking..." : "Confirm"}
               </Button>
             </div>
           </div>
