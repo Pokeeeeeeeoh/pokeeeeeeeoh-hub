@@ -6,27 +6,27 @@
 
 @layer base {
   :root {
-    /* Dark, minimal tattoo studio aesthetic */
-    --background: 0 0% 4%;
-    --foreground: 0 0% 92%;
+    /* Clean, minimal white aesthetic */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 8%;
 
-    --card: 0 0% 7%;
-    --card-foreground: 0 0% 92%;
+    --card: 0 0% 98%;
+    --card-foreground: 0 0% 8%;
 
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 92%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 8%;
 
-    --primary: 0 0% 92%;
-    --primary-foreground: 0 0% 4%;
+    --primary: 0 0% 8%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 92%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 8%;
 
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 55%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 0 0% 18%;
-    --accent-foreground: 0 0% 92%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 8%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 98%;
@@ -37,25 +37,25 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 4%;
 
-    --border: 0 0% 18%;
-    --input: 0 0% 12%;
+    --border: 0 0% 90%;
+    --input: 0 0% 96%;
     --ring: 0 0% 40%;
 
     --radius: 0.25rem;
 
-    --sidebar-background: 0 0% 6%;
-    --sidebar-foreground: 0 0% 85%;
-    --sidebar-primary: 0 0% 92%;
-    --sidebar-primary-foreground: 0 0% 4%;
-    --sidebar-accent: 0 0% 12%;
-    --sidebar-accent-foreground: 0 0% 92%;
-    --sidebar-border: 0 0% 15%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 20%;
+    --sidebar-primary: 0 0% 8%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 94%;
+    --sidebar-accent-foreground: 0 0% 8%;
+    --sidebar-border: 0 0% 90%;
     --sidebar-ring: 0 0% 40%;
 
     /* Custom design tokens */
-    --gradient-subtle: linear-gradient(135deg, hsl(0 0% 7%) 0%, hsl(0 0% 10%) 100%);
-    --shadow-subtle: 0 2px 10px -3px hsl(0 0% 0% / 0.5);
-    --shadow-card: 0 4px 20px -5px hsl(0 0% 0% / 0.6);
+    --gradient-subtle: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(0 0% 98%) 100%);
+    --shadow-subtle: 0 2px 10px -3px hsl(0 0% 0% / 0.08);
+    --shadow-card: 0 4px 20px -5px hsl(0 0% 0% / 0.1);
   }
 
   .light {
