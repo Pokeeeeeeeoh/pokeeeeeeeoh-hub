@@ -145,8 +145,17 @@ const AdminCalendar = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
-  const [newClient, setNewClient] = useState({ name: "", email: "", phone: "" });
+  const [newClient, setNewClient] = useState({ name: "", email: "", phone: "", tattooDescription: "" });
   const [bookingInProgress, setBookingInProgress] = useState(false);
+
+  // Repeat day state
+  const [showRepeatDayDialog, setShowRepeatDayDialog] = useState(false);
+  const [dayToRepeat, setDayToRepeat] = useState<Date | null>(null);
+  const [dayRepeatMode, setDayRepeatMode] = useState<RepeatMode>("weeks");
+  const [dayRepeatWeeks, setDayRepeatWeeks] = useState(4);
+  const [dayRepeatUntilDate, setDayRepeatUntilDate] = useState<Date | undefined>();
+  const [dayRepeatDays, setDayRepeatDays] = useState<number[]>([]);
+  const [repeatingDay, setRepeatingDay] = useState(false);
 
   useEffect(() => {
     fetchSlots();
@@ -230,6 +239,100 @@ const AdminCalendar = () => {
     setShowSlotDialog(true);
   };
 
+  // Open repeat day dialog
+  const openRepeatDayDialog = (day: Date) => {
+    const daySlots = getSlotsForDay(day);
+    if (daySlots.length === 0) {
+      toast.error("Inga tider denna dag att upprepa");
+      return;
+    }
+    setDayToRepeat(day);
+    setDayRepeatDays([getDay(day)]);
+    setDayRepeatMode("weeks");
+    setDayRepeatWeeks(4);
+    setDayRepeatUntilDate(undefined);
+    setShowRepeatDayDialog(true);
+  };
+
+  const handleRepeatDay = async () => {
+    if (!dayToRepeat) return;
+    setRepeatingDay(true);
+
+    try {
+      const daySlots = getSlotsForDay(dayToRepeat);
+      const slotsToCreate: { start_time: string; end_time: string }[] = [];
+
+      for (const slot of daySlots) {
+        if (slot.is_booked) continue; // Don't repeat booked slots
+        
+        const slotDate = parseISO(slot.start_time);
+        const slotEndDate = parseISO(slot.end_time);
+        const startHour = slotDate.getHours();
+        const startMin = slotDate.getMinutes();
+        const endHour = slotEndDate.getHours();
+        const endMin = slotEndDate.getMinutes();
+
+        if (dayRepeatMode === "weeks") {
+          for (let i = 1; i <= dayRepeatWeeks; i++) {
+            for (const dayOfWeek of dayRepeatDays) {
+              let date = addWeeks(dayToRepeat, i);
+              const currentDay = getDay(date);
+              const diff = dayOfWeek - currentDay;
+              date = addDays(date, diff);
+
+              const startTime = setMinutes(setHours(date, startHour), startMin);
+              const endTime = setMinutes(setHours(date, endHour), endMin);
+              slotsToCreate.push({
+                start_time: startTime.toISOString(),
+                end_time: endTime.toISOString(),
+              });
+            }
+          }
+        } else if (dayRepeatMode === "until" && dayRepeatUntilDate) {
+          const days = eachDayOfInterval({ start: addDays(dayToRepeat, 1), end: dayRepeatUntilDate });
+          const matchingDays = days.filter((d) => dayRepeatDays.includes(getDay(d)));
+
+          for (const date of matchingDays) {
+            const startTime = setMinutes(setHours(date, startHour), startMin);
+            const endTime = setMinutes(setHours(date, endHour), endMin);
+            slotsToCreate.push({
+              start_time: startTime.toISOString(),
+              end_time: endTime.toISOString(),
+            });
+          }
+        }
+      }
+
+      if (slotsToCreate.length === 0) {
+        toast.error("Inga tider att skapa med dessa inställningar");
+        setRepeatingDay(false);
+        return;
+      }
+
+      const { error } = await supabase
+        .from("availability_slots")
+        .insert(slotsToCreate);
+
+      if (error) throw error;
+
+      toast.success(`${slotsToCreate.length} tid${slotsToCreate.length > 1 ? "er" : ""} tillagd${slotsToCreate.length > 1 ? "a" : ""}`);
+      setShowRepeatDayDialog(false);
+      setDayToRepeat(null);
+      fetchSlots();
+    } catch (err) {
+      console.error("Error repeating day:", err);
+      toast.error("Kunde inte upprepa dagen");
+    } finally {
+      setRepeatingDay(false);
+    }
+  };
+
+  const toggleDayRepeatDay = (day: number) => {
+    setDayRepeatDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  };
+
   const handleManualBooking = async (clientId: string) => {
     if (!selectedSlot) return;
     setBookingInProgress(true);
@@ -277,31 +380,53 @@ const AdminCalendar = () => {
   };
 
   const handleBookWithNewClient = async () => {
-    if (!newClient.name || !newClient.email) {
-      toast.error("Namn och e-post krävs");
+    // At least one field should have some info
+    const hasAnyInfo = newClient.name || newClient.email || newClient.phone || newClient.tattooDescription;
+    if (!hasAnyInfo) {
+      toast.error("Fyll i minst ett fält");
       return;
     }
 
     setBookingInProgress(true);
 
     try {
-      const { data: existingClient } = await supabase
-        .from("clients")
-        .select("id")
-        .eq("email", newClient.email)
-        .maybeSingle();
-
       let clientId: string;
+      
+      // If email provided, check for existing
+      if (newClient.email) {
+        const { data: existingClient } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("email", newClient.email)
+          .maybeSingle();
 
-      if (existingClient) {
-        clientId = existingClient.id;
+        if (existingClient) {
+          clientId = existingClient.id;
+        } else {
+          const { data: createdClient, error: clientError } = await supabase
+            .from("clients")
+            .insert({
+              name: newClient.name || "Okänd",
+              email: newClient.email,
+              phone: newClient.phone || null,
+              notes: newClient.tattooDescription || null,
+            })
+            .select()
+            .single();
+
+          if (clientError) throw clientError;
+          clientId = createdClient.id;
+          fetchClients();
+        }
       } else {
+        // No email - create new client
         const { data: createdClient, error: clientError } = await supabase
           .from("clients")
           .insert({
-            name: newClient.name,
-            email: newClient.email,
+            name: newClient.name || "Okänd",
+            email: `unknown-${Date.now()}@placeholder.local`,
             phone: newClient.phone || null,
+            notes: newClient.tattooDescription || null,
           })
           .select()
           .single();
@@ -681,14 +806,23 @@ const AdminCalendar = () => {
                     </div>
 
                     {!isPast && (
-                      <div className="p-1.5 pt-0 shrink-0">
+                      <div className="p-1.5 pt-0 shrink-0 flex gap-1">
                         <button
                           onClick={() => openDayDialog(day)}
-                          className="w-full p-1.5 rounded border border-dashed border-border hover:border-primary/50 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1"
+                          className="flex-1 p-1.5 rounded border border-dashed border-border hover:border-primary/50 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1"
                         >
                           <Plus className="h-3 w-3" />
                           <span className="text-[10px]">Lägg till</span>
                         </button>
+                        {daySlots.length > 0 && (
+                          <button
+                            onClick={() => openRepeatDayDialog(day)}
+                            className="p-1.5 rounded border border-dashed border-border hover:border-primary/50 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center"
+                            title="Upprepa hela dagen"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1039,7 +1173,7 @@ const AdminCalendar = () => {
                         variant="outline"
                         onClick={() => {
                           setSelectedClientId("");
-                          setNewClient({ name: "", email: "", phone: "" });
+                          setNewClient({ name: "", email: "", phone: "", tattooDescription: "" });
                           setShowBookingDialog(true);
                         }}
                       >
@@ -1269,7 +1403,7 @@ const AdminCalendar = () => {
 
                   <TabsContent value="new" className="space-y-4 pt-4">
                     <div className="space-y-2">
-                      <Label className="text-xs">Namn *</Label>
+                      <Label className="text-xs">Namn</Label>
                       <Input
                         value={newClient.name}
                         onChange={(e) =>
@@ -1282,7 +1416,7 @@ const AdminCalendar = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs">E-post *</Label>
+                      <Label className="text-xs">E-post</Label>
                       <Input
                         type="email"
                         value={newClient.email}
@@ -1308,18 +1442,164 @@ const AdminCalendar = () => {
                         placeholder="Valfritt"
                       />
                     </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Tatuering (kort beskrivning)</Label>
+                      <Input
+                        value={newClient.tattooDescription}
+                        onChange={(e) =>
+                          setNewClient((prev) => ({
+                            ...prev,
+                            tattooDescription: e.target.value,
+                          }))
+                        }
+                        placeholder="T.ex. Ros på underarm"
+                      />
+                    </div>
 
                     <Button
                       className="w-full"
                       onClick={handleBookWithNewClient}
-                      disabled={
-                        !newClient.name || !newClient.email || bookingInProgress
-                      }
+                      disabled={bookingInProgress}
                     >
                       {bookingInProgress ? "Bokar..." : "Skapa & boka"}
                     </Button>
                   </TabsContent>
                 </Tabs>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Repeat Day Dialog */}
+        <Dialog open={showRepeatDayDialog} onOpenChange={setShowRepeatDayDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Upprepa hela dagen</DialogTitle>
+            </DialogHeader>
+            {dayToRepeat && (
+              <div className="space-y-4">
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <p className="text-sm font-medium">
+                    {format(dayToRepeat, "EEEE d MMMM yyyy", { locale: sv })}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {getSlotsForDay(dayToRepeat).filter(s => !s.is_booked).length} lediga tider kommer upprepas
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="day-repeat-weeks"
+                        checked={dayRepeatMode === "weeks"}
+                        onCheckedChange={(checked) => setDayRepeatMode(checked ? "weeks" : "until")}
+                      />
+                      <Label htmlFor="day-repeat-weeks" className="text-sm cursor-pointer">
+                        Antal veckor framåt
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="day-repeat-until"
+                        checked={dayRepeatMode === "until"}
+                        onCheckedChange={(checked) => setDayRepeatMode(checked ? "until" : "weeks")}
+                      />
+                      <Label htmlFor="day-repeat-until" className="text-sm cursor-pointer">
+                        Till datum
+                      </Label>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Vilka dagar</Label>
+                      <div className="flex flex-wrap gap-1">
+                        {WEEKDAYS.map((day) => (
+                          <button
+                            key={day.value}
+                            onClick={() => toggleDayRepeatDay(day.value)}
+                            className={cn(
+                              "px-2.5 py-1 text-xs rounded-full border transition-colors",
+                              dayRepeatDays.includes(day.value)
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-background border-border hover:border-primary/50"
+                            )}
+                          >
+                            {day.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {dayRepeatMode === "weeks" && (
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Antal veckor</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={52}
+                          value={dayRepeatWeeks}
+                          onChange={(e) =>
+                            setDayRepeatWeeks(parseInt(e.target.value) || 1)
+                          }
+                        />
+                      </div>
+                    )}
+
+                    {dayRepeatMode === "until" && (
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Till datum</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !dayRepeatUntilDate && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {dayRepeatUntilDate
+                                ? format(dayRepeatUntilDate, "d MMMM yyyy", { locale: sv })
+                                : "Välj datum"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={dayRepeatUntilDate}
+                              onSelect={setDayRepeatUntilDate}
+                              disabled={(date) => date <= dayToRepeat}
+                              weekStartsOn={1}
+                              locale={sv}
+                              initialFocus
+                              className="p-3 pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setShowRepeatDayDialog(false)}
+                  >
+                    Avbryt
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={handleRepeatDay}
+                    disabled={repeatingDay || dayRepeatDays.length === 0}
+                  >
+                    {repeatingDay ? "Skapar tider..." : "Upprepa"}
+                  </Button>
+                </div>
               </div>
             )}
           </DialogContent>

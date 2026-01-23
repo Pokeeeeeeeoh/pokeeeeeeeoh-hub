@@ -34,14 +34,14 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link to="/" className="font-mono text-sm tracking-widest uppercase">
+        <div className="max-w-5xl mx-auto flex h-16 items-center justify-between px-4">
+          <Link to="/" className="font-mono text-sm tracking-widest uppercase truncate">
             {settings.site_name}
           </Link>
-          <nav className="flex items-center gap-6">
+          <nav className="flex items-center gap-4 sm:gap-6">
             <Link 
               to="/admin" 
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -50,7 +50,7 @@ const Index = () => {
             </Link>
             <Link to="/book">
               <Button variant="outline" size="sm">
-                Book
+                Boka
               </Button>
             </Link>
           </nav>
@@ -60,7 +60,7 @@ const Index = () => {
       {/* Hero Section */}
       <section className="relative flex min-h-screen items-center justify-center px-4 pt-16">
         <div className="relative z-10 max-w-2xl text-center">
-          <h1 className="mb-8 text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl animate-fade-in">
+          <h1 className="mb-8 text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl animate-fade-in break-words">
             {settings.site_name}
           </h1>
           <p className="mb-8 text-lg text-muted-foreground max-w-md mx-auto animate-fade-in stagger-1">
@@ -69,7 +69,7 @@ const Index = () => {
           <div className="animate-fade-in stagger-2">
             <Link to="/book">
               <Button size="lg" className="group">
-                Book a tattoo
+                Boka tatuering
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
@@ -79,11 +79,11 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="border-t border-border py-8 px-4">
-        <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <p className="font-mono text-xs tracking-widest">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+          <p className="font-mono text-xs tracking-widest break-all">
             {settings.email}
           </p>
-          <p className="text-xs">
+          <p className="text-xs text-center sm:text-right">
             {settings.address}
           </p>
         </div>
