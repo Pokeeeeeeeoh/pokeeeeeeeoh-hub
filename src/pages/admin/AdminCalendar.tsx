@@ -20,6 +20,7 @@ import {
   eachDayOfInterval,
   getDay,
 } from "date-fns";
+import { sv } from "date-fns/locale";
 import {
   ChevronLeft,
   ChevronRight,
@@ -29,6 +30,11 @@ import {
   UserPlus,
   Calendar as CalendarIcon,
   LayoutGrid,
+  Repeat,
+  User,
+  Mail,
+  Phone,
+  Copy,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -62,6 +68,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 
+interface Appointment {
+  id: string;
+  client_id: string;
+  clients: {
+    name: string;
+    email: string;
+    phone: string | null;
+  } | null;
+}
+
 interface AvailabilitySlot {
   id: string;
   start_time: string;
@@ -69,6 +85,7 @@ interface AvailabilitySlot {
   is_blocked: boolean;
   is_booked: boolean;
   notes: string | null;
+  appointments?: Appointment[];
 }
 
 interface Client {
@@ -82,13 +99,13 @@ type ViewMode = "week" | "month";
 type RepeatMode = "none" | "weeks" | "until";
 
 const WEEKDAYS = [
-  { value: 1, label: "Mon" },
-  { value: 2, label: "Tue" },
-  { value: 3, label: "Wed" },
-  { value: 4, label: "Thu" },
-  { value: 5, label: "Fri" },
-  { value: 6, label: "Sat" },
-  { value: 0, label: "Sun" },
+  { value: 1, label: "Mån" },
+  { value: 2, label: "Tis" },
+  { value: 3, label: "Ons" },
+  { value: 4, label: "Tor" },
+  { value: 5, label: "Fre" },
+  { value: 6, label: "Lör" },
+  { value: 0, label: "Sön" },
 ];
 
 const AdminCalendar = () => {
@@ -100,9 +117,9 @@ const AdminCalendar = () => {
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
 
-  // Add slot state
-  const [showAddSlot, setShowAddSlot] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  // Day action dialog (when clicking on a day)
+  const [showDayDialog, setShowDayDialog] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [newSlot, setNewSlot] = useState({
     startTime: "10:00",
     endTime: "12:00",
@@ -113,9 +130,18 @@ const AdminCalendar = () => {
   const [repeatUntilDate, setRepeatUntilDate] = useState<Date | undefined>();
   const [addingSlot, setAddingSlot] = useState(false);
 
+  // Slot action dialog (when clicking on a slot)
+  const [showSlotDialog, setShowSlotDialog] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
+  const [slotRepeatMode, setSlotRepeatMode] = useState<RepeatMode>("none");
+  const [slotRepeatWeekday, setSlotRepeatWeekday] = useState<number>(1);
+  const [slotRepeatWeeks, setSlotRepeatWeeks] = useState(4);
+  const [slotRepeatUntilDate, setSlotRepeatUntilDate] = useState<Date | undefined>();
+  const [slotRepeatDays, setSlotRepeatDays] = useState<number[]>([]);
+  const [repeatingSlot, setRepeatingSlot] = useState(false);
+
   // Manual booking state
   const [showBookingDialog, setShowBookingDialog] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
@@ -144,7 +170,18 @@ const AdminCalendar = () => {
 
     const { data, error } = await supabase
       .from("availability_slots")
-      .select("*")
+      .select(`
+        *,
+        appointments (
+          id,
+          client_id,
+          clients (
+            name,
+            email,
+            phone
+          )
+        )
+      `)
       .gte("start_time", startDate.toISOString())
       .lt("start_time", endDate.toISOString())
       .order("start_time", { ascending: true });
@@ -170,11 +207,27 @@ const AdminCalendar = () => {
     }
   };
 
-  const openBookingDialog = (slot: AvailabilitySlot) => {
+  // Open day dialog when clicking on a day
+  const openDayDialog = (day: Date) => {
+    setSelectedDay(day);
+    setRepeatWeekday(getDay(day));
+    setRepeatMode("none");
+    setRepeatWeeks(4);
+    setRepeatUntilDate(undefined);
+    setNewSlot({ startTime: "10:00", endTime: "12:00" });
+    setShowDayDialog(true);
+  };
+
+  // Open slot dialog when clicking on a slot
+  const openSlotDialog = (slot: AvailabilitySlot) => {
     setSelectedSlot(slot);
-    setSelectedClientId("");
-    setNewClient({ name: "", email: "", phone: "" });
-    setShowBookingDialog(true);
+    const slotDate = parseISO(slot.start_time);
+    setSlotRepeatWeekday(getDay(slotDate));
+    setSlotRepeatDays([getDay(slotDate)]);
+    setSlotRepeatMode("none");
+    setSlotRepeatWeeks(4);
+    setSlotRepeatUntilDate(undefined);
+    setShowSlotDialog(true);
   };
 
   const handleManualBooking = async (clientId: string) => {
@@ -211,12 +264,13 @@ const AdminCalendar = () => {
 
       if (slotError) throw slotError;
 
-      toast.success("Appointment booked successfully");
+      toast.success("Bokning genomförd");
       setShowBookingDialog(false);
+      setShowSlotDialog(false);
       fetchSlots();
     } catch (err) {
       console.error("Booking error:", err);
-      toast.error("Failed to book appointment");
+      toast.error("Kunde inte boka tid");
     } finally {
       setBookingInProgress(false);
     }
@@ -224,7 +278,7 @@ const AdminCalendar = () => {
 
   const handleBookWithNewClient = async () => {
     if (!newClient.name || !newClient.email) {
-      toast.error("Name and email are required");
+      toast.error("Namn och e-post krävs");
       return;
     }
 
@@ -260,13 +314,13 @@ const AdminCalendar = () => {
       await handleManualBooking(clientId);
     } catch (err) {
       console.error("Error creating client:", err);
-      toast.error("Failed to create client");
+      toast.error("Kunde inte skapa kund");
       setBookingInProgress(false);
     }
   };
 
   const handleAddSlot = async () => {
-    if (!selectedDate) return;
+    if (!selectedDay) return;
     setAddingSlot(true);
 
     try {
@@ -276,18 +330,15 @@ const AdminCalendar = () => {
       const slotsToCreate: { start_time: string; end_time: string }[] = [];
 
       if (repeatMode === "none") {
-        // Single slot
-        const startTime = setMinutes(setHours(selectedDate, startHour), startMin);
-        const endTime = setMinutes(setHours(selectedDate, endHour), endMin);
+        const startTime = setMinutes(setHours(selectedDay, startHour), startMin);
+        const endTime = setMinutes(setHours(selectedDay, endHour), endMin);
         slotsToCreate.push({
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
         });
       } else if (repeatMode === "weeks") {
-        // Repeat for X weeks on selected weekday
         for (let i = 0; i < repeatWeeks; i++) {
-          let date = addWeeks(selectedDate, i);
-          // Adjust to correct weekday
+          let date = addWeeks(selectedDay, i);
           const currentDay = getDay(date);
           const diff = repeatWeekday - currentDay;
           date = addDays(date, diff);
@@ -300,8 +351,7 @@ const AdminCalendar = () => {
           });
         }
       } else if (repeatMode === "until" && repeatUntilDate) {
-        // Repeat until date on selected weekday
-        const days = eachDayOfInterval({ start: selectedDate, end: repeatUntilDate });
+        const days = eachDayOfInterval({ start: selectedDay, end: repeatUntilDate });
         const matchingDays = days.filter((d) => getDay(d) === repeatWeekday);
 
         for (const date of matchingDays) {
@@ -315,7 +365,7 @@ const AdminCalendar = () => {
       }
 
       if (slotsToCreate.length === 0) {
-        toast.error("No slots to create with these settings");
+        toast.error("Inga tider att skapa med dessa inställningar");
         setAddingSlot(false);
         return;
       }
@@ -326,28 +376,95 @@ const AdminCalendar = () => {
 
       if (error) throw error;
 
-      toast.success(
-        `Added ${slotsToCreate.length} slot${slotsToCreate.length > 1 ? "s" : ""}`
-      );
-      setShowAddSlot(false);
-      setSelectedDate(null);
+      toast.success(`${slotsToCreate.length} tid${slotsToCreate.length > 1 ? "er" : ""} tillagd${slotsToCreate.length > 1 ? "a" : ""}`);
+      setShowDayDialog(false);
+      setSelectedDay(null);
       setRepeatMode("none");
       fetchSlots();
     } catch (err) {
       console.error("Error adding slot:", err);
-      toast.error("Failed to add slot");
+      toast.error("Kunde inte lägga till tid");
     } finally {
       setAddingSlot(false);
+    }
+  };
+
+  const handleRepeatSlot = async () => {
+    if (!selectedSlot) return;
+    setRepeatingSlot(true);
+
+    try {
+      const slotDate = parseISO(selectedSlot.start_time);
+      const slotEndDate = parseISO(selectedSlot.end_time);
+      const startHour = slotDate.getHours();
+      const startMin = slotDate.getMinutes();
+      const endHour = slotEndDate.getHours();
+      const endMin = slotEndDate.getMinutes();
+
+      const slotsToCreate: { start_time: string; end_time: string }[] = [];
+
+      if (slotRepeatMode === "weeks") {
+        for (let i = 1; i <= slotRepeatWeeks; i++) {
+          for (const dayOfWeek of slotRepeatDays) {
+            let date = addWeeks(slotDate, i);
+            const currentDay = getDay(date);
+            const diff = dayOfWeek - currentDay;
+            date = addDays(date, diff);
+
+            const startTime = setMinutes(setHours(date, startHour), startMin);
+            const endTime = setMinutes(setHours(date, endHour), endMin);
+            slotsToCreate.push({
+              start_time: startTime.toISOString(),
+              end_time: endTime.toISOString(),
+            });
+          }
+        }
+      } else if (slotRepeatMode === "until" && slotRepeatUntilDate) {
+        const days = eachDayOfInterval({ start: addDays(slotDate, 1), end: slotRepeatUntilDate });
+        const matchingDays = days.filter((d) => slotRepeatDays.includes(getDay(d)));
+
+        for (const date of matchingDays) {
+          const startTime = setMinutes(setHours(date, startHour), startMin);
+          const endTime = setMinutes(setHours(date, endHour), endMin);
+          slotsToCreate.push({
+            start_time: startTime.toISOString(),
+            end_time: endTime.toISOString(),
+          });
+        }
+      }
+
+      if (slotsToCreate.length === 0) {
+        toast.error("Inga tider att skapa med dessa inställningar");
+        setRepeatingSlot(false);
+        return;
+      }
+
+      const { error } = await supabase
+        .from("availability_slots")
+        .insert(slotsToCreate);
+
+      if (error) throw error;
+
+      toast.success(`${slotsToCreate.length} tid${slotsToCreate.length > 1 ? "er" : ""} tillagd${slotsToCreate.length > 1 ? "a" : ""}`);
+      setShowSlotDialog(false);
+      setSelectedSlot(null);
+      fetchSlots();
+    } catch (err) {
+      console.error("Error repeating slot:", err);
+      toast.error("Kunde inte upprepa tid");
+    } finally {
+      setRepeatingSlot(false);
     }
   };
 
   const handleDeleteSlot = async (slotId: string) => {
     try {
       await supabase.from("availability_slots").delete().eq("id", slotId);
-      toast.success("Slot removed");
+      toast.success("Tid borttagen");
+      setShowSlotDialog(false);
       fetchSlots();
     } catch (err) {
-      toast.error("Failed to remove slot");
+      toast.error("Kunde inte ta bort tid");
     }
   };
 
@@ -358,9 +475,16 @@ const AdminCalendar = () => {
         .update({ is_blocked: blocked })
         .eq("id", slotId);
       fetchSlots();
+      setShowSlotDialog(false);
     } catch (err) {
-      toast.error("Failed to update slot");
+      toast.error("Kunde inte uppdatera tid");
     }
+  };
+
+  const toggleRepeatDay = (day: number) => {
+    setSlotRepeatDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
   };
 
   const navigatePrev = () => {
@@ -395,7 +519,7 @@ const AdminCalendar = () => {
   const monthDays = eachDayOfInterval({
     start: monthStartWeek,
     end: addDays(monthEnd, 6 - getDay(monthEnd) || 7),
-  }).slice(0, 42); // Max 6 weeks
+  }).slice(0, 42);
 
   const timeOptions = [];
   for (let h = 8; h <= 20; h++) {
@@ -405,78 +529,50 @@ const AdminCalendar = () => {
     }
   }
 
-  const openAddSlotDialog = (day: Date) => {
-    setSelectedDate(day);
-    setRepeatWeekday(getDay(day));
-    setShowAddSlot(true);
+  const getClientFromSlot = (slot: AvailabilitySlot) => {
+    if (slot.appointments && slot.appointments.length > 0) {
+      return slot.appointments[0].clients;
+    }
+    return null;
   };
 
-  const SlotCard = ({ slot }: { slot: AvailabilitySlot }) => (
-    <div
-      className={cn(
-        "group px-2 py-1.5 rounded text-xs border transition-colors",
-        slot.is_booked
-          ? "bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400"
-          : slot.is_blocked
-          ? "bg-muted border-muted text-muted-foreground line-through"
-          : "bg-card border-border hover:border-primary/50"
-      )}
-    >
-      <div className="flex items-center gap-1.5">
-        <span className="font-mono text-[11px] shrink-0">
-          {format(parseISO(slot.start_time), "HH:mm")}
-        </span>
-        {slot.is_booked && (
-          <span className="text-[10px] opacity-70 truncate">Booked</span>
+  const SlotCard = ({ slot }: { slot: AvailabilitySlot }) => {
+    const client = getClientFromSlot(slot);
+    
+    return (
+      <button
+        onClick={() => openSlotDialog(slot)}
+        className={cn(
+          "w-full text-left group px-2 py-1.5 rounded text-xs border transition-colors",
+          slot.is_booked
+            ? "bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400 hover:bg-green-500/20"
+            : slot.is_blocked
+            ? "bg-muted border-muted text-muted-foreground line-through hover:bg-muted/80"
+            : "bg-card border-border hover:border-primary/50 hover:bg-accent/50"
         )}
-        {!slot.is_booked && (
-          <div className="ml-auto opacity-0 group-hover:opacity-100 flex gap-0.5 transition-opacity shrink-0">
-            {!slot.is_blocked && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openBookingDialog(slot);
-                }}
-                className="p-0.5 hover:bg-primary/20 rounded text-primary"
-                title="Book client"
-              >
-                <UserPlus className="h-3 w-3" />
-              </button>
-            )}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleBlockSlot(slot.id, !slot.is_blocked);
-              }}
-              className="p-0.5 hover:bg-secondary rounded"
-              title={slot.is_blocked ? "Unblock" : "Block"}
-            >
-              <Clock className="h-3 w-3" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteSlot(slot.id);
-              }}
-              className="p-0.5 hover:bg-destructive/20 rounded text-destructive"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+      >
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono text-[11px] shrink-0">
+            {format(parseISO(slot.start_time), "HH:mm")}
+          </span>
+          {slot.is_booked && client && (
+            <span className="text-[10px] opacity-70 truncate">{client.name}</span>
+          )}
+          {!slot.is_booked && !slot.is_blocked && (
+            <span className="text-[10px] opacity-50 truncate">Ledig</span>
+          )}
+        </div>
+      </button>
+    );
+  };
 
   return (
     <div className="p-4 lg:p-8">
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight">
-            Availability Calendar
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight">Kalender</h1>
           <p className="text-muted-foreground text-sm">
-            Manage your available appointment slots
+            Hantera dina lediga tider
           </p>
         </div>
 
@@ -487,20 +583,20 @@ const AdminCalendar = () => {
             <Button variant="outline" size="icon" onClick={navigatePrev}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="text-center min-w-[180px]">
+            <div className="text-center min-w-[200px]">
               {viewMode === "week" ? (
                 <>
                   <p className="font-mono text-xs text-muted-foreground">
-                    Week {weekNumber}
+                    Vecka {weekNumber}
                   </p>
                   <p className="text-sm font-medium">
-                    {format(currentWeekStart, "MMM d")} –{" "}
-                    {format(addDays(currentWeekStart, 6), "MMM d")}
+                    {format(currentWeekStart, "d MMM", { locale: sv })} –{" "}
+                    {format(addDays(currentWeekStart, 6), "d MMM yyyy", { locale: sv })}
                   </p>
                 </>
               ) : (
                 <p className="text-sm font-medium">
-                  {format(currentDate, "MMMM yyyy")}
+                  {format(currentDate, "MMMM yyyy", { locale: sv })}
                 </p>
               )}
             </div>
@@ -517,7 +613,7 @@ const AdminCalendar = () => {
               onClick={() => setViewMode("week")}
             >
               <CalendarIcon className="h-4 w-4 mr-1.5" />
-              Week
+              Vecka
             </Button>
             <Button
               variant={viewMode === "month" ? "default" : "outline"}
@@ -525,7 +621,7 @@ const AdminCalendar = () => {
               onClick={() => setViewMode("month")}
             >
               <LayoutGrid className="h-4 w-4 mr-1.5" />
-              Month
+              Månad
             </Button>
           </div>
         </div>
@@ -533,7 +629,7 @@ const AdminCalendar = () => {
         {/* Calendar */}
         {loading ? (
           <div className="text-center py-12 text-muted-foreground">
-            Loading calendar...
+            Laddar kalender...
           </div>
         ) : viewMode === "week" ? (
           /* Week View */
@@ -553,14 +649,17 @@ const AdminCalendar = () => {
                       isPast && "opacity-50"
                     )}
                   >
-                    <div
+                    <button
+                      onClick={() => !isPast && openDayDialog(day)}
+                      disabled={isPast}
                       className={cn(
-                        "p-2 border-b border-border text-center shrink-0",
-                        isToday && "bg-primary/10"
+                        "p-2 border-b border-border text-center shrink-0 hover:bg-accent/50 transition-colors",
+                        isToday && "bg-primary/10",
+                        !isPast && "cursor-pointer"
                       )}
                     >
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                        {format(day, "EEE")}
+                        {format(day, "EEEE", { locale: sv })}
                       </p>
                       <p
                         className={cn(
@@ -570,7 +669,10 @@ const AdminCalendar = () => {
                       >
                         {format(day, "d")}
                       </p>
-                    </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        {format(day, "MMM", { locale: sv })}
+                      </p>
+                    </button>
 
                     <div className="flex-1 p-1.5 space-y-1 overflow-y-auto">
                       {daySlots.map((slot) => (
@@ -581,11 +683,11 @@ const AdminCalendar = () => {
                     {!isPast && (
                       <div className="p-1.5 pt-0 shrink-0">
                         <button
-                          onClick={() => openAddSlotDialog(day)}
+                          onClick={() => openDayDialog(day)}
                           className="w-full p-1.5 rounded border border-dashed border-border hover:border-primary/50 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1"
                         >
                           <Plus className="h-3 w-3" />
-                          <span className="text-[10px]">Add</span>
+                          <span className="text-[10px]">Lägg till</span>
                         </button>
                       </div>
                     )}
@@ -600,7 +702,7 @@ const AdminCalendar = () => {
             <div className="min-w-[700px]">
               {/* Weekday Headers */}
               <div className="grid grid-cols-7 gap-1 mb-1">
-                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+                {["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"].map((d) => (
                   <div
                     key={d}
                     className="text-center text-[10px] uppercase tracking-wider text-muted-foreground py-2"
@@ -629,18 +731,20 @@ const AdminCalendar = () => {
                       )}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span
+                        <button
+                          onClick={() => !isPast && isCurrentMonth && openDayDialog(day)}
+                          disabled={isPast || !isCurrentMonth}
                           className={cn(
-                            "text-xs font-medium",
+                            "text-xs font-medium hover:text-primary transition-colors",
                             isToday && "text-primary",
                             !isCurrentMonth && "text-muted-foreground"
                           )}
                         >
                           {format(day, "d")}
-                        </span>
+                        </button>
                         {!isPast && isCurrentMonth && (
                           <button
-                            onClick={() => openAddSlotDialog(day)}
+                            onClick={() => openDayDialog(day)}
                             className="p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
                           >
                             <Plus className="h-3 w-3" />
@@ -650,24 +754,24 @@ const AdminCalendar = () => {
 
                       <div className="flex-1 space-y-0.5 overflow-y-auto">
                         {daySlots.slice(0, 3).map((slot) => (
-                          <div
+                          <button
                             key={slot.id}
+                            onClick={() => openSlotDialog(slot)}
                             className={cn(
-                              "text-[10px] px-1 py-0.5 rounded truncate cursor-pointer",
+                              "w-full text-left text-[10px] px-1 py-0.5 rounded truncate",
                               slot.is_booked
-                                ? "bg-green-500/20 text-green-700 dark:text-green-400"
+                                ? "bg-green-500/20 text-green-700 dark:text-green-400 hover:bg-green-500/30"
                                 : slot.is_blocked
                                 ? "bg-muted text-muted-foreground line-through"
-                                : "bg-primary/10 text-primary"
+                                : "bg-primary/10 text-primary hover:bg-primary/20"
                             )}
-                            onClick={() => !slot.is_booked && openBookingDialog(slot)}
                           >
                             {format(parseISO(slot.start_time), "HH:mm")}
-                          </div>
+                          </button>
                         ))}
                         {daySlots.length > 3 && (
                           <div className="text-[10px] text-muted-foreground px-1">
-                            +{daySlots.length - 3} more
+                            +{daySlots.length - 3} till
                           </div>
                         )}
                       </div>
@@ -679,24 +783,23 @@ const AdminCalendar = () => {
           </div>
         )}
 
-        {/* Add Slot Dialog */}
-        <Dialog open={showAddSlot} onOpenChange={setShowAddSlot}>
+        {/* Add Slot Dialog (Day Click) */}
+        <Dialog open={showDayDialog} onOpenChange={setShowDayDialog}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Add Availability Slot</DialogTitle>
+              <DialogTitle>Lägg till tid</DialogTitle>
             </DialogHeader>
-            {selectedDate && (
+            {selectedDay && (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Starting from{" "}
                   <span className="text-foreground font-medium">
-                    {format(selectedDate, "EEEE, MMM d, yyyy")}
+                    {format(selectedDay, "EEEE d MMMM yyyy", { locale: sv })}
                   </span>
                 </p>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Start Time</Label>
+                    <Label className="text-xs">Starttid</Label>
                     <Select
                       value={newSlot.startTime}
                       onValueChange={(v) =>
@@ -716,7 +819,7 @@ const AdminCalendar = () => {
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">End Time</Label>
+                    <Label className="text-xs">Sluttid</Label>
                     <Select
                       value={newSlot.endTime}
                       onValueChange={(v) =>
@@ -740,7 +843,7 @@ const AdminCalendar = () => {
                 {/* Repeat Options */}
                 <div className="space-y-3 pt-2 border-t border-border">
                   <Label className="text-xs text-muted-foreground">
-                    Repeat Options
+                    Upprepa
                   </Label>
 
                   <div className="space-y-2">
@@ -751,7 +854,7 @@ const AdminCalendar = () => {
                         onCheckedChange={() => setRepeatMode("none")}
                       />
                       <Label htmlFor="repeat-none" className="text-sm cursor-pointer">
-                        Single slot only
+                        Endast denna dag
                       </Label>
                     </div>
 
@@ -762,7 +865,7 @@ const AdminCalendar = () => {
                         onCheckedChange={() => setRepeatMode("weeks")}
                       />
                       <Label htmlFor="repeat-weeks" className="text-sm cursor-pointer">
-                        Repeat for weeks
+                        Upprepa antal veckor
                       </Label>
                     </div>
 
@@ -773,7 +876,7 @@ const AdminCalendar = () => {
                         onCheckedChange={() => setRepeatMode("until")}
                       />
                       <Label htmlFor="repeat-until" className="text-sm cursor-pointer">
-                        Repeat until date
+                        Upprepa till datum
                       </Label>
                     </div>
                   </div>
@@ -781,7 +884,7 @@ const AdminCalendar = () => {
                   {repeatMode !== "none" && (
                     <div className="space-y-3 pl-6">
                       <div className="space-y-1.5">
-                        <Label className="text-xs">Weekday</Label>
+                        <Label className="text-xs">Veckodag</Label>
                         <Select
                           value={repeatWeekday.toString()}
                           onValueChange={(v) => setRepeatWeekday(parseInt(v))}
@@ -801,7 +904,7 @@ const AdminCalendar = () => {
 
                       {repeatMode === "weeks" && (
                         <div className="space-y-1.5">
-                          <Label className="text-xs">Number of weeks</Label>
+                          <Label className="text-xs">Antal veckor</Label>
                           <Input
                             type="number"
                             min={1}
@@ -816,7 +919,7 @@ const AdminCalendar = () => {
 
                       {repeatMode === "until" && (
                         <div className="space-y-1.5">
-                          <Label className="text-xs">Until date</Label>
+                          <Label className="text-xs">Till datum</Label>
                           <Popover>
                             <PopoverTrigger asChild>
                               <Button
@@ -828,8 +931,8 @@ const AdminCalendar = () => {
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {repeatUntilDate
-                                  ? format(repeatUntilDate, "PPP")
-                                  : "Pick a date"}
+                                  ? format(repeatUntilDate, "d MMMM yyyy", { locale: sv })
+                                  : "Välj datum"}
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
@@ -837,7 +940,9 @@ const AdminCalendar = () => {
                                 mode="single"
                                 selected={repeatUntilDate}
                                 onSelect={setRepeatUntilDate}
-                                disabled={(date) => date < selectedDate}
+                                disabled={(date) => date < selectedDay}
+                                weekStartsOn={1}
+                                locale={sv}
                                 initialFocus
                                 className="p-3 pointer-events-auto"
                               />
@@ -853,18 +958,229 @@ const AdminCalendar = () => {
                   <Button
                     variant="outline"
                     className="flex-1"
-                    onClick={() => setShowAddSlot(false)}
+                    onClick={() => setShowDayDialog(false)}
                   >
-                    Cancel
+                    Avbryt
                   </Button>
                   <Button
                     className="flex-1"
                     onClick={handleAddSlot}
                     disabled={addingSlot}
                   >
-                    {addingSlot ? "Adding..." : "Add Slot"}
+                    {addingSlot ? "Lägger till..." : "Lägg till"}
                   </Button>
                 </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Slot Dialog (Slot Click) */}
+        <Dialog open={showSlotDialog} onOpenChange={setShowSlotDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedSlot?.is_booked ? "Bokad tid" : "Hantera tid"}
+              </DialogTitle>
+            </DialogHeader>
+            {selectedSlot && (
+              <div className="space-y-4">
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <p className="text-sm font-medium">
+                    {format(parseISO(selectedSlot.start_time), "EEEE d MMMM yyyy", { locale: sv })}
+                  </p>
+                  <p className="text-lg font-mono">
+                    {format(parseISO(selectedSlot.start_time), "HH:mm")} – {format(parseISO(selectedSlot.end_time), "HH:mm")}
+                  </p>
+                </div>
+
+                {/* If booked, show client info */}
+                {selectedSlot.is_booked && getClientFromSlot(selectedSlot) && (
+                  <div className="space-y-3 p-4 border border-green-500/30 bg-green-500/5 rounded-lg">
+                    <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                      <User className="h-4 w-4" />
+                      <span className="font-medium">{getClientFromSlot(selectedSlot)?.name}</span>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(getClientFromSlot(selectedSlot)?.email || "");
+                          toast.success("E-post kopierad");
+                        }}
+                        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full"
+                      >
+                        <Mail className="h-3.5 w-3.5" />
+                        <span>{getClientFromSlot(selectedSlot)?.email}</span>
+                        <Copy className="h-3 w-3 ml-auto opacity-50" />
+                      </button>
+                      {getClientFromSlot(selectedSlot)?.phone && (
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(getClientFromSlot(selectedSlot)?.phone || "");
+                            toast.success("Telefon kopierad");
+                          }}
+                          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full"
+                        >
+                          <Phone className="h-3.5 w-3.5" />
+                          <span>{getClientFromSlot(selectedSlot)?.phone}</span>
+                          <Copy className="h-3 w-3 ml-auto opacity-50" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* If not booked, show actions */}
+                {!selectedSlot.is_booked && (
+                  <div className="space-y-4">
+                    {/* Quick Actions */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedClientId("");
+                          setNewClient({ name: "", email: "", phone: "" });
+                          setShowBookingDialog(true);
+                        }}
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Boka kund
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleBlockSlot(selectedSlot.id, !selectedSlot.is_blocked)}
+                      >
+                        <Clock className="h-4 w-4 mr-2" />
+                        {selectedSlot.is_blocked ? "Avblockera" : "Blockera"}
+                      </Button>
+                    </div>
+
+                    {/* Repeat Options */}
+                    <div className="space-y-3 pt-4 border-t border-border">
+                      <div className="flex items-center gap-2">
+                        <Repeat className="h-4 w-4 text-muted-foreground" />
+                        <Label className="text-sm font-medium">Upprepa denna tid</Label>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="slot-repeat-weeks"
+                            checked={slotRepeatMode === "weeks"}
+                            onCheckedChange={(checked) => setSlotRepeatMode(checked ? "weeks" : "none")}
+                          />
+                          <Label htmlFor="slot-repeat-weeks" className="text-sm cursor-pointer">
+                            Antal veckor framåt
+                          </Label>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="slot-repeat-until"
+                            checked={slotRepeatMode === "until"}
+                            onCheckedChange={(checked) => setSlotRepeatMode(checked ? "until" : "none")}
+                          />
+                          <Label htmlFor="slot-repeat-until" className="text-sm cursor-pointer">
+                            Till datum
+                          </Label>
+                        </div>
+                      </div>
+
+                      {slotRepeatMode !== "none" && (
+                        <div className="space-y-3 pl-6">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">Vilka dagar</Label>
+                            <div className="flex flex-wrap gap-1">
+                              {WEEKDAYS.map((day) => (
+                                <button
+                                  key={day.value}
+                                  onClick={() => toggleRepeatDay(day.value)}
+                                  className={cn(
+                                    "px-2.5 py-1 text-xs rounded-full border transition-colors",
+                                    slotRepeatDays.includes(day.value)
+                                      ? "bg-primary text-primary-foreground border-primary"
+                                      : "bg-background border-border hover:border-primary/50"
+                                  )}
+                                >
+                                  {day.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {slotRepeatMode === "weeks" && (
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">Antal veckor</Label>
+                              <Input
+                                type="number"
+                                min={1}
+                                max={52}
+                                value={slotRepeatWeeks}
+                                onChange={(e) =>
+                                  setSlotRepeatWeeks(parseInt(e.target.value) || 1)
+                                }
+                              />
+                            </div>
+                          )}
+
+                          {slotRepeatMode === "until" && (
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">Till datum</Label>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    className={cn(
+                                      "w-full justify-start text-left font-normal",
+                                      !slotRepeatUntilDate && "text-muted-foreground"
+                                    )}
+                                  >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {slotRepeatUntilDate
+                                      ? format(slotRepeatUntilDate, "d MMMM yyyy", { locale: sv })
+                                      : "Välj datum"}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={slotRepeatUntilDate}
+                                    onSelect={setSlotRepeatUntilDate}
+                                    disabled={(date) => date <= parseISO(selectedSlot.start_time)}
+                                    weekStartsOn={1}
+                                    locale={sv}
+                                    initialFocus
+                                    className="p-3 pointer-events-auto"
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                          )}
+
+                          <Button
+                            className="w-full"
+                            onClick={handleRepeatSlot}
+                            disabled={repeatingSlot || slotRepeatDays.length === 0}
+                          >
+                            {repeatingSlot ? "Skapar tider..." : "Skapa upprepade tider"}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Delete */}
+                    <div className="pt-4 border-t border-border">
+                      <Button
+                        variant="destructive"
+                        className="w-full"
+                        onClick={() => handleDeleteSlot(selectedSlot.id)}
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Ta bort tid
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </DialogContent>
@@ -874,29 +1190,26 @@ const AdminCalendar = () => {
         <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Book Appointment</DialogTitle>
+              <DialogTitle>Boka kund</DialogTitle>
             </DialogHeader>
             {selectedSlot && (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Booking slot:{" "}
+                  Bokar tid:{" "}
                   <span className="text-foreground font-medium">
-                    {format(
-                      parseISO(selectedSlot.start_time),
-                      "EEE, MMM d 'at' HH:mm"
-                    )}
+                    {format(parseISO(selectedSlot.start_time), "EEEE d MMM 'kl' HH:mm", { locale: sv })}
                   </span>
                 </p>
 
                 <Tabs defaultValue="existing" className="w-full">
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="existing">Existing Client</TabsTrigger>
-                    <TabsTrigger value="new">New Client</TabsTrigger>
+                    <TabsTrigger value="existing">Befintlig kund</TabsTrigger>
+                    <TabsTrigger value="new">Ny kund</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="existing" className="space-y-4 pt-4">
                     <div className="space-y-2">
-                      <Label className="text-xs">Select Client</Label>
+                      <Label className="text-xs">Välj kund</Label>
                       <Popover
                         open={clientSearchOpen}
                         onOpenChange={setClientSearchOpen}
@@ -910,14 +1223,14 @@ const AdminCalendar = () => {
                           >
                             {selectedClientId
                               ? clients.find((c) => c.id === selectedClientId)?.name
-                              : "Search clients..."}
+                              : "Sök kund..."}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-full p-0" align="start">
                           <Command>
-                            <CommandInput placeholder="Search by name or email..." />
+                            <CommandInput placeholder="Sök på namn eller e-post..." />
                             <CommandList>
-                              <CommandEmpty>No clients found.</CommandEmpty>
+                              <CommandEmpty>Inga kunder hittades.</CommandEmpty>
                               <CommandGroup>
                                 {clients.map((client) => (
                                   <CommandItem
@@ -950,13 +1263,13 @@ const AdminCalendar = () => {
                       onClick={() => handleManualBooking(selectedClientId)}
                       disabled={!selectedClientId || bookingInProgress}
                     >
-                      {bookingInProgress ? "Booking..." : "Book Appointment"}
+                      {bookingInProgress ? "Bokar..." : "Boka tid"}
                     </Button>
                   </TabsContent>
 
                   <TabsContent value="new" className="space-y-4 pt-4">
                     <div className="space-y-2">
-                      <Label className="text-xs">Name *</Label>
+                      <Label className="text-xs">Namn *</Label>
                       <Input
                         value={newClient.name}
                         onChange={(e) =>
@@ -965,11 +1278,11 @@ const AdminCalendar = () => {
                             name: e.target.value,
                           }))
                         }
-                        placeholder="Client name"
+                        placeholder="Kundens namn"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs">Email *</Label>
+                      <Label className="text-xs">E-post *</Label>
                       <Input
                         type="email"
                         value={newClient.email}
@@ -979,11 +1292,11 @@ const AdminCalendar = () => {
                             email: e.target.value,
                           }))
                         }
-                        placeholder="client@email.com"
+                        placeholder="kund@email.com"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs">Phone</Label>
+                      <Label className="text-xs">Telefon</Label>
                       <Input
                         value={newClient.phone}
                         onChange={(e) =>
@@ -992,7 +1305,7 @@ const AdminCalendar = () => {
                             phone: e.target.value,
                           }))
                         }
-                        placeholder="Optional"
+                        placeholder="Valfritt"
                       />
                     </div>
 
@@ -1003,7 +1316,7 @@ const AdminCalendar = () => {
                         !newClient.name || !newClient.email || bookingInProgress
                       }
                     >
-                      {bookingInProgress ? "Booking..." : "Create & Book"}
+                      {bookingInProgress ? "Bokar..." : "Skapa & boka"}
                     </Button>
                   </TabsContent>
                 </Tabs>
