@@ -50,7 +50,7 @@ const Index = () => {
             </Link>
             <Link to="/book">
               <Button variant="outline" size="sm">
-                Boka
+                Book
               </Button>
             </Link>
           </nav>
@@ -69,7 +69,7 @@ const Index = () => {
           <div className="animate-fade-in stagger-2">
             <Link to="/book">
               <Button size="lg" className="group">
-                Boka tatuering
+                Book a Tattoo
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
