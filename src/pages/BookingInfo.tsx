@@ -29,26 +29,21 @@ const BookingInfo = () => {
   }, []);
 
   useEffect(() => {
+    if (loading) return;
     const handleScroll = () => {
-      if (contentRef.current) {
-        const { scrollTop, scrollHeight, clientHeight } = contentRef.current;
-        if (scrollTop + clientHeight >= scrollHeight - 50) {
-          setHasScrolledToBottom(true);
-        }
-      }
-    };
-
-    const element = contentRef.current;
-    if (element) {
-      element.addEventListener("scroll", handleScroll);
-      // Check if content is short enough that no scroll needed
-      if (element.scrollHeight <= element.clientHeight) {
+      const scrolled = window.innerHeight + window.scrollY;
+      if (scrolled >= document.documentElement.scrollHeight - 80) {
         setHasScrolledToBottom(true);
       }
+    };
+    // If page is shorter than viewport, no scroll needed
+    if (document.documentElement.scrollHeight <= window.innerHeight + 80) {
+      setHasScrolledToBottom(true);
     }
-
-    return () => element?.removeEventListener("scroll", handleScroll);
-  }, [infoContent]);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [loading, infoContent]);
 
   const handleContinue = () => {
     if (acknowledged) {
@@ -98,11 +93,8 @@ const BookingInfo = () => {
             </p>
           </div>
 
-          {/* Scrollable Content */}
-          <div 
-            ref={contentRef}
-            className="h-[50vh] overflow-y-auto border border-border rounded-lg bg-card/50 p-6 mb-6 animate-fade-in stagger-1"
-          >
+          {/* Content */}
+          <div className="border border-border rounded-lg bg-card/50 p-6 mb-6 animate-fade-in stagger-1">
             <div className="prose prose-sm max-w-none">
               <ReactMarkdown
                 components={{

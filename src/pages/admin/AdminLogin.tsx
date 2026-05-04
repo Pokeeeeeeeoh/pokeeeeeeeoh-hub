@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -91,50 +92,6 @@ const AdminLogin = () => {
     }
   };
 
-  const handleSignUp = async () => {
-    if (!email || !password) {
-      toast.error("Please enter email and password.");
-      return;
-    }
-    
-    setLoading(true);
-
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/admin`,
-        },
-      });
-
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-
-      if (data.user) {
-        // Create admin user entry
-        const { error: adminError } = await supabase
-          .from("admin_users")
-          .insert({
-            user_id: data.user.id,
-            email: data.user.email || email,
-          });
-
-        if (adminError) {
-          console.error("Admin creation error:", adminError);
-        }
-
-        toast.success("Admin account created! You can now log in.");
-      }
-    } catch (err) {
-      toast.error("An error occurred. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   if (checkingAuth) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -144,7 +101,14 @@ const AdminLogin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 relative">
+      <Link
+        to="/"
+        className="absolute top-4 left-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back
+      </Link>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-secondary mb-4">
@@ -191,19 +155,6 @@ const AdminLogin = () => {
           </Button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-border text-center">
-          <p className="text-xs text-muted-foreground mb-4">
-            First time? Create your admin account:
-          </p>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleSignUp}
-            disabled={loading}
-          >
-            Create Admin Account
-          </Button>
-        </div>
       </div>
     </div>
   );
