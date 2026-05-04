@@ -155,19 +155,6 @@ const AdminLogin = () => {
           </Button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-border text-center">
-          <p className="text-xs text-muted-foreground mb-4">
-            First time? Create your admin account:
-          </p>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleSignUp}
-            disabled={loading}
-          >
-            Create Admin Account
-          </Button>
-        </div>
       </div>
     </div>
   );
