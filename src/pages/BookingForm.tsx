@@ -215,6 +215,8 @@ const BookingForm = () => {
                   <Label htmlFor="name">Name *</Label>
                   <Input
                     id="name"
+                    name="name"
+                    autoComplete="name"
                     value={clientInfo.name}
                     onChange={(e) => setClientInfo(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="Your full name"
@@ -225,7 +227,9 @@ const BookingForm = () => {
                   <Label htmlFor="email">Email *</Label>
                   <Input
                     id="email"
+                    name="email"
                     type="email"
+                    autoComplete="email"
                     value={clientInfo.email}
                     onChange={(e) => setClientInfo(prev => ({ ...prev, email: e.target.value }))}
                     placeholder="your@email.com"
@@ -236,7 +240,9 @@ const BookingForm = () => {
                   <Label htmlFor="phone">Phone (optional)</Label>
                   <Input
                     id="phone"
+                    name="phone"
                     type="tel"
+                    autoComplete="tel"
                     value={clientInfo.phone}
                     onChange={(e) => setClientInfo(prev => ({ ...prev, phone: e.target.value }))}
                     placeholder="Your phone number"
