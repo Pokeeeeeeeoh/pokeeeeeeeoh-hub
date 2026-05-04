@@ -92,7 +92,19 @@ const AdminLayout = () => {
         <span className="ml-3 font-mono text-sm tracking-widest uppercase">
           Admin
         </span>
+        <div className="ml-auto flex items-center gap-2">
+          <Link to="/">
+            <Button variant="outline" size="sm">Booking</Button>
+          </Link>
+        </div>
       </header>
+
+      {/* Desktop top-right toggle */}
+      <div className="hidden lg:flex fixed top-4 right-6 z-50 items-center gap-2">
+        <Link to="/">
+          <Button variant="outline" size="sm">View Booking Site</Button>
+        </Link>
+      </div>
 
       {/* Sidebar */}
       <aside
