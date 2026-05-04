@@ -98,7 +98,7 @@ const BookingForm = () => {
         .from("clients")
         .select("id")
         .eq("email", clientInfo.email)
-        .single();
+        .maybeSingle();
 
       let clientId: string;
 
@@ -154,9 +154,9 @@ const BookingForm = () => {
       if (requestError) throw requestError;
 
       navigate("/book/confirmation");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Submission error:", error);
-      toast.error("Failed to submit request. Please try again.");
+      toast.error(`Failed to submit: ${error?.message || "Please try again."}`);
     } finally {
       setSubmitting(false);
     }
