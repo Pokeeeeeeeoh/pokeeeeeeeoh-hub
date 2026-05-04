@@ -93,11 +93,8 @@ const BookingInfo = () => {
             </p>
           </div>
 
-          {/* Scrollable Content */}
-          <div 
-            ref={contentRef}
-            className="h-[50vh] overflow-y-auto border border-border rounded-lg bg-card/50 p-6 mb-6 animate-fade-in stagger-1"
-          >
+          {/* Content */}
+          <div className="border border-border rounded-lg bg-card/50 p-6 mb-6 animate-fade-in stagger-1">
             <div className="prose prose-sm max-w-none">
               <ReactMarkdown
                 components={{
