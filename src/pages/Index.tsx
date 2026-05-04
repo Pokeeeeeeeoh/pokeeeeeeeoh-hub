@@ -41,17 +41,12 @@ const Index = () => {
           <Link to="/" className="font-mono text-sm tracking-widest uppercase truncate">
             {settings.site_name}
           </Link>
-          <nav className="flex items-center gap-4 sm:gap-6">
-            <Link 
-              to="/admin" 
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Admin
+          <nav className="flex items-center gap-2 sm:gap-3">
+            <Link to="/admin">
+              <Button variant="ghost" size="sm">Admin</Button>
             </Link>
             <Link to="/book">
-              <Button variant="outline" size="sm">
-                Book
-              </Button>
+              <Button variant="outline" size="sm">Book</Button>
             </Link>
           </nav>
         </div>
