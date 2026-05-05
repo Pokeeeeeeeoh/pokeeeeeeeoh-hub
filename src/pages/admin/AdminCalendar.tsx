@@ -246,11 +246,12 @@ const AdminCalendar = () => {
   // Open day dialog when clicking on a day
   const openDayDialog = (day: Date) => {
     setSelectedDay(day);
-    setRepeatWeekday(getDay(day));
+    setRepeatWeekdays([getDay(day)]);
     setRepeatMode("none");
     setRepeatWeeks(4);
     setRepeatUntilDate(undefined);
-    setNewSlot({ startTime: "10:00", endTime: "12:00" });
+    setCustomDates([]);
+    setPatterns(DEFAULT_PATTERNS);
     setShowDayDialog(true);
   };
 
