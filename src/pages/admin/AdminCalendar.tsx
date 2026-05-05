@@ -158,6 +158,9 @@ const AdminCalendar = () => {
   const [slotRepeatUntilDate, setSlotRepeatUntilDate] = useState<Date | undefined>();
   const [slotRepeatDays, setSlotRepeatDays] = useState<number[]>([]);
   const [repeatingSlot, setRepeatingSlot] = useState(false);
+  const [editStartTime, setEditStartTime] = useState("10:00");
+  const [editEndTime, setEditEndTime] = useState("12:00");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Manual booking state
   const [showBookingDialog, setShowBookingDialog] = useState(false);
