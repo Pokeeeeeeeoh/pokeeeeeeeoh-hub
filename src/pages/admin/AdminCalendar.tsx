@@ -262,11 +262,14 @@ const AdminCalendar = () => {
   const openSlotDialog = (slot: AvailabilitySlot) => {
     setSelectedSlot(slot);
     const slotDate = parseISO(slot.start_time);
+    const slotEnd = parseISO(slot.end_time);
     setSlotRepeatWeekday(getDay(slotDate));
     setSlotRepeatDays([getDay(slotDate)]);
     setSlotRepeatMode("none");
     setSlotRepeatWeeks(4);
     setSlotRepeatUntilDate(undefined);
+    setEditStartTime(format(slotDate, "HH:mm"));
+    setEditEndTime(format(slotEnd, "HH:mm"));
     setShowSlotDialog(true);
   };
 
