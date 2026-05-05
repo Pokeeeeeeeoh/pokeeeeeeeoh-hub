@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, FastForward } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, parseISO, startOfWeek, addDays, isSameDay, getISOWeek, addMonths, startOfMonth } from "date-fns";
+import { format, parseISO, startOfWeek, addDays, isSameDay, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, endOfWeek, isSameMonth } from "date-fns";
 import {
   Select,
   SelectContent,
