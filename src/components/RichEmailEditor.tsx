@@ -27,14 +27,13 @@ export const RichEmailEditor = ({ value, onChange, variables = DEFAULT_VARS }: P
   const [showSource, setShowSource] = useState(false);
   const [source, setSource] = useState(value);
 
-  // Initialize content once
+  // Sync external value into the editor when it changes (e.g. switching templates)
   useEffect(() => {
-    if (ref.current && ref.current.innerHTML !== value) {
+    if (ref.current && ref.current.innerHTML !== (value || "")) {
       ref.current.innerHTML = value || "";
     }
     setSource(value);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showSource]);
+  }, [value, showSource]);
 
   const exec = (cmd: string, arg?: string) => {
     ref.current?.focus();
