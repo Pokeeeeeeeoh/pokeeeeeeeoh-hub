@@ -577,6 +577,16 @@ const AdminDashboard = () => {
                         Resend approval link
                       </Button>
                     )}
+                    {selectedRequest.status === "declined" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => resendDecline(selectedRequest)}
+                        disabled={actionLoading}
+                      >
+                        Send decline email
+                      </Button>
+                    )}
                   </div>
                 </div>
 
