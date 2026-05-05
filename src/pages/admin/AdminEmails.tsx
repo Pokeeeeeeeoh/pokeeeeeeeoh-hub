@@ -150,8 +150,9 @@ const AdminEmails = () => {
             <p className="text-muted-foreground">Edit templates, send custom emails, and view delivery log</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={sendTestReminders}>
-              <Bell className="h-4 w-4 mr-2" /> Send test reminders
+            <Button variant="outline" size="sm" onClick={sendTestReminders} disabled={sendingTest}>
+              <Bell className={`h-4 w-4 mr-2 ${sendingTest ? "animate-pulse" : ""}`} />
+              {sendingTest ? "Sending…" : "Send test reminders"}
             </Button>
             <Button variant="outline" size="sm" onClick={() => setSendOpen(true)}>
               <Send className="h-4 w-4 mr-2" /> Send custom
