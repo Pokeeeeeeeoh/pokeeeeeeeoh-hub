@@ -46,6 +46,7 @@ const AdminDashboard = () => {
   const [editing, setEditing] = useState(false);
   const [editClient, setEditClient] = useState<Client>({ name: "", email: "", phone: null });
   const [editResponses, setEditResponses] = useState<Record<string, unknown>>({});
+  const [lightbox, setLightbox] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
 
   useEffect(() => {
     fetchRequests();
