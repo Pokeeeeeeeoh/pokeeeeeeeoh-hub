@@ -652,6 +652,52 @@ const AdminCalendar = () => {
     }
   };
 
+  const handleSaveSlotTime = async () => {
+    if (!selectedSlot) return;
+    setSavingEdit(true);
+    try {
+      const [sh, sm] = editStartTime.split(":").map(Number);
+      const [eh, em] = editEndTime.split(":").map(Number);
+      const baseDate = parseISO(selectedSlot.start_time);
+      const newStart = setMinutes(setHours(baseDate, sh), sm);
+      const newEnd = setMinutes(setHours(baseDate, eh), em);
+      if (newEnd <= newStart) {
+        toast.error("End time must be after start time");
+        setSavingEdit(false);
+        return;
+      }
+
+      const { error: slotErr } = await supabase
+        .from("availability_slots")
+        .update({
+          start_time: newStart.toISOString(),
+          end_time: newEnd.toISOString(),
+        })
+        .eq("id", selectedSlot.id);
+      if (slotErr) throw slotErr;
+
+      // Keep linked appointment in sync if booked
+      if (selectedSlot.is_booked) {
+        await supabase
+          .from("appointments")
+          .update({
+            start_time: newStart.toISOString(),
+            end_time: newEnd.toISOString(),
+          })
+          .eq("slot_id", selectedSlot.id);
+      }
+
+      toast.success("Slot updated");
+      setShowSlotDialog(false);
+      fetchSlots();
+    } catch (err) {
+      console.error("Error updating slot:", err);
+      toast.error("Could not update slot");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   const handleDeleteSlot = async (slotId: string) => {
     try {
       await supabase.from("availability_slots").delete().eq("id", slotId);
