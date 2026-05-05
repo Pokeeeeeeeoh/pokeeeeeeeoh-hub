@@ -67,6 +67,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { ImageLightbox } from "@/components/ImageLightbox";
 
 interface BookingRequestLite {
   id: string;
