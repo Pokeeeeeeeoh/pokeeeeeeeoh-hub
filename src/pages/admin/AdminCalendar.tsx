@@ -106,7 +106,18 @@ interface Client {
 }
 
 type ViewMode = "week" | "month";
-type RepeatMode = "none" | "weeks" | "until";
+type RepeatMode = "none" | "weeks" | "until" | "custom";
+
+interface SlotPattern {
+  startTime: string;
+  endTime: string;
+}
+
+const DEFAULT_PATTERNS: SlotPattern[] = [
+  { startTime: "10:00", endTime: "12:00" },
+  { startTime: "13:00", endTime: "15:00" },
+  { startTime: "16:00", endTime: "18:00" },
+];
 
 const WEEKDAYS = [
   { value: 1, label: "Mon" },
