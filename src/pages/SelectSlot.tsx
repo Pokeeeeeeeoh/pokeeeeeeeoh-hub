@@ -135,6 +135,17 @@ const SelectSlot = () => {
         .update({ status: "booked" })
         .eq("id", request.id);
 
+      // Send appointment confirmation
+      const apptDate = format(parseISO(slot.start_time), "EEEE d MMMM yyyy 'at' HH:mm", { locale: enGB });
+      supabase.functions.invoke("send-template-email", {
+        body: {
+          templateKey: "appointment_booked",
+          to: request.clients.email,
+          bookingRequestId: request.id,
+          vars: { name: request.clients.name, appointmentTime: apptDate },
+        },
+      }).catch((e) => console.error("appt email failed", e));
+
       setBooked(true);
     } catch (err) {
       console.error("Booking error:", err);

@@ -144,14 +144,16 @@ const BookingForm = () => {
       }
 
       // Create booking request
-      const { error: requestError } = await supabase
+      const { data: newRequest, error: requestError } = await supabase
         .from("booking_requests")
         .insert({
           client_id: clientId,
           form_responses: formData,
           images: imageUrls,
           status: "new",
-        });
+        })
+        .select("id")
+        .single();
 
       if (requestError) throw requestError;
 
@@ -161,6 +163,7 @@ const BookingForm = () => {
           to: clientInfo.email,
           name: clientInfo.name,
           adminEmail: "jakehaynes@gmail.com",
+          bookingRequestId: newRequest?.id,
         },
       }).catch((e) => console.error("Email send failed:", e));
 
