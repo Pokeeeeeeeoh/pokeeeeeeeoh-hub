@@ -1,9 +1,16 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, FastForward } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, parseISO, startOfWeek, addDays, isSameDay, getISOWeek } from "date-fns";
+import { format, parseISO, startOfWeek, addDays, isSameDay, getISOWeek, addMonths, startOfMonth } from "date-fns";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { enGB } from "date-fns/locale";
 import { toast } from "sonner";
 import { useUiText } from "@/hooks/useUiText";
