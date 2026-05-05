@@ -166,6 +166,7 @@ const AdminCalendar = () => {
   const [dayRepeatUntilDate, setDayRepeatUntilDate] = useState<Date | undefined>();
   const [dayRepeatDays, setDayRepeatDays] = useState<number[]>([]);
   const [repeatingDay, setRepeatingDay] = useState(false);
+  const [lightbox, setLightbox] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
 
   useEffect(() => {
     fetchSlots();
