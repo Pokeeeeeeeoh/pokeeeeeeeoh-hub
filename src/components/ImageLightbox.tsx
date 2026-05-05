@@ -21,43 +21,80 @@ export const ImageLightbox = ({ images, startIndex, open, onOpenChange }: ImageL
   if (!images.length) return null;
   const src = images[index];
 
+  const isIOS = typeof navigator !== "undefined" &&
+    (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && (navigator as Navigator & { maxTouchPoints?: number }).maxTouchPoints! > 1));
+
   const handleDownload = async () => {
+    // Fetch the image as a blob
+    let blob: Blob | null = null;
     try {
-      const res = await fetch(src, { mode: "cors" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const blob = await res.blob();
-      const ext = (blob.type.split("/")[1] || "jpg").split(";")[0];
-      const filename = `reference-${index + 1}.${ext}`;
-
-      // Try Web Share API (best on iOS — saves to Photos via share sheet)
-      const file = new File([blob], filename, { type: blob.type || "image/jpeg" });
-      const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
-      if (nav.canShare && nav.canShare({ files: [file] })) {
-        try {
-          await (navigator as Navigator & { share: (d: ShareData) => Promise<void> }).share({ files: [file] });
-          return;
-        } catch (shareErr) {
-          // user cancelled or share failed — fall through to download
-          if ((shareErr as Error)?.name === "AbortError") return;
-        }
-      }
-
-      // Fallback: anchor download
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.rel = "noopener";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (e) {
-      console.error("download failed", e);
-      // Last resort: open in a new tab so user can long-press save
-      window.open(src, "_blank", "noopener,noreferrer");
-      toast.message("Long-press the image to save it");
+      const res = await fetch(src, { mode: "cors", credentials: "omit" });
+      if (res.ok) blob = await res.blob();
+    } catch {
+      // ignore — try without cors
     }
+    if (!blob) {
+      try {
+        const res = await fetch(src);
+        if (res.ok) blob = await res.blob();
+      } catch {
+        // ignore
+      }
+    }
+
+    const ext = (blob?.type.split("/")[1] || "jpeg").split(";")[0].replace("jpg", "jpeg");
+    const filename = `reference-${index + 1}.${ext === "jpeg" ? "jpg" : ext}`;
+
+    // iOS: use Web Share API so the user can save to Photos via the share sheet
+    if (blob && isIOS) {
+      try {
+        const file = new File([blob], filename, { type: blob.type || "image/jpeg" });
+        const nav = navigator as Navigator & {
+          canShare?: (d: ShareData) => boolean;
+          share?: (d: ShareData) => Promise<void>;
+        };
+        if (nav.share && nav.canShare && nav.canShare({ files: [file] })) {
+          await nav.share({ files: [file] });
+          return;
+        }
+      } catch (shareErr) {
+        if ((shareErr as Error)?.name === "AbortError") return;
+        // fall through
+      }
+      // iOS Safari fallback: open the blob in a new tab so user can long-press → Save to Photos
+      try {
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank", "noopener,noreferrer");
+        toast.message("Long-press the image, then tap Save to Photos");
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        return;
+      } catch {
+        // fall through
+      }
+    }
+
+    // Desktop / Android: anchor download
+    if (blob) {
+      try {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        return;
+      } catch (e) {
+        console.error("anchor download failed", e);
+      }
+    }
+
+    // Last resort: open original URL
+    window.open(src, "_blank", "noopener,noreferrer");
+    toast.message(isIOS ? "Long-press the image, then tap Save to Photos" : "Right-click the image to save it");
   };
 
   const prev = () => setIndex((i) => (i - 1 + images.length) % images.length);
