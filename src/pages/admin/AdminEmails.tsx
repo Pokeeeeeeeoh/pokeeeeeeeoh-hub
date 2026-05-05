@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
-import { Save, Send, Eye, RefreshCw } from "lucide-react";
+import { Save, Send, Eye, RefreshCw, Bell } from "lucide-react";
+import { RichEmailEditor } from "@/components/RichEmailEditor";
 
 interface Template {
   id: string;
@@ -111,6 +112,17 @@ const AdminEmails = () => {
     }
   };
 
+  const sendTestReminders = async () => {
+    toast.info("Sending test reminders…");
+    const { data, error } = await supabase.functions.invoke("send-appointment-reminders", {
+      body: { test: true },
+    });
+    if (error) return toast.error("Failed to send test reminders");
+    const count = (data as any)?.processed ?? 0;
+    toast.success(`Sent ${count} test reminder${count === 1 ? "" : "s"}`);
+    loadAll();
+  };
+
   return (
     <div className="p-6 lg:p-8">
       <div className="max-w-6xl mx-auto">
@@ -119,9 +131,14 @@ const AdminEmails = () => {
             <h1 className="text-2xl font-bold tracking-tight">Emails</h1>
             <p className="text-muted-foreground">Edit templates, send custom emails, and view delivery log</p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setSendOpen(true)}>
-            <Send className="h-4 w-4 mr-2" /> Send custom
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={sendTestReminders}>
+              <Bell className="h-4 w-4 mr-2" /> Send test reminders
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setSendOpen(true)}>
+              <Send className="h-4 w-4 mr-2" /> Send custom
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="templates" className="space-y-6">
@@ -162,12 +179,10 @@ const AdminEmails = () => {
                       <Input value={active.subject} onChange={(e) => updateActive({ subject: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <Label>HTML body</Label>
-                      <Textarea
+                      <Label>Body</Label>
+                      <RichEmailEditor
                         value={active.body_html}
-                        onChange={(e) => updateActive({ body_html: e.target.value })}
-                        rows={16}
-                        className="font-mono text-xs"
+                        onChange={(html) => updateActive({ body_html: html })}
                       />
                     </div>
                     <div className="flex gap-2">
