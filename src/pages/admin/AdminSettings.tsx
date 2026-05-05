@@ -16,6 +16,7 @@ import {
   GripVertical,
   ChevronUp,
   ChevronDown,
+  Type,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -76,6 +77,7 @@ const AdminSettings = () => {
   // Form config state
   const [infoContent, setInfoContent] = useState("");
   const [fields, setFields] = useState<FormField[]>([]);
+  const [uiTexts, setUiTexts] = useState<{ id: string; key: string; label: string; value: string; category: string }[]>([]);
 
   // New field state
   const [newFieldType, setNewFieldType] = useState<FormField["type"]>("text");
@@ -85,9 +87,10 @@ const AdminSettings = () => {
   }, []);
 
   const fetchAllConfig = async () => {
-    const [siteRes, formRes] = await Promise.all([
+    const [siteRes, formRes, uiRes] = await Promise.all([
       supabase.from("site_settings").select("*").single(),
       supabase.from("form_config").select("*").single(),
+      supabase.from("ui_text").select("*").order("category").order("label"),
     ]);
 
     if (siteRes.data) {
@@ -103,7 +106,29 @@ const AdminSettings = () => {
       setFields(parsedFields || []);
     }
 
+    if (uiRes.data) setUiTexts(uiRes.data);
+
     setLoading(false);
+  };
+
+  const saveUiText = async (id: string, value: string) => {
+    setUiTexts((prev) => prev.map((u) => (u.id === id ? { ...u, value } : u)));
+  };
+
+  const persistUiTexts = async () => {
+    setSaving(true);
+    try {
+      await Promise.all(
+        uiTexts.map((u) =>
+          supabase.from("ui_text").update({ value: u.value }).eq("id", u.id)
+        )
+      );
+      toast.success("Page text saved");
+    } catch {
+      toast.error("Failed to save page text");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSaveSiteSettings = async () => {
@@ -213,7 +238,7 @@ const AdminSettings = () => {
         </div>
 
         <Tabs defaultValue="homepage" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="homepage" className="flex items-center gap-2">
               <Home className="h-4 w-4" />
               <span className="hidden sm:inline">Homepage</span>
@@ -225,6 +250,10 @@ const AdminSettings = () => {
             <TabsTrigger value="content" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">Booking Info</span>
+            </TabsTrigger>
+            <TabsTrigger value="text" className="flex items-center gap-2">
+              <Type className="h-4 w-4" />
+              <span className="hidden sm:inline">Page Text</span>
             </TabsTrigger>
           </TabsList>
 
