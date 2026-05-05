@@ -1,0 +1,1 @@
+DELETE FROM appointments WHERE id='842097fc-0e9e-4681-abd4-8bbf6ef6c09b'; UPDATE availability_slots SET is_booked=false WHERE id='f8f5fc60-68e5-444f-a727-fccdd88ccc72'; UPDATE booking_requests SET status='approved' WHERE id='3d75d633-8605-4fd3-ab87-6822aec939a0';
