@@ -28,27 +28,39 @@ const DEFAULT_VARS = [
 
 export const RichEmailEditor = ({ value, onChange, variables = DEFAULT_VARS }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
+  const lastEmitted = useRef<string>(value);
   const [showSource, setShowSource] = useState(false);
   const [source, setSource] = useState(value);
 
-  // Sync external value into the editor when it changes (e.g. switching templates)
+  // Sync external value into the editor only when it differs from what we last emitted
+  // (e.g. switching templates). This avoids overwriting the DOM on every keystroke,
+  // which was wiping the user's edits and breaking the cursor.
   useEffect(() => {
-    if (ref.current && ref.current.innerHTML !== (value || "")) {
-      ref.current.innerHTML = value || "";
+    if (showSource) {
+      setSource(value);
+      return;
     }
-    setSource(value);
+    if (ref.current && value !== lastEmitted.current) {
+      ref.current.innerHTML = value || "";
+      lastEmitted.current = value;
+    }
   }, [value, showSource]);
+
+  const emit = (html: string) => {
+    lastEmitted.current = html;
+    onChange(html);
+  };
 
   const exec = (cmd: string, arg?: string) => {
     ref.current?.focus();
     document.execCommand(cmd, false, arg);
-    if (ref.current) onChange(ref.current.innerHTML);
+    if (ref.current) emit(ref.current.innerHTML);
   };
 
   const insertHTML = (html: string) => {
     ref.current?.focus();
     document.execCommand("insertHTML", false, html);
-    if (ref.current) onChange(ref.current.innerHTML);
+    if (ref.current) emit(ref.current.innerHTML);
   };
 
   const insertVar = (key: string) => insertHTML(`{{${key}}}`);
