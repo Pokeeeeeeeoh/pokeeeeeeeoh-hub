@@ -158,6 +158,9 @@ const AdminCalendar = () => {
   const [slotRepeatUntilDate, setSlotRepeatUntilDate] = useState<Date | undefined>();
   const [slotRepeatDays, setSlotRepeatDays] = useState<number[]>([]);
   const [repeatingSlot, setRepeatingSlot] = useState(false);
+  const [editStartTime, setEditStartTime] = useState("10:00");
+  const [editEndTime, setEditEndTime] = useState("12:00");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Manual booking state
   const [showBookingDialog, setShowBookingDialog] = useState(false);
@@ -259,11 +262,14 @@ const AdminCalendar = () => {
   const openSlotDialog = (slot: AvailabilitySlot) => {
     setSelectedSlot(slot);
     const slotDate = parseISO(slot.start_time);
+    const slotEnd = parseISO(slot.end_time);
     setSlotRepeatWeekday(getDay(slotDate));
     setSlotRepeatDays([getDay(slotDate)]);
     setSlotRepeatMode("none");
     setSlotRepeatWeeks(4);
     setSlotRepeatUntilDate(undefined);
+    setEditStartTime(format(slotDate, "HH:mm"));
+    setEditEndTime(format(slotEnd, "HH:mm"));
     setShowSlotDialog(true);
   };
 
@@ -643,6 +649,52 @@ const AdminCalendar = () => {
       toast.error("Could not repeat slot");
     } finally {
       setRepeatingSlot(false);
+    }
+  };
+
+  const handleSaveSlotTime = async () => {
+    if (!selectedSlot) return;
+    setSavingEdit(true);
+    try {
+      const [sh, sm] = editStartTime.split(":").map(Number);
+      const [eh, em] = editEndTime.split(":").map(Number);
+      const baseDate = parseISO(selectedSlot.start_time);
+      const newStart = setMinutes(setHours(baseDate, sh), sm);
+      const newEnd = setMinutes(setHours(baseDate, eh), em);
+      if (newEnd <= newStart) {
+        toast.error("End time must be after start time");
+        setSavingEdit(false);
+        return;
+      }
+
+      const { error: slotErr } = await supabase
+        .from("availability_slots")
+        .update({
+          start_time: newStart.toISOString(),
+          end_time: newEnd.toISOString(),
+        })
+        .eq("id", selectedSlot.id);
+      if (slotErr) throw slotErr;
+
+      // Keep linked appointment in sync if booked
+      if (selectedSlot.is_booked) {
+        await supabase
+          .from("appointments")
+          .update({
+            start_time: newStart.toISOString(),
+            end_time: newEnd.toISOString(),
+          })
+          .eq("slot_id", selectedSlot.id);
+      }
+
+      toast.success("Slot updated");
+      setShowSlotDialog(false);
+      fetchSlots();
+    } catch (err) {
+      console.error("Error updating slot:", err);
+      toast.error("Could not update slot");
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -1218,7 +1270,42 @@ const AdminCalendar = () => {
                   </p>
                 </div>
 
-                {/* If booked, show client info */}
+                {/* Edit times */}
+                <div className="space-y-2">
+                  <Label className="text-xs">Edit times</Label>
+                  <div className="flex items-center gap-2">
+                    <Select value={editStartTime} onValueChange={setEditStartTime}>
+                      <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {timeOptions.map((t) => (<SelectItem key={t} value={t}>{t}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-xs text-muted-foreground">–</span>
+                    <Select value={editEndTime} onValueChange={setEditEndTime}>
+                      <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {timeOptions.map((t) => (<SelectItem key={t} value={t}>{t}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveSlotTime}
+                      disabled={
+                        savingEdit ||
+                        (editStartTime === format(parseISO(selectedSlot.start_time), "HH:mm") &&
+                          editEndTime === format(parseISO(selectedSlot.end_time), "HH:mm"))
+                      }
+                    >
+                      {savingEdit ? "Saving" : "Save"}
+                    </Button>
+                  </div>
+                  {selectedSlot.is_booked && (
+                    <p className="text-[11px] text-muted-foreground">
+                      The client's appointment will be updated too. They won't be notified automatically.
+                    </p>
+                  )}
+                </div>
+
                 {selectedSlot.is_booked && getClientFromSlot(selectedSlot) && (
                   <div className="space-y-3 p-4 border border-green-500/30 bg-green-500/5 rounded-lg">
                     <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
