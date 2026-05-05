@@ -188,8 +188,11 @@ const AdminEmails = () => {
                   <CardHeader>
                     <CardTitle>{active.name}</CardTitle>
                     <CardDescription>
-                      Use <code>{"{{name}}"}</code>, <code>{"{{email}}"}</code>, <code>{"{{bookingUrl}}"}</code>,{" "}
-                      <code>{"{{reason}}"}</code>, <code>{"{{appointmentTime}}"}</code> as placeholders.
+                      Personalised tags: <code>{"{{name}}"}</code>, <code>{"{{email}}"}</code>,{" "}
+                      <code>{"{{appointmentTime}}"}</code>, <code>{"{{bookingUrl}}"}</code>,{" "}
+                      <code>{"{{reason}}"}</code>. Studio info auto-fills from Settings:{" "}
+                      <code>{"{{siteName}}"}</code>, <code>{"{{address}}"}</code>,{" "}
+                      <code>{"{{siteEmail}}"}</code>, <code>{"{{tagline}}"}</code>.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
