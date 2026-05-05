@@ -937,7 +937,7 @@ const AdminCalendar = () => {
 
         {/* Add Slot Dialog (Day Click) */}
         <Dialog open={showDayDialog} onOpenChange={setShowDayDialog}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add Slot</DialogTitle>
             </DialogHeader>
@@ -1130,7 +1130,7 @@ const AdminCalendar = () => {
 
         {/* Slot Dialog (Slot Click) */}
         <Dialog open={showSlotDialog} onOpenChange={setShowSlotDialog}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {selectedSlot?.is_booked ? "Booked Slot" : "Manage Slot"}
@@ -1389,7 +1389,7 @@ const AdminCalendar = () => {
 
         {/* Manual Booking Dialog */}
         <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Book Client</DialogTitle>
             </DialogHeader>
@@ -1539,7 +1539,7 @@ const AdminCalendar = () => {
 
         {/* Repeat Day Dialog */}
         <Dialog open={showRepeatDayDialog} onOpenChange={setShowRepeatDayDialog}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Repeat Entire Day</DialogTitle>
             </DialogHeader>
