@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { ImageLightbox } from "@/components/ImageLightbox";
 
 interface Client {
   name: string;
