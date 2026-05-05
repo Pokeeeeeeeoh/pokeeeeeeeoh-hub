@@ -143,18 +143,26 @@ const SelectSlot = () => {
         return;
       }
 
-      // Send appointment confirmation
-      const apptDate = format(parseISO(slot.start_time), "EEEE d MMMM yyyy 'at' HH:mm", { locale: enGB });
-      supabase.functions
-        .invoke("send-template-email", {
-          body: {
-            templateKey: "appointment_booked",
-            to: request.clients.email,
-            bookingRequestId: request.id,
-            vars: { name: request.clients.name, appointmentTime: apptDate },
-          },
-        })
-        .catch((e) => console.error("appt email failed", e));
+      // Send appointment confirmation (best-effort, never block booking)
+      try {
+        const apptDate = format(parseISO(slot.start_time), "EEEE d MMMM yyyy 'at' HH:mm", { locale: enGB });
+        const clientEmail = request?.clients?.email;
+        const clientName = request?.clients?.name ?? "";
+        if (clientEmail) {
+          supabase.functions
+            .invoke("send-template-email", {
+              body: {
+                templateKey: "appointment_booked",
+                to: clientEmail,
+                bookingRequestId: request.id,
+                vars: { name: clientName, appointmentTime: apptDate },
+              },
+            })
+            .catch((e) => console.error("appt email failed", e));
+        }
+      } catch (e) {
+        console.error("appt email setup failed", e);
+      }
 
       setBooked(true);
     } catch (err) {
