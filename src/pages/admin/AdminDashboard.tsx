@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { ImageLightbox } from "@/components/ImageLightbox";
 
 interface Client {
   name: string;
@@ -45,6 +46,7 @@ const AdminDashboard = () => {
   const [editing, setEditing] = useState(false);
   const [editClient, setEditClient] = useState<Client>({ name: "", email: "", phone: null });
   const [editResponses, setEditResponses] = useState<Record<string, unknown>>({});
+  const [lightbox, setLightbox] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
 
   useEffect(() => {
     fetchRequests();
@@ -502,11 +504,10 @@ const AdminDashboard = () => {
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
                       {selectedRequest.images.map((img, i) => (
-                        <a
+                        <button
                           key={i}
-                          href={img}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          type="button"
+                          onClick={() => setLightbox({ open: true, index: i })}
                           className="aspect-square rounded-lg border border-border overflow-hidden hover:border-primary/50 transition-colors"
                         >
                           <img
@@ -514,7 +515,7 @@ const AdminDashboard = () => {
                             alt={`Reference ${i + 1}`}
                             className="w-full h-full object-cover"
                           />
-                        </a>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -606,7 +607,12 @@ const AdminDashboard = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Decline Dialog */}
+        <ImageLightbox
+          images={selectedRequest?.images || []}
+          startIndex={lightbox.index}
+          open={lightbox.open}
+          onOpenChange={(o) => setLightbox((p) => ({ ...p, open: o }))}
+        />
         <Dialog open={showDeclineDialog} onOpenChange={setShowDeclineDialog}>
           <DialogContent>
             <DialogHeader>
