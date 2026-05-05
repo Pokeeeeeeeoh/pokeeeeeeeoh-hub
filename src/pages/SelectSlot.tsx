@@ -239,7 +239,7 @@ const SelectSlot = () => {
   }
 
   if (booked) {
-    const bookedSlot = slots.find(s => s.id === selectedSlot);
+    const bookedSlot = confirmedSlot ?? slots.find(s => s.id === selectedSlot);
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="max-w-md text-center">
@@ -254,7 +254,7 @@ const SelectSlot = () => {
           <p className="text-muted-foreground mb-6">
             {alreadyBooked
               ? t("slot_booked_existing_subtitle", "This booking link has already been used and your appointment is already confirmed.")
-              : t("slot_booked_subtitle", "Your appointment is confirmed. We'll send a confirmation email with all the details.")}
+              : t("slot_booked_subtitle", `Your appointment is confirmed. A confirmation email has been sent to ${request?.clients?.email ?? "your email"}.`)}
           </p>
           {bookedSlot && (
             <div className="p-4 rounded-lg border border-border bg-card mb-6 text-left">
@@ -286,12 +286,21 @@ const SelectSlot = () => {
         <div className="max-w-4xl mx-auto">
           <h1 className="text-xl font-semibold">{t("slot_title", "Select Your Appointment")}</h1>
           <p className="text-sm text-muted-foreground">
-            {t("slot_subtitle", "Choose from the available slots below")}
+            {t("slot_subtitle", "Choose from the available slots below. This booking link is already connected to your saved details.")}
           </p>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto py-6 px-4 pb-32">
+        {request?.clients && (
+          <div className="mb-6 rounded-lg border border-border bg-card p-4">
+            <p className="text-sm font-medium">Booking for {request.clients.name}</p>
+            <p className="text-sm text-muted-foreground">
+              Confirmation will be sent to {request.clients.email}. You do not need to enter your details again.
+            </p>
+          </div>
+        )}
+
         {/* Month Navigation */}
         <div className="flex items-center justify-between gap-2 mb-4">
           <Button variant="outline" size="icon" onClick={() => { setCurrentMonth(prev => addMonths(prev, -1)); setSelectedDay(null); }}>
