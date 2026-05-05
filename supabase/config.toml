@@ -2,3 +2,6 @@ project_id = "wtrmrhfjrxdfkqpxteuq"
 
 [functions.book-slot]
 verify_jwt = false
+
+[functions.send-appointment-reminders]
+verify_jwt = false
