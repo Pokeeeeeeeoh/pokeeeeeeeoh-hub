@@ -20,6 +20,10 @@ const DEFAULT_VARS = [
   { key: "appointmentTime", label: "Appointment time" },
   { key: "bookingUrl", label: "Booking URL" },
   { key: "reason", label: "Reason" },
+  { key: "siteName", label: "Studio name (from Settings)" },
+  { key: "address", label: "Studio address (from Settings)" },
+  { key: "siteEmail", label: "Studio email (from Settings)" },
+  { key: "tagline", label: "Studio tagline (from Settings)" },
 ];
 
 export const RichEmailEditor = ({ value, onChange, variables = DEFAULT_VARS }: Props) => {

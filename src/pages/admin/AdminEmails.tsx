@@ -112,14 +112,32 @@ const AdminEmails = () => {
     }
   };
 
+  const [sendingTest, setSendingTest] = useState(false);
   const sendTestReminders = async () => {
-    toast.info("Sending test reminders…");
+    if (sendingTest) return;
+    setSendingTest(true);
+    const tId = toast.loading("Sending test reminders…");
     const { data, error } = await supabase.functions.invoke("send-appointment-reminders", {
       body: { test: true },
     });
-    if (error) return toast.error("Failed to send test reminders");
-    const count = (data as any)?.processed ?? 0;
-    toast.success(`Sent ${count} test reminder${count === 1 ? "" : "s"}`);
+    setSendingTest(false);
+    if (error) {
+      toast.error("Failed to send test reminders", { id: tId });
+      return;
+    }
+    const results = ((data as any)?.results ?? []) as { sent: boolean }[];
+    const sent = results.filter((r) => r.sent).length;
+    const failed = results.length - sent;
+    if (results.length === 0) {
+      toast.warning("No upcoming appointments to send reminders to", { id: tId });
+    } else if (failed === 0) {
+      toast.success(`✓ Sent ${sent} test reminder${sent === 1 ? "" : "s"}`, {
+        id: tId,
+        description: "Check the Log tab to see them.",
+      });
+    } else {
+      toast.error(`Sent ${sent}, ${failed} failed`, { id: tId });
+    }
     loadAll();
   };
 
@@ -132,8 +150,9 @@ const AdminEmails = () => {
             <p className="text-muted-foreground">Edit templates, send custom emails, and view delivery log</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={sendTestReminders}>
-              <Bell className="h-4 w-4 mr-2" /> Send test reminders
+            <Button variant="outline" size="sm" onClick={sendTestReminders} disabled={sendingTest}>
+              <Bell className={`h-4 w-4 mr-2 ${sendingTest ? "animate-pulse" : ""}`} />
+              {sendingTest ? "Sending…" : "Send test reminders"}
             </Button>
             <Button variant="outline" size="sm" onClick={() => setSendOpen(true)}>
               <Send className="h-4 w-4 mr-2" /> Send custom
@@ -169,8 +188,11 @@ const AdminEmails = () => {
                   <CardHeader>
                     <CardTitle>{active.name}</CardTitle>
                     <CardDescription>
-                      Use <code>{"{{name}}"}</code>, <code>{"{{email}}"}</code>, <code>{"{{bookingUrl}}"}</code>,{" "}
-                      <code>{"{{reason}}"}</code>, <code>{"{{appointmentTime}}"}</code> as placeholders.
+                      Personalised tags: <code>{"{{name}}"}</code>, <code>{"{{email}}"}</code>,{" "}
+                      <code>{"{{appointmentTime}}"}</code>, <code>{"{{bookingUrl}}"}</code>,{" "}
+                      <code>{"{{reason}}"}</code>. Studio info auto-fills from Settings:{" "}
+                      <code>{"{{siteName}}"}</code>, <code>{"{{address}}"}</code>,{" "}
+                      <code>{"{{siteEmail}}"}</code>, <code>{"{{tagline}}"}</code>.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">

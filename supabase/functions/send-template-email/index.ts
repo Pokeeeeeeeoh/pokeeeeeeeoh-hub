@@ -52,8 +52,21 @@ Deno.serve(async (req) => {
       }
     }
 
-    subject = render(subject || "", vars);
-    html = render(html || "", vars);
+    // Auto-inject site settings as template variables (address, siteName, siteEmail)
+    const { data: site } = await sb
+      .from("site_settings")
+      .select("site_name, address, email, tagline")
+      .single();
+    const mergedVars: Record<string, string> = {
+      address: site?.address ?? "",
+      siteName: site?.site_name ?? "",
+      siteEmail: site?.email ?? "",
+      tagline: site?.tagline ?? "",
+      ...vars,
+    };
+
+    subject = render(subject || "", mergedVars);
+    html = render(html || "", mergedVars);
 
     let status = "sent";
     let error_message: string | null = null;
