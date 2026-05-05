@@ -77,7 +77,22 @@ const AdminDashboard = () => {
         .update({ status: "approved" })
         .eq("id", request.id);
 
-      toast.success("Request approved! Client can now book a slot.");
+      const bookingUrl = `${window.location.origin}/select-slot?token=${request.approval_token}`;
+      const { error: emailError } = await supabase.functions.invoke("send-approval-email", {
+        body: {
+          to: request.clients.email,
+          name: request.clients.name,
+          bookingUrl,
+        },
+      });
+
+      if (emailError) {
+        console.error("Email send failed:", emailError);
+        toast.success("Request approved (email failed to send)");
+      } else {
+        toast.success("Request approved & email sent!");
+      }
+
       fetchRequests();
       setSelectedRequest(null);
     } catch (err) {
