@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, startOfWeek, addDays, isSameDay, getISOWeek } from "date-fns";
 import { enGB } from "date-fns/locale";
 import { toast } from "sonner";
+import { useUiText } from "@/hooks/useUiText";
 
 interface AvailableSlot {
   id: string;
@@ -24,6 +25,7 @@ interface BookingRequest {
 }
 
 const SelectSlot = () => {
+  const t = useUiText();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get("token");
@@ -181,10 +183,10 @@ const SelectSlot = () => {
             <CheckCircle className="h-10 w-10 text-green-600" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight mb-4">
-            Appointment Booked!
+            {t("slot_booked_title", "Appointment Booked!")}
           </h1>
           <p className="text-muted-foreground mb-6">
-            Your appointment is confirmed. We'll send a confirmation email with all the details.
+            {t("slot_booked_subtitle", "Your appointment is confirmed. We'll send a confirmation email with all the details.")}
           </p>
           {bookedSlot && (
             <div className="p-4 rounded-lg border border-border bg-card mb-6 text-left">
@@ -214,9 +216,9 @@ const SelectSlot = () => {
     <div className="min-h-screen bg-background overflow-x-hidden">
       <header className="border-b border-border bg-background/80 backdrop-blur-sm p-4">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-xl font-semibold">Select Your Appointment</h1>
+          <h1 className="text-xl font-semibold">{t("slot_title", "Select Your Appointment")}</h1>
           <p className="text-sm text-muted-foreground">
-            Choose from the available slots below
+            {t("slot_subtitle", "Choose from the available slots below")}
           </p>
         </div>
       </header>

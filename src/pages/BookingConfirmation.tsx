@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Mail, Clock, ArrowRight } from "lucide-react";
+import { useUiText } from "@/hooks/useUiText";
 
 const BookingConfirmation = () => {
+  const t = useUiText();
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
@@ -11,11 +13,10 @@ const BookingConfirmation = () => {
             <CheckCircle className="h-10 w-10 text-success" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight mb-4">
-            Request Submitted!
+            {t("confirmation_title", "Request Submitted!")}
           </h1>
           <p className="text-muted-foreground mb-8">
-            Thank you for your booking request. We've received your information 
-            and will review it shortly.
+            {t("confirmation_subtitle", "Thank you for your booking request. We've received your information and will review it shortly.")}
           </p>
         </div>
 
@@ -23,9 +24,9 @@ const BookingConfirmation = () => {
           <div className="flex items-start gap-4 p-4 rounded-lg border border-border bg-card/50 text-left">
             <Mail className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
             <div>
-              <h3 className="font-medium text-sm mb-1">Check Your Email</h3>
+              <h3 className="font-medium text-sm mb-1">{t("confirmation_email_heading", "Check Your Email")}</h3>
               <p className="text-sm text-muted-foreground">
-                You'll receive a confirmation email with your request details.
+                {t("confirmation_email_body", "You'll receive a confirmation email with your request details.")}
               </p>
             </div>
           </div>
@@ -33,10 +34,9 @@ const BookingConfirmation = () => {
           <div className="flex items-start gap-4 p-4 rounded-lg border border-border bg-card/50 text-left">
             <Clock className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
             <div>
-              <h3 className="font-medium text-sm mb-1">What Happens Next</h3>
+              <h3 className="font-medium text-sm mb-1">{t("confirmation_next_heading", "What Happens Next")}</h3>
               <p className="text-sm text-muted-foreground">
-                We'll review your request within 24-48 hours. If approved, 
-                you'll receive an email with a link to select your appointment time.
+                {t("confirmation_next_body", "We'll review your request within 24-48 hours. If approved, you'll receive an email with a link to select your appointment time.")}
               </p>
             </div>
           </div>
@@ -44,8 +44,7 @@ const BookingConfirmation = () => {
 
         <div className="animate-fade-in stagger-2">
           <p className="text-xs text-muted-foreground mb-4">
-            Important: No appointment has been booked yet. 
-            You must complete the booking process after approval.
+            {t("confirmation_disclaimer", "Important: No appointment has been booked yet. You must complete the booking process after approval.")}
           </p>
           <Link to="/">
             <Button variant="outline" className="group">
