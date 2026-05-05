@@ -1671,6 +1671,13 @@ const AdminCalendar = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        <ImageLightbox
+          images={selectedSlot?.appointments?.[0]?.booking_requests?.images || []}
+          startIndex={lightbox.index}
+          open={lightbox.open}
+          onOpenChange={(o) => setLightbox((p) => ({ ...p, open: o }))}
+        />
       </div>
     </div>
   );
