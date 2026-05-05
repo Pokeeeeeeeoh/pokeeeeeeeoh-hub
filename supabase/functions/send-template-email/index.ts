@@ -21,23 +21,39 @@ Deno.serve(async (req) => {
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    const { to, name, bookingUrl, bookingRequestId } = await req.json();
-    if (!to) {
-      return new Response(JSON.stringify({ error: "Missing 'to'" }), {
+    const {
+      templateKey,
+      to,
+      vars = {},
+      bookingRequestId,
+      subjectOverride,
+      htmlOverride,
+    } = await req.json();
+
+    if (!to || (!templateKey && !htmlOverride)) {
+      return new Response(JSON.stringify({ error: "Missing 'to' or template" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { data: tpl } = await sb
-      .from("email_templates")
-      .select("subject, body_html")
-      .eq("key", "approval")
-      .single();
+    let subject = subjectOverride;
+    let html = htmlOverride;
 
-    const vars = { name: name || "", bookingUrl: bookingUrl || "" };
-    const subject = render(tpl?.subject || "Your booking request was approved", vars);
-    const html = render(tpl?.body_html || "", vars);
+    if (templateKey && (!subject || !html)) {
+      const { data: tpl } = await sb
+        .from("email_templates")
+        .select("subject, body_html")
+        .eq("key", templateKey)
+        .single();
+      if (tpl) {
+        subject = subject || tpl.subject;
+        html = html || tpl.body_html;
+      }
+    }
+
+    subject = render(subject || "", vars);
+    html = render(html || "", vars);
 
     let status = "sent";
     let error_message: string | null = null;
@@ -66,7 +82,7 @@ Deno.serve(async (req) => {
     }
 
     await sb.from("email_log").insert({
-      template_key: "approval",
+      template_key: templateKey || "custom",
       recipient: to,
       subject,
       status,
@@ -80,7 +96,7 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    console.error("send-approval-email error:", msg);
+    console.error("send-template-email error:", msg);
     return new Response(JSON.stringify({ error: msg }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
