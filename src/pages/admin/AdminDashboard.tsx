@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
-import { Search, Eye, Check, X, ChevronDown } from "lucide-react";
+import { Search, Eye, Check, X, ChevronDown, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -42,6 +42,9 @@ const AdminDashboard = () => {
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [declineReason, setDeclineReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editClient, setEditClient] = useState<Client>({ name: "", email: "", phone: null });
+  const [editResponses, setEditResponses] = useState<Record<string, unknown>>({});
 
   useEffect(() => {
     fetchRequests();
