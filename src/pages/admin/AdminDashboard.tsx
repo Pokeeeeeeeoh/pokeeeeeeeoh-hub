@@ -406,7 +406,14 @@ const AdminDashboard = () => {
         <Dialog open={!!selectedRequest && !showDeclineDialog} onOpenChange={() => setSelectedRequest(null)}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Request Details</DialogTitle>
+              <DialogTitle className="flex items-center justify-between gap-4">
+                <span>Request Details</span>
+                {selectedRequest && !editing && (
+                  <Button size="sm" variant="outline" onClick={() => startEdit(selectedRequest)}>
+                    <Pencil className="h-4 w-4 mr-1" /> Edit
+                  </Button>
+                )}
+              </DialogTitle>
             </DialogHeader>
             {selectedRequest && (
               <div className="space-y-6">
@@ -416,10 +423,29 @@ const AdminDashboard = () => {
                     Client Information
                   </h3>
                   <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-2">
-                    <p><span className="text-muted-foreground">Name:</span> {selectedRequest.clients?.name}</p>
-                    <p><span className="text-muted-foreground">Email:</span> {selectedRequest.clients?.email}</p>
-                    {selectedRequest.clients?.phone && (
-                      <p><span className="text-muted-foreground">Phone:</span> {selectedRequest.clients?.phone}</p>
+                    {editing ? (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground">Name</label>
+                          <Input value={editClient.name} onChange={(e) => setEditClient((p) => ({ ...p, name: e.target.value }))} />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground">Email</label>
+                          <Input value={editClient.email} onChange={(e) => setEditClient((p) => ({ ...p, email: e.target.value }))} />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground">Phone</label>
+                          <Input value={editClient.phone || ""} onChange={(e) => setEditClient((p) => ({ ...p, phone: e.target.value }))} />
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p><span className="text-muted-foreground">Name:</span> {selectedRequest.clients?.name}</p>
+                        <p><span className="text-muted-foreground">Email:</span> {selectedRequest.clients?.email}</p>
+                        {selectedRequest.clients?.phone && (
+                          <p><span className="text-muted-foreground">Phone:</span> {selectedRequest.clients?.phone}</p>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -430,15 +456,36 @@ const AdminDashboard = () => {
                     Tattoo Details
                   </h3>
                   <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-3">
-                    {Object.entries(selectedRequest.form_responses || {}).map(([key, value]) => (
+                    {Object.entries((editing ? editResponses : selectedRequest.form_responses) || {}).map(([key, value]) => (
                       <div key={key}>
                         <p className="text-xs text-muted-foreground capitalize">
                           {key.replace(/_/g, " ")}
                         </p>
-                        <p className="text-sm">{String(value)}</p>
+                        {editing ? (
+                          typeof value === "boolean" ? (
+                            <Input
+                              value={String(value)}
+                              onChange={(e) => setEditResponses((p) => ({ ...p, [key]: e.target.value === "true" }))}
+                            />
+                          ) : (
+                            <Textarea
+                              value={String(value ?? "")}
+                              onChange={(e) => setEditResponses((p) => ({ ...p, [key]: e.target.value }))}
+                              rows={2}
+                            />
+                          )
+                        ) : (
+                          <p className="text-sm">{String(value)}</p>
+                        )}
                       </div>
                     ))}
                   </div>
+                  {editing && (
+                    <div className="flex gap-2 mt-3">
+                      <Button size="sm" onClick={saveEdit} disabled={actionLoading}>Save changes</Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Images */}
