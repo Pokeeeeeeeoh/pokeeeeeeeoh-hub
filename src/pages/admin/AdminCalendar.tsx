@@ -1270,7 +1270,42 @@ const AdminCalendar = () => {
                   </p>
                 </div>
 
-                {/* If booked, show client info */}
+                {/* Edit times */}
+                <div className="space-y-2">
+                  <Label className="text-xs">Edit times</Label>
+                  <div className="flex items-center gap-2">
+                    <Select value={editStartTime} onValueChange={setEditStartTime}>
+                      <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {timeOptions.map((t) => (<SelectItem key={t} value={t}>{t}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-xs text-muted-foreground">–</span>
+                    <Select value={editEndTime} onValueChange={setEditEndTime}>
+                      <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {timeOptions.map((t) => (<SelectItem key={t} value={t}>{t}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveSlotTime}
+                      disabled={
+                        savingEdit ||
+                        (editStartTime === format(parseISO(selectedSlot.start_time), "HH:mm") &&
+                          editEndTime === format(parseISO(selectedSlot.end_time), "HH:mm"))
+                      }
+                    >
+                      {savingEdit ? "Saving" : "Save"}
+                    </Button>
+                  </div>
+                  {selectedSlot.is_booked && (
+                    <p className="text-[11px] text-muted-foreground">
+                      The client's appointment will be updated too. They won't be notified automatically.
+                    </p>
+                  )}
+                </div>
+
                 {selectedSlot.is_booked && getClientFromSlot(selectedSlot) && (
                   <div className="space-y-3 p-4 border border-green-500/30 bg-green-500/5 rounded-lg">
                     <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
