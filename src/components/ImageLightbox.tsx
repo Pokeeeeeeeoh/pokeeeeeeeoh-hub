@@ -23,20 +23,40 @@ export const ImageLightbox = ({ images, startIndex, open, onOpenChange }: ImageL
 
   const handleDownload = async () => {
     try {
-      const res = await fetch(src);
+      const res = await fetch(src, { mode: "cors" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
+      const ext = (blob.type.split("/")[1] || "jpg").split(";")[0];
+      const filename = `reference-${index + 1}.${ext}`;
+
+      // Try Web Share API (best on iOS — saves to Photos via share sheet)
+      const file = new File([blob], filename, { type: blob.type || "image/jpeg" });
+      const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+      if (nav.canShare && nav.canShare({ files: [file] })) {
+        try {
+          await (navigator as Navigator & { share: (d: ShareData) => Promise<void> }).share({ files: [file] });
+          return;
+        } catch (shareErr) {
+          // user cancelled or share failed — fall through to download
+          if ((shareErr as Error)?.name === "AbortError") return;
+        }
+      }
+
+      // Fallback: anchor download
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      const ext = (blob.type.split("/")[1] || "jpg").split(";")[0];
       a.href = url;
-      a.download = `reference-${index + 1}.${ext}`;
+      a.download = filename;
+      a.rel = "noopener";
       document.body.appendChild(a);
       a.click();
       a.remove();
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e) {
-      console.error(e);
-      toast.error("Could not download image");
+      console.error("download failed", e);
+      // Last resort: open in a new tab so user can long-press save
+      window.open(src, "_blank", "noopener,noreferrer");
+      toast.message("Long-press the image to save it");
     }
   };
 
