@@ -228,18 +228,17 @@ const SelectSlot = () => {
       </header>
 
       <main className="max-w-4xl mx-auto py-6 px-4 pb-32">
-        {/* Week Navigation */}
+        {/* Month Navigation */}
         <div className="flex items-center justify-between gap-2 mb-4">
-          <Button variant="outline" size="icon" onClick={() => setCurrentWeekStart(prev => addDays(prev, -7))}>
+          <Button variant="outline" size="icon" onClick={() => { setCurrentMonth(prev => addMonths(prev, -1)); setSelectedDay(null); }}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <div className="text-center min-w-0 flex-1">
-            <p className="font-mono text-xs text-muted-foreground">Week {weekNumber}</p>
-            <p className="text-sm font-medium truncate">
-              {format(currentWeekStart, "d MMM", { locale: enGB })} – {format(addDays(currentWeekStart, 6), "d MMM yyyy", { locale: enGB })}
+            <p className="text-base font-medium capitalize">
+              {format(currentMonth, "MMMM yyyy", { locale: enGB })}
             </p>
           </div>
-          <Button variant="outline" size="icon" onClick={() => setCurrentWeekStart(prev => addDays(prev, 7))}>
+          <Button variant="outline" size="icon" onClick={() => { setCurrentMonth(prev => addMonths(prev, 1)); setSelectedDay(null); }}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -247,11 +246,11 @@ const SelectSlot = () => {
         {/* Month jump + next available */}
         <div className="flex items-center gap-2 mb-6">
           <Select
-            value={format(startOfMonth(currentWeekStart), "yyyy-MM")}
+            value={format(currentMonth, "yyyy-MM")}
             onValueChange={(v) => {
               const [y, m] = v.split("-").map(Number);
-              const target = new Date(y, m - 1, 1);
-              setCurrentWeekStart(startOfWeek(target, { weekStartsOn: 1 }));
+              setCurrentMonth(new Date(y, m - 1, 1));
+              setSelectedDay(null);
             }}
           >
             <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
@@ -269,7 +268,9 @@ const SelectSlot = () => {
             onClick={() => {
               const next = slots.find(s => parseISO(s.start_time) >= new Date());
               if (next) {
-                setCurrentWeekStart(startOfWeek(parseISO(next.start_time), { weekStartsOn: 1 }));
+                const d = parseISO(next.start_time);
+                setCurrentMonth(startOfMonth(d));
+                setSelectedDay(d);
                 setSelectedSlot(next.id);
               } else {
                 toast.info("No upcoming slots available");
@@ -280,68 +281,63 @@ const SelectSlot = () => {
           </Button>
         </div>
 
-        {/* Calendar - Stacked on mobile */}
-        <div className="space-y-3 sm:hidden">
-          {weekDays.map((day, i) => {
-            const daySlots = getSlotsForDay(day);
-            const isToday = isSameDay(day, new Date());
-            const isPast = day < new Date() && !isToday;
-            
-            if (daySlots.length === 0 && isPast) return null;
-            
-            return (
-              <div key={i} className={`rounded-lg border ${isToday ? 'border-primary' : 'border-border'} overflow-hidden`}>
-                <div className={`p-3 border-b ${isToday ? 'bg-primary/10' : 'bg-muted/30'}`}>
-                  <p className="font-medium capitalize">
-                    {format(day, "EEEE d MMMM", { locale: enGB })}
-                  </p>
-                </div>
-                <div className="p-3">
-                  {daySlots.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {daySlots.map(slot => (
-                        <button
-                          key={slot.id}
-                          onClick={() => setSelectedSlot(slot.id)}
-                          className={`px-4 py-2 text-sm rounded-lg border transition-all ${
-                            selectedSlot === slot.id
-                              ? 'bg-primary text-primary-foreground border-primary'
-                              : 'bg-card border-border hover:border-primary/50'
-                          }`}
-                        >
-                          {format(parseISO(slot.start_time), "HH:mm")}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No available slots</p>
+        {/* Month Grid */}
+        <div className="mb-6">
+          <div className="grid grid-cols-7 gap-1 mb-1">
+            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(d => (
+              <div key={d} className="text-center text-xs text-muted-foreground py-1">{d}</div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {monthDays.map((day, i) => {
+              const daySlots = getSlotsForDay(day);
+              const isToday = isSameDay(day, new Date());
+              const isPast = day < new Date() && !isToday;
+              const inMonth = isSameMonth(day, currentMonth);
+              const hasSlots = daySlots.length > 0;
+              const isSelected = selectedDay && isSameDay(day, selectedDay);
+              const disabled = isPast || !hasSlots;
+              return (
+                <button
+                  key={i}
+                  disabled={disabled}
+                  onClick={() => { setSelectedDay(day); setSelectedSlot(null); }}
+                  className={`aspect-square rounded-md border text-sm flex flex-col items-center justify-center transition-all relative ${
+                    isSelected
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : hasSlots && !isPast
+                        ? 'bg-card border-border hover:border-primary/50 cursor-pointer'
+                        : 'bg-muted/20 border-transparent text-muted-foreground/40 cursor-not-allowed'
+                  } ${!inMonth ? 'opacity-40' : ''} ${isToday && !isSelected ? 'ring-1 ring-primary' : ''}`}
+                >
+                  <span className={`${isToday && !isSelected ? 'text-primary font-semibold' : ''}`}>
+                    {format(day, "d")}
+                  </span>
+                  {hasSlots && !isPast && (
+                    <span className={`mt-0.5 h-1 w-1 rounded-full ${isSelected ? 'bg-primary-foreground' : 'bg-primary'}`} />
                   )}
-                </div>
-              </div>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Calendar Grid - Desktop */}
-        <div className="hidden sm:grid grid-cols-7 gap-2 mb-8">
-          {weekDays.map((day, i) => {
-            const daySlots = getSlotsForDay(day);
-            const isToday = isSameDay(day, new Date());
-            
-            return (
-              <div key={i} className="min-h-[180px] rounded-lg border border-border overflow-hidden">
-                <div className={`text-center p-2 border-b ${isToday ? 'bg-primary/10' : 'bg-muted/30'}`}>
-                  <p className="text-xs text-muted-foreground capitalize">{format(day, "EEE", { locale: enGB })}</p>
-                  <p className={`text-lg font-semibold ${isToday ? 'text-primary' : ''}`}>
-                    {format(day, "d")}
-                  </p>
-                </div>
-                <div className="space-y-1 p-1.5">
-                  {daySlots.map(slot => (
+        {/* Times for selected day */}
+        {selectedDay && (
+          <div className="rounded-lg border border-border overflow-hidden mb-8">
+            <div className="p-3 border-b bg-muted/30">
+              <p className="font-medium capitalize">
+                {format(selectedDay, "EEEE d MMMM yyyy", { locale: enGB })}
+              </p>
+            </div>
+            <div className="p-3">
+              {selectedDaySlots.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {selectedDaySlots.map(slot => (
                     <button
                       key={slot.id}
                       onClick={() => setSelectedSlot(slot.id)}
-                      className={`w-full p-2 text-xs rounded border transition-all ${
+                      className={`px-4 py-2 text-sm rounded-lg border transition-all ${
                         selectedSlot === slot.id
                           ? 'bg-primary text-primary-foreground border-primary'
                           : 'bg-card border-border hover:border-primary/50'
@@ -350,16 +346,18 @@ const SelectSlot = () => {
                       {format(parseISO(slot.start_time), "HH:mm")}
                     </button>
                   ))}
-                  {daySlots.length === 0 && (
-                    <p className="text-xs text-muted-foreground text-center p-2">
-                      —
-                    </p>
-                  )}
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No available slots</p>
+              )}
+            </div>
+          </div>
+        )}
+        {!selectedDay && (
+          <p className="text-sm text-muted-foreground text-center mb-8">
+            Tap a highlighted day to see available times.
+          </p>
+        )}
 
         {/* Booking Action */}
         {selectedSlot && (
