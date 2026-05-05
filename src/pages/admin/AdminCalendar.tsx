@@ -193,10 +193,17 @@ const AdminCalendar = () => {
         appointments (
           id,
           client_id,
+          booking_request_id,
           clients (
             name,
             email,
             phone
+          ),
+          booking_requests (
+            id,
+            form_responses,
+            images,
+            admin_notes
           )
         )
       `)
@@ -207,7 +214,7 @@ const AdminCalendar = () => {
     if (error) {
       console.error("Error fetching slots:", error);
     } else {
-      setSlots(data || []);
+      setSlots((data || []) as unknown as AvailabilitySlot[]);
     }
     setLoading(false);
   };
