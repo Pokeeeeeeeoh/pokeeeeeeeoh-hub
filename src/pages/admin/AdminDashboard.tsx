@@ -86,6 +86,7 @@ const AdminDashboard = () => {
           to: request.clients.email,
           name: request.clients.name,
           bookingUrl,
+          bookingRequestId: request.id,
         },
       });
 
@@ -113,6 +114,7 @@ const AdminDashboard = () => {
           to: request.clients.email,
           name: request.clients.name,
           adminEmail: "jakehaynes@gmail.com",
+          bookingRequestId: request.id,
         },
       });
       if (error) throw error;
@@ -134,6 +136,7 @@ const AdminDashboard = () => {
           to: request.clients.email,
           name: request.clients.name,
           bookingUrl,
+          bookingRequestId: request.id,
         },
       });
       if (error) throw error;
@@ -141,6 +144,76 @@ const AdminDashboard = () => {
     } catch (err) {
       console.error(err);
       toast.error("Failed to resend approval email");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const resendDecline = async (request: BookingRequest) => {
+    setActionLoading(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-template-email", {
+        body: {
+          templateKey: "decline",
+          to: request.clients.email,
+          bookingRequestId: request.id,
+          vars: {
+            name: request.clients.name,
+            reason: request.decline_reason || "",
+          },
+        },
+      });
+      if (error) throw error;
+      toast.success("Decline email sent");
+    } catch (err) {
+      toast.error("Failed to send decline email");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const startEdit = (req: BookingRequest) => {
+    setEditClient({
+      name: req.clients?.name || "",
+      email: req.clients?.email || "",
+      phone: req.clients?.phone || null,
+    });
+    setEditResponses({ ...(req.form_responses || {}) });
+    setEditing(true);
+  };
+
+  const saveEdit = async () => {
+    if (!selectedRequest) return;
+    setActionLoading(true);
+    try {
+      const { error: cErr } = await supabase
+        .from("clients")
+        .update({
+          name: editClient.name,
+          email: editClient.email,
+          phone: editClient.phone || null,
+        })
+        .eq("id", selectedRequest.client_id);
+      if (cErr) throw cErr;
+
+      const { error: rErr } = await supabase
+        .from("booking_requests")
+        .update({ form_responses: editResponses })
+        .eq("id", selectedRequest.id);
+      if (rErr) throw rErr;
+
+      toast.success("Submission updated");
+      setEditing(false);
+      await fetchRequests();
+      // refresh selected request locally
+      setSelectedRequest({
+        ...selectedRequest,
+        clients: { ...selectedRequest.clients, ...editClient },
+        form_responses: editResponses,
+      });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save changes");
     } finally {
       setActionLoading(false);
     }
