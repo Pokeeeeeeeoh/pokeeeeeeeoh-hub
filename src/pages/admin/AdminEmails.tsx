@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
-import { Save, Send, Eye, RefreshCw } from "lucide-react";
+import { Save, Send, Eye, RefreshCw, Bell } from "lucide-react";
+import { RichEmailEditor } from "@/components/RichEmailEditor";
 
 interface Template {
   id: string;
@@ -162,12 +163,10 @@ const AdminEmails = () => {
                       <Input value={active.subject} onChange={(e) => updateActive({ subject: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <Label>HTML body</Label>
-                      <Textarea
+                      <Label>Body</Label>
+                      <RichEmailEditor
                         value={active.body_html}
-                        onChange={(e) => updateActive({ body_html: e.target.value })}
-                        rows={16}
-                        className="font-mono text-xs"
+                        onChange={(html) => updateActive({ body_html: html })}
                       />
                     </div>
                     <div className="flex gap-2">
