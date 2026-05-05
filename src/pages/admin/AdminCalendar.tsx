@@ -68,14 +68,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 
+interface BookingRequestLite {
+  id: string;
+  form_responses: Record<string, unknown> | null;
+  images: string[] | null;
+  admin_notes: string | null;
+}
+
 interface Appointment {
   id: string;
   client_id: string;
+  booking_request_id: string | null;
   clients: {
     name: string;
     email: string;
     phone: string | null;
   } | null;
+  booking_requests: BookingRequestLite | null;
 }
 
 interface AvailabilitySlot {
