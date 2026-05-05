@@ -233,6 +233,69 @@ export type Database = {
         }
         Relationships: []
       }
+      email_log: {
+        Row: {
+          booking_request_id: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          recipient: string
+          status: string
+          subject: string | null
+          template_key: string | null
+        }
+        Insert: {
+          booking_request_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          recipient: string
+          status?: string
+          subject?: string | null
+          template_key?: string | null
+        }
+        Update: {
+          booking_request_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          recipient?: string
+          status?: string
+          subject?: string | null
+          template_key?: string | null
+        }
+        Relationships: []
+      }
+      email_templates: {
+        Row: {
+          body_html: string
+          id: string
+          key: string
+          name: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          body_html: string
+          id?: string
+          key: string
+          name: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string
+          id?: string
+          key?: string
+          name?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       form_config: {
         Row: {
           fields: Json
@@ -278,6 +341,33 @@ export type Database = {
           site_name?: string
           tagline?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      ui_text: {
+        Row: {
+          category: string
+          id: string
+          key: string
+          label: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          category?: string
+          id?: string
+          key: string
+          label: string
+          updated_at?: string
+          value?: string
+        }
+        Update: {
+          category?: string
+          id?: string
+          key?: string
+          label?: string
+          updated_at?: string
+          value?: string
         }
         Relationships: []
       }

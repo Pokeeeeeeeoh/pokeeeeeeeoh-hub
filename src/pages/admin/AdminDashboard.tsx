@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
-import { Search, Eye, Check, X, ChevronDown } from "lucide-react";
+import { Search, Eye, Check, X, ChevronDown, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -42,6 +42,9 @@ const AdminDashboard = () => {
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [declineReason, setDeclineReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editClient, setEditClient] = useState<Client>({ name: "", email: "", phone: null });
+  const [editResponses, setEditResponses] = useState<Record<string, unknown>>({});
 
   useEffect(() => {
     fetchRequests();
@@ -83,6 +86,7 @@ const AdminDashboard = () => {
           to: request.clients.email,
           name: request.clients.name,
           bookingUrl,
+          bookingRequestId: request.id,
         },
       });
 
@@ -110,6 +114,7 @@ const AdminDashboard = () => {
           to: request.clients.email,
           name: request.clients.name,
           adminEmail: "jakehaynes@gmail.com",
+          bookingRequestId: request.id,
         },
       });
       if (error) throw error;
@@ -131,6 +136,7 @@ const AdminDashboard = () => {
           to: request.clients.email,
           name: request.clients.name,
           bookingUrl,
+          bookingRequestId: request.id,
         },
       });
       if (error) throw error;
@@ -138,6 +144,76 @@ const AdminDashboard = () => {
     } catch (err) {
       console.error(err);
       toast.error("Failed to resend approval email");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const resendDecline = async (request: BookingRequest) => {
+    setActionLoading(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-template-email", {
+        body: {
+          templateKey: "decline",
+          to: request.clients.email,
+          bookingRequestId: request.id,
+          vars: {
+            name: request.clients.name,
+            reason: request.decline_reason || "",
+          },
+        },
+      });
+      if (error) throw error;
+      toast.success("Decline email sent");
+    } catch (err) {
+      toast.error("Failed to send decline email");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const startEdit = (req: BookingRequest) => {
+    setEditClient({
+      name: req.clients?.name || "",
+      email: req.clients?.email || "",
+      phone: req.clients?.phone || null,
+    });
+    setEditResponses({ ...(req.form_responses || {}) });
+    setEditing(true);
+  };
+
+  const saveEdit = async () => {
+    if (!selectedRequest) return;
+    setActionLoading(true);
+    try {
+      const { error: cErr } = await supabase
+        .from("clients")
+        .update({
+          name: editClient.name,
+          email: editClient.email,
+          phone: editClient.phone || null,
+        })
+        .eq("id", selectedRequest.client_id);
+      if (cErr) throw cErr;
+
+      const { error: rErr } = await supabase
+        .from("booking_requests")
+        .update({ form_responses: editResponses as never })
+        .eq("id", selectedRequest.id);
+      if (rErr) throw rErr;
+
+      toast.success("Submission updated");
+      setEditing(false);
+      await fetchRequests();
+      // refresh selected request locally
+      setSelectedRequest({
+        ...selectedRequest,
+        clients: { ...selectedRequest.clients, ...editClient },
+        form_responses: editResponses,
+      });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save changes");
     } finally {
       setActionLoading(false);
     }
@@ -330,7 +406,14 @@ const AdminDashboard = () => {
         <Dialog open={!!selectedRequest && !showDeclineDialog} onOpenChange={() => setSelectedRequest(null)}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Request Details</DialogTitle>
+              <DialogTitle className="flex items-center justify-between gap-4">
+                <span>Request Details</span>
+                {selectedRequest && !editing && (
+                  <Button size="sm" variant="outline" onClick={() => startEdit(selectedRequest)}>
+                    <Pencil className="h-4 w-4 mr-1" /> Edit
+                  </Button>
+                )}
+              </DialogTitle>
             </DialogHeader>
             {selectedRequest && (
               <div className="space-y-6">
@@ -340,10 +423,29 @@ const AdminDashboard = () => {
                     Client Information
                   </h3>
                   <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-2">
-                    <p><span className="text-muted-foreground">Name:</span> {selectedRequest.clients?.name}</p>
-                    <p><span className="text-muted-foreground">Email:</span> {selectedRequest.clients?.email}</p>
-                    {selectedRequest.clients?.phone && (
-                      <p><span className="text-muted-foreground">Phone:</span> {selectedRequest.clients?.phone}</p>
+                    {editing ? (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs text-muted-foreground">Name</label>
+                          <Input value={editClient.name} onChange={(e) => setEditClient((p) => ({ ...p, name: e.target.value }))} />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground">Email</label>
+                          <Input value={editClient.email} onChange={(e) => setEditClient((p) => ({ ...p, email: e.target.value }))} />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground">Phone</label>
+                          <Input value={editClient.phone || ""} onChange={(e) => setEditClient((p) => ({ ...p, phone: e.target.value }))} />
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p><span className="text-muted-foreground">Name:</span> {selectedRequest.clients?.name}</p>
+                        <p><span className="text-muted-foreground">Email:</span> {selectedRequest.clients?.email}</p>
+                        {selectedRequest.clients?.phone && (
+                          <p><span className="text-muted-foreground">Phone:</span> {selectedRequest.clients?.phone}</p>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -354,15 +456,36 @@ const AdminDashboard = () => {
                     Tattoo Details
                   </h3>
                   <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-3">
-                    {Object.entries(selectedRequest.form_responses || {}).map(([key, value]) => (
+                    {Object.entries((editing ? editResponses : selectedRequest.form_responses) || {}).map(([key, value]) => (
                       <div key={key}>
                         <p className="text-xs text-muted-foreground capitalize">
                           {key.replace(/_/g, " ")}
                         </p>
-                        <p className="text-sm">{String(value)}</p>
+                        {editing ? (
+                          typeof value === "boolean" ? (
+                            <Input
+                              value={String(value)}
+                              onChange={(e) => setEditResponses((p) => ({ ...p, [key]: e.target.value === "true" }))}
+                            />
+                          ) : (
+                            <Textarea
+                              value={String(value ?? "")}
+                              onChange={(e) => setEditResponses((p) => ({ ...p, [key]: e.target.value }))}
+                              rows={2}
+                            />
+                          )
+                        ) : (
+                          <p className="text-sm">{String(value)}</p>
+                        )}
                       </div>
                     ))}
                   </div>
+                  {editing && (
+                    <div className="flex gap-2 mt-3">
+                      <Button size="sm" onClick={saveEdit} disabled={actionLoading}>Save changes</Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Images */}
@@ -452,6 +575,16 @@ const AdminDashboard = () => {
                         disabled={actionLoading}
                       >
                         Resend approval link
+                      </Button>
+                    )}
+                    {selectedRequest.status === "declined" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => resendDecline(selectedRequest)}
+                        disabled={actionLoading}
+                      >
+                        Send decline email
                       </Button>
                     )}
                   </div>

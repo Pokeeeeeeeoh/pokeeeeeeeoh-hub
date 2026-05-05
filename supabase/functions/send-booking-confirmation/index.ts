@@ -1,68 +1,50 @@
-import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 
+function render(tpl: string, vars: Record<string, string>) {
+  return tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? "");
+}
+
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-    if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    const { to, name, adminEmail } = await req.json();
-    if (!to || typeof to !== "string") {
+    const { to, name, adminEmail, bookingRequestId } = await req.json();
+    if (!to) {
       return new Response(JSON.stringify({ error: "Missing 'to'" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const clientHtml = `
-      <div style="font-family: Inter, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px; color: #000; background: #fff;">
-        <h1 style="font-size: 22px; margin: 0 0 16px;">Booking request received</h1>
-        <p style="font-size: 14px; line-height: 1.6; color: #333;">
-          ${name ? `Hi ${name},` : "Hi,"} thanks for your booking request. I've received it and
-          will review it shortly. You'll get another email with a link to pick a time slot
-          once it's approved.
-        </p>
-        <p style="font-size: 12px; color: #777; margin-top: 32px;">— pokeeeeeeeoh</p>
-      </div>
-    `;
+    const { data: tpls } = await sb
+      .from("email_templates")
+      .select("key, subject, body_html")
+      .in("key", ["booking_confirmation_client", "booking_confirmation_admin"]);
+    const byKey = Object.fromEntries((tpls || []).map((t: any) => [t.key, t]));
+    const vars = { name: name || "", email: to };
 
-    const adminHtml = `
-      <div style="font-family: Inter, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px; color: #000; background: #fff;">
-        <h1 style="font-size: 22px; margin: 0 0 16px;">New booking request</h1>
-        <p style="font-size: 14px; line-height: 1.6; color: #333;">
-          ${name || "Someone"} (${to}) just submitted a booking request. Open the admin
-          dashboard to review and approve it.
-        </p>
-      </div>
-    `;
-
-    const sends = [
-      fetch(`${GATEWAY_URL}/emails`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "X-Connection-Api-Key": RESEND_API_KEY,
-        },
-        body: JSON.stringify({
-          from: "pokeeeeeeeoh <onboarding@resend.dev>",
-          to: [to],
-          subject: "We received your booking request",
-          html: clientHtml,
-        }),
-      }),
-    ];
-
-    if (adminEmail && adminEmail !== to) {
-      sends.push(
-        fetch(`${GATEWAY_URL}/emails`, {
+    async function sendOne(key: string, recipient: string) {
+      const tpl = byKey[key];
+      if (!tpl) return;
+      const subject = render(tpl.subject, vars);
+      const html = render(tpl.body_html, vars);
+      let status = "sent";
+      let error_message: string | null = null;
+      try {
+        const resp = await fetch(`${GATEWAY_URL}/emails`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -71,22 +53,32 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             from: "pokeeeeeeeoh <onboarding@resend.dev>",
-            to: [adminEmail],
-            subject: `New booking request from ${name || to}`,
-            html: adminHtml,
+            to: [recipient],
+            subject,
+            html,
           }),
-        }),
-      );
+        });
+        if (!resp.ok) {
+          status = "failed";
+          error_message = await resp.text();
+        }
+      } catch (e) {
+        status = "failed";
+        error_message = e instanceof Error ? e.message : String(e);
+      }
+      await sb.from("email_log").insert({
+        template_key: key,
+        recipient,
+        subject,
+        status,
+        error_message,
+        booking_request_id: bookingRequestId || null,
+      });
     }
 
-    const results = await Promise.all(sends);
-    for (const r of results) {
-      if (!r.ok) {
-        const errBody = await r.text();
-        console.error("Resend error:", r.status, errBody);
-      } else {
-        await r.text();
-      }
+    await sendOne("booking_confirmation_client", to);
+    if (adminEmail && adminEmail !== to) {
+      await sendOne("booking_confirmation_admin", adminEmail);
     }
 
     return new Response(JSON.stringify({ success: true }), {
