@@ -28,6 +28,14 @@ Deno.serve(async (req) => {
       .eq("approval_token", token)
       .single();
     if (reqErr || !request) throw new Error("Invalid token");
+
+    if (request.status === "booked") {
+      return new Response(
+        JSON.stringify({ success: true, alreadyBooked: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     if (request.status !== "approved") throw new Error("Request is not approved");
 
     // Verify slot is available
@@ -38,6 +46,20 @@ Deno.serve(async (req) => {
       .single();
     if (slotErr || !slot) throw new Error("Slot not found");
     if (slot.is_booked || slot.is_blocked) throw new Error("Slot no longer available");
+
+    const { data: existingAppointment } = await supabase
+      .from("appointments")
+      .select("id")
+      .eq("booking_request_id", request.id)
+      .eq("slot_id", slot.id)
+      .maybeSingle();
+
+    if (existingAppointment) {
+      return new Response(
+        JSON.stringify({ success: true, alreadyBooked: true, start_time: slot.start_time, end_time: slot.end_time }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     // Create appointment
     const { error: apptErr } = await supabase.from("appointments").insert({
