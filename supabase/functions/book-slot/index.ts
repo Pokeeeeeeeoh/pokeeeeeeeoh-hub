@@ -20,11 +20,13 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+    const projectUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
     // Verify request via token
     const { data: request, error: reqErr } = await supabase
       .from("booking_requests")
-      .select("id, client_id, status")
+      .select("id, client_id, status, clients(name, email)")
       .eq("approval_token", token)
       .single();
     if (reqErr || !request) throw new Error("Invalid token");
@@ -52,7 +54,7 @@ Deno.serve(async (req) => {
 
     if (existingAppointment) {
       return new Response(
-        JSON.stringify({ success: true, alreadyBooked: true, start_time: slot.start_time, end_time: slot.end_time }),
+        JSON.stringify({ success: true, alreadyBooked: true, slot_id: slot.id, start_time: slot.start_time, end_time: slot.end_time }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -72,8 +74,42 @@ Deno.serve(async (req) => {
     // Update request status
     await supabase.from("booking_requests").update({ status: "booked" }).eq("id", request.id);
 
+    const clientEmail = request.clients?.email;
+    const clientName = request.clients?.name ?? "";
+    if (clientEmail) {
+      const appointmentTime = new Date(slot.start_time).toLocaleString("en-GB", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: "UTC",
+      }).replace(",", " at");
+
+      const emailResp = await fetch(`${projectUrl}/functions/v1/send-template-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({
+          templateKey: "appointment_booked",
+          to: clientEmail,
+          bookingRequestId: request.id,
+          vars: { name: clientName, appointmentTime },
+        }),
+      });
+
+      if (!emailResp.ok) {
+        console.error("book-slot confirmation email failed", await emailResp.text());
+      }
+    }
+
     return new Response(
-      JSON.stringify({ success: true, start_time: slot.start_time, end_time: slot.end_time }),
+      JSON.stringify({ success: true, slot_id: slot.id, start_time: slot.start_time, end_time: slot.end_time }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
