@@ -106,7 +106,18 @@ interface Client {
 }
 
 type ViewMode = "week" | "month";
-type RepeatMode = "none" | "weeks" | "until";
+type RepeatMode = "none" | "weeks" | "until" | "custom";
+
+interface SlotPattern {
+  startTime: string;
+  endTime: string;
+}
+
+const DEFAULT_PATTERNS: SlotPattern[] = [
+  { startTime: "10:00", endTime: "12:00" },
+  { startTime: "13:00", endTime: "15:00" },
+  { startTime: "16:00", endTime: "18:00" },
+];
 
 const WEEKDAYS = [
   { value: 1, label: "Mon" },
@@ -130,14 +141,12 @@ const AdminCalendar = () => {
   // Day action dialog (when clicking on a day)
   const [showDayDialog, setShowDayDialog] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-  const [newSlot, setNewSlot] = useState({
-    startTime: "10:00",
-    endTime: "12:00",
-  });
+  const [patterns, setPatterns] = useState<SlotPattern[]>(DEFAULT_PATTERNS);
   const [repeatMode, setRepeatMode] = useState<RepeatMode>("none");
-  const [repeatWeekday, setRepeatWeekday] = useState<number>(1);
+  const [repeatWeekdays, setRepeatWeekdays] = useState<number[]>([]);
   const [repeatWeeks, setRepeatWeeks] = useState(4);
   const [repeatUntilDate, setRepeatUntilDate] = useState<Date | undefined>();
+  const [customDates, setCustomDates] = useState<Date[]>([]);
   const [addingSlot, setAddingSlot] = useState(false);
 
   // Slot action dialog (when clicking on a slot)
@@ -237,11 +246,12 @@ const AdminCalendar = () => {
   // Open day dialog when clicking on a day
   const openDayDialog = (day: Date) => {
     setSelectedDay(day);
-    setRepeatWeekday(getDay(day));
+    setRepeatWeekdays([getDay(day)]);
     setRepeatMode("none");
     setRepeatWeeks(4);
     setRepeatUntilDate(undefined);
-    setNewSlot({ startTime: "10:00", endTime: "12:00" });
+    setCustomDates([]);
+    setPatterns(DEFAULT_PATTERNS);
     setShowDayDialog(true);
   };
 
@@ -467,48 +477,66 @@ const AdminCalendar = () => {
     setAddingSlot(true);
 
     try {
-      const [startHour, startMin] = newSlot.startTime.split(":").map(Number);
-      const [endHour, endMin] = newSlot.endTime.split(":").map(Number);
+      const validPatterns = patterns.filter((p) => p.startTime && p.endTime);
+      if (validPatterns.length === 0) {
+        toast.error("Add at least one time slot");
+        setAddingSlot(false);
+        return;
+      }
 
-      const slotsToCreate: { start_time: string; end_time: string }[] = [];
+      // Determine target dates
+      let targetDates: Date[] = [];
 
       if (repeatMode === "none") {
-        const startTime = setMinutes(setHours(selectedDay, startHour), startMin);
-        const endTime = setMinutes(setHours(selectedDay, endHour), endMin);
-        slotsToCreate.push({
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
-        });
+        targetDates = [selectedDay];
       } else if (repeatMode === "weeks") {
+        if (repeatWeekdays.length === 0) {
+          toast.error("Select at least one weekday");
+          setAddingSlot(false);
+          return;
+        }
+        const weekStart = startOfWeek(selectedDay, { weekStartsOn: 1 });
         for (let i = 0; i < repeatWeeks; i++) {
-          let date = addWeeks(selectedDay, i);
-          const currentDay = getDay(date);
-          const diff = repeatWeekday - currentDay;
-          date = addDays(date, diff);
-
-          const startTime = setMinutes(setHours(date, startHour), startMin);
-          const endTime = setMinutes(setHours(date, endHour), endMin);
-          slotsToCreate.push({
-            start_time: startTime.toISOString(),
-            end_time: endTime.toISOString(),
-          });
+          for (const wd of repeatWeekdays) {
+            // Map: Mon=1..Sun=0 → offset from Monday
+            const offset = wd === 0 ? 6 : wd - 1;
+            const date = addDays(addWeeks(weekStart, i), offset);
+            if (date >= selectedDay || isSameDay(date, selectedDay)) {
+              targetDates.push(date);
+            }
+          }
         }
       } else if (repeatMode === "until" && repeatUntilDate) {
+        if (repeatWeekdays.length === 0) {
+          toast.error("Select at least one weekday");
+          setAddingSlot(false);
+          return;
+        }
         const days = eachDayOfInterval({ start: selectedDay, end: repeatUntilDate });
-        const matchingDays = days.filter((d) => getDay(d) === repeatWeekday);
+        targetDates = days.filter((d) => repeatWeekdays.includes(getDay(d)));
+      } else if (repeatMode === "custom") {
+        if (customDates.length === 0) {
+          toast.error("Select at least one date");
+          setAddingSlot(false);
+          return;
+        }
+        targetDates = customDates;
+      }
 
-        for (const date of matchingDays) {
-          const startTime = setMinutes(setHours(date, startHour), startMin);
-          const endTime = setMinutes(setHours(date, endHour), endMin);
+      const slotsToCreate: { start_time: string; end_time: string }[] = [];
+      for (const date of targetDates) {
+        for (const p of validPatterns) {
+          const [sh, sm] = p.startTime.split(":").map(Number);
+          const [eh, em] = p.endTime.split(":").map(Number);
           slotsToCreate.push({
-            start_time: startTime.toISOString(),
-            end_time: endTime.toISOString(),
+            start_time: setMinutes(setHours(date, sh), sm).toISOString(),
+            end_time: setMinutes(setHours(date, eh), em).toISOString(),
           });
         }
       }
 
       if (slotsToCreate.length === 0) {
-        toast.error("No slots to create with these settings");
+        toast.error("No slots to create");
         setAddingSlot(false);
         return;
       }
@@ -530,6 +558,24 @@ const AdminCalendar = () => {
     } finally {
       setAddingSlot(false);
     }
+  };
+
+  const toggleRepeatWeekday = (day: number) => {
+    setRepeatWeekdays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  };
+
+  const updatePattern = (i: number, field: "startTime" | "endTime", value: string) => {
+    setPatterns((prev) => prev.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
+  };
+
+  const addPattern = () => {
+    setPatterns((prev) => [...prev, { startTime: "10:00", endTime: "12:00" }]);
+  };
+
+  const removePattern = (i: number) => {
+    setPatterns((prev) => prev.filter((_, idx) => idx !== i));
   };
 
   const handleRepeatSlot = async () => {
@@ -949,110 +995,118 @@ const AdminCalendar = () => {
                   </span>
                 </p>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Start Time</Label>
-                    <Select
-                      value={newSlot.startTime}
-                      onValueChange={(v) =>
-                        setNewSlot((prev) => ({ ...prev, startTime: v }))
-                      }
+                {/* Time Slots (multiple) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Time slots</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={addPattern}
+                      className="h-7 px-2 text-xs"
                     >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {timeOptions.map((time) => (
-                          <SelectItem key={time} value={time}>
-                            {time}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add slot
+                    </Button>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">End Time</Label>
-                    <Select
-                      value={newSlot.endTime}
-                      onValueChange={(v) =>
-                        setNewSlot((prev) => ({ ...prev, endTime: v }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {timeOptions.map((time) => (
-                          <SelectItem key={time} value={time}>
-                            {time}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Repeat Options */}
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-center gap-2">
-                    <Repeat className="h-4 w-4 text-muted-foreground" />
-                    <Label className="text-sm font-medium">Repeat</Label>
-                  </div>
-
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="repeat-none"
-                        checked={repeatMode === "none"}
-                        onCheckedChange={() => setRepeatMode("none")}
-                      />
-                      <Label htmlFor="repeat-none" className="text-sm cursor-pointer">
-                        Single slot only
-                      </Label>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="repeat-weeks"
-                        checked={repeatMode === "weeks"}
-                        onCheckedChange={() => setRepeatMode("weeks")}
-                      />
-                      <Label htmlFor="repeat-weeks" className="text-sm cursor-pointer">
-                        Repeat for number of weeks
-                      </Label>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="repeat-until"
-                        checked={repeatMode === "until"}
-                        onCheckedChange={() => setRepeatMode("until")}
-                      />
-                      <Label htmlFor="repeat-until" className="text-sm cursor-pointer">
-                        Repeat until date
-                      </Label>
-                    </div>
-                  </div>
-
-                  {repeatMode !== "none" && (
-                    <div className="space-y-3 pl-6">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Weekday</Label>
+                    {patterns.map((p, i) => (
+                      <div key={i} className="flex items-center gap-2">
                         <Select
-                          value={repeatWeekday.toString()}
-                          onValueChange={(v) => setRepeatWeekday(parseInt(v))}
+                          value={p.startTime}
+                          onValueChange={(v) => updatePattern(i, "startTime", v)}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="flex-1">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {WEEKDAYS.map((day) => (
-                              <SelectItem key={day.value} value={day.value.toString()}>
-                                {day.label}
-                              </SelectItem>
+                            {timeOptions.map((time) => (
+                              <SelectItem key={time} value={time}>{time}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
+                        <span className="text-xs text-muted-foreground">–</span>
+                        <Select
+                          value={p.endTime}
+                          onValueChange={(v) => updatePattern(i, "endTime", v)}
+                        >
+                          <SelectTrigger className="flex-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {timeOptions.map((time) => (
+                              <SelectItem key={time} value={time}>{time}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {patterns.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0"
+                            onClick={() => removePattern(i)}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Apply To */}
+                <div className="space-y-3 pt-2 border-t border-border">
+                  <div className="flex items-center gap-2">
+                    <Repeat className="h-4 w-4 text-muted-foreground" />
+                    <Label className="text-sm font-medium">Apply to</Label>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      { v: "none", label: "Just this day" },
+                      { v: "weeks", label: "Next N weeks" },
+                      { v: "until", label: "Until date" },
+                      { v: "custom", label: "Custom dates" },
+                    ] as const).map((opt) => (
+                      <button
+                        key={opt.v}
+                        type="button"
+                        onClick={() => setRepeatMode(opt.v)}
+                        className={cn(
+                          "px-3 py-2 text-xs rounded-md border transition-colors text-left",
+                          repeatMode === opt.v
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background border-border hover:border-primary/50"
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {(repeatMode === "weeks" || repeatMode === "until") && (
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Weekdays</Label>
+                        <div className="flex flex-wrap gap-1">
+                          {WEEKDAYS.map((day) => (
+                            <button
+                              key={day.value}
+                              type="button"
+                              onClick={() => toggleRepeatWeekday(day.value)}
+                              className={cn(
+                                "px-2.5 py-1 text-xs rounded-full border transition-colors",
+                                repeatWeekdays.includes(day.value)
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-background border-border hover:border-primary/50"
+                              )}
+                            >
+                              {day.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
                       {repeatMode === "weeks" && (
@@ -1063,9 +1117,7 @@ const AdminCalendar = () => {
                             min={1}
                             max={52}
                             value={repeatWeeks}
-                            onChange={(e) =>
-                              setRepeatWeeks(parseInt(e.target.value) || 1)
-                            }
+                            onChange={(e) => setRepeatWeeks(parseInt(e.target.value) || 1)}
                           />
                         </div>
                       )}
@@ -1103,6 +1155,25 @@ const AdminCalendar = () => {
                           </Popover>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {repeatMode === "custom" && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">
+                        Pick dates ({customDates.length} selected)
+                      </Label>
+                      <div className="rounded-md border border-border flex justify-center">
+                        <Calendar
+                          mode="multiple"
+                          selected={customDates}
+                          onSelect={(dates) => setCustomDates(dates || [])}
+                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                          weekStartsOn={1}
+                          locale={enGB}
+                          className="p-3 pointer-events-auto"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
