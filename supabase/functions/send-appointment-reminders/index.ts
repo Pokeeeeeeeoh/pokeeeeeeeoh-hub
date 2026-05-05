@@ -13,18 +13,34 @@ Deno.serve(async (req) => {
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    // Find appointments starting in 23-25 hours that haven't had reminders sent
-    const now = new Date();
-    const windowStart = new Date(now.getTime() + 23 * 60 * 60 * 1000).toISOString();
-    const windowEnd = new Date(now.getTime() + 25 * 60 * 60 * 1000).toISOString();
+    let test = false;
+    try {
+      const body = await req.json();
+      test = !!body?.test;
+    } catch {
+      // no body
+    }
 
-    const { data: appts, error } = await sb
+    const now = new Date();
+
+    let query = sb
       .from("appointments")
       .select("id, start_time, end_time, booking_request_id, reminder_sent, clients(name, email)")
-      .eq("reminder_sent", false)
-      .gte("start_time", windowStart)
-      .lte("start_time", windowEnd);
+      .gte("start_time", now.toISOString());
 
+    if (test) {
+      // send to all upcoming appointments, regardless of reminder_sent
+      query = query.order("start_time", { ascending: true }).limit(50);
+    } else {
+      const windowStart = new Date(now.getTime() + 23 * 60 * 60 * 1000).toISOString();
+      const windowEnd = new Date(now.getTime() + 25 * 60 * 60 * 1000).toISOString();
+      query = query
+        .eq("reminder_sent", false)
+        .gte("start_time", windowStart)
+        .lte("start_time", windowEnd);
+    }
+
+    const { data: appts, error } = await query;
     if (error) throw error;
 
     const results: any[] = [];
@@ -37,7 +53,7 @@ Deno.serve(async (req) => {
         hour: "2-digit", minute: "2-digit", hour12: false,
       });
 
-      const { data, error: invokeErr } = await sb.functions.invoke("send-template-email", {
+      const { error: invokeErr } = await sb.functions.invoke("send-template-email", {
         body: {
           templateKey: "appointment_reminder",
           to: client.email,
@@ -46,13 +62,13 @@ Deno.serve(async (req) => {
         },
       });
 
-      if (!invokeErr) {
+      if (!invokeErr && !test) {
         await sb.from("appointments").update({ reminder_sent: true }).eq("id", appt.id);
       }
       results.push({ id: appt.id, sent: !invokeErr, error: invokeErr?.message });
     }
 
-    return new Response(JSON.stringify({ processed: results.length, results }), {
+    return new Response(JSON.stringify({ processed: results.length, test, results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
