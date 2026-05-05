@@ -77,15 +77,7 @@ const SelectSlot = () => {
         return;
       }
 
-      if (requestData.status === "booked") {
-        setRequest(requestData as unknown as BookingRequest);
-        setAlreadyBooked(true);
-        setBooked(true);
-        setLoading(false);
-        return;
-      }
-
-      if (requestData.status !== "approved") {
+      if (requestData.status !== "approved" && requestData.status !== "booked") {
         setError("This request is no longer available for booking.");
         setLoading(false);
         return;

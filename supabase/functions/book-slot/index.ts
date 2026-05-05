@@ -29,14 +29,10 @@ Deno.serve(async (req) => {
       .single();
     if (reqErr || !request) throw new Error("Invalid token");
 
-    if (request.status === "booked") {
-      return new Response(
-        JSON.stringify({ success: true, alreadyBooked: true }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    if (request.status !== "approved" && request.status !== "booked") {
+      throw new Error("Request is not approved");
     }
 
-    if (request.status !== "approved") throw new Error("Request is not approved");
 
     // Verify slot is available
     const { data: slot, error: slotErr } = await supabase
