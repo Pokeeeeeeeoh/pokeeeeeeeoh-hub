@@ -28,27 +28,39 @@ const DEFAULT_VARS = [
 
 export const RichEmailEditor = ({ value, onChange, variables = DEFAULT_VARS }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
+  const lastEmitted = useRef<string>(value);
   const [showSource, setShowSource] = useState(false);
   const [source, setSource] = useState(value);
 
-  // Sync external value into the editor when it changes (e.g. switching templates)
+  // Sync external value into the editor only when it differs from what we last emitted
+  // (e.g. switching templates). This avoids overwriting the DOM on every keystroke,
+  // which was wiping the user's edits and breaking the cursor.
   useEffect(() => {
-    if (ref.current && ref.current.innerHTML !== (value || "")) {
-      ref.current.innerHTML = value || "";
+    if (showSource) {
+      setSource(value);
+      return;
     }
-    setSource(value);
+    if (ref.current && value !== lastEmitted.current) {
+      ref.current.innerHTML = value || "";
+      lastEmitted.current = value;
+    }
   }, [value, showSource]);
+
+  const emit = (html: string) => {
+    lastEmitted.current = html;
+    onChange(html);
+  };
 
   const exec = (cmd: string, arg?: string) => {
     ref.current?.focus();
     document.execCommand(cmd, false, arg);
-    if (ref.current) onChange(ref.current.innerHTML);
+    if (ref.current) emit(ref.current.innerHTML);
   };
 
   const insertHTML = (html: string) => {
     ref.current?.focus();
     document.execCommand("insertHTML", false, html);
-    if (ref.current) onChange(ref.current.innerHTML);
+    if (ref.current) emit(ref.current.innerHTML);
   };
 
   const insertVar = (key: string) => insertHTML(`{{${key}}}`);
@@ -145,7 +157,7 @@ export const RichEmailEditor = ({ value, onChange, variables = DEFAULT_VARS }: P
         ref={ref}
         contentEditable
         suppressContentEditableWarning
-        onInput={(e) => onChange((e.target as HTMLDivElement).innerHTML)}
+        onInput={(e) => emit((e.target as HTMLDivElement).innerHTML)}
         className="min-h-[320px] max-h-[500px] overflow-auto p-4 text-sm focus:outline-none prose prose-sm max-w-none [&_h1]:text-xl [&_h1]:font-bold [&_h2]:text-lg [&_h2]:font-semibold [&_a]:text-primary [&_a]:underline"
       />
     </div>
