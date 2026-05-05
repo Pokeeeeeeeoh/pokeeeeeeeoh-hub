@@ -1183,7 +1183,55 @@ const AdminCalendar = () => {
                   </div>
                 )}
 
-                {/* If not booked, show actions */}
+                {/* Booking details for booked slot */}
+                {selectedSlot.is_booked && (() => {
+                  const appt = selectedSlot.appointments?.[0];
+                  const br = appt?.booking_requests;
+                  const responses = (br?.form_responses as Record<string, unknown>) || {};
+                  const images = br?.images || [];
+                  const responseEntries = Object.entries(responses).filter(([k]) => k !== "manual_booking");
+                  return (
+                    <>
+                      {responseEntries.length > 0 && (
+                        <div>
+                          <h3 className="text-sm font-medium text-muted-foreground mb-2">Tattoo Details</h3>
+                          <div className="p-3 rounded-lg border border-border bg-secondary/30 space-y-2 text-sm">
+                            {responseEntries.map(([key, value]) => (
+                              <div key={key}>
+                                <p className="text-xs text-muted-foreground capitalize">{key.replace(/_/g, " ")}</p>
+                                <p className="whitespace-pre-wrap">{String(value)}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {br?.admin_notes && (
+                        <div>
+                          <h3 className="text-sm font-medium text-muted-foreground mb-2">Admin Notes</h3>
+                          <p className="text-sm whitespace-pre-wrap p-3 rounded-lg border border-border bg-secondary/30">{br.admin_notes}</p>
+                        </div>
+                      )}
+                      {images.length > 0 && (
+                        <div>
+                          <h3 className="text-sm font-medium text-muted-foreground mb-2">Reference Images</h3>
+                          <div className="grid grid-cols-3 gap-2">
+                            {images.map((img, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => setLightbox({ open: true, index: i })}
+                                className="aspect-square rounded-lg border border-border overflow-hidden hover:border-primary/50 transition-colors"
+                              >
+                                <img src={img} alt={`Reference ${i + 1}`} className="w-full h-full object-cover" />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+
                 {!selectedSlot.is_booked && (
                   <div className="space-y-4">
                     {/* Quick Actions */}
