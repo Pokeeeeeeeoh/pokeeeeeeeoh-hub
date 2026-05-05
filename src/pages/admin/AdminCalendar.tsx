@@ -141,14 +141,12 @@ const AdminCalendar = () => {
   // Day action dialog (when clicking on a day)
   const [showDayDialog, setShowDayDialog] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-  const [newSlot, setNewSlot] = useState({
-    startTime: "10:00",
-    endTime: "12:00",
-  });
+  const [patterns, setPatterns] = useState<SlotPattern[]>(DEFAULT_PATTERNS);
   const [repeatMode, setRepeatMode] = useState<RepeatMode>("none");
-  const [repeatWeekday, setRepeatWeekday] = useState<number>(1);
+  const [repeatWeekdays, setRepeatWeekdays] = useState<number[]>([]);
   const [repeatWeeks, setRepeatWeeks] = useState(4);
   const [repeatUntilDate, setRepeatUntilDate] = useState<Date | undefined>();
+  const [customDates, setCustomDates] = useState<Date[]>([]);
   const [addingSlot, setAddingSlot] = useState(false);
 
   // Slot action dialog (when clicking on a slot)
