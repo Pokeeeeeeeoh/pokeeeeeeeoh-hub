@@ -106,34 +106,68 @@ const SelectSlot = () => {
 
   const handleBookSlot = async () => {
     if (!selectedSlot || !request) return;
-    
+
     setBooking(true);
 
     try {
-      const slot = slots.find(s => s.id === selectedSlot);
+      const slot = slots.find((s) => s.id === selectedSlot);
       if (!slot) throw new Error("Slot not found");
 
       const { data: result, error: fnError } = await supabase.functions.invoke("book-slot", {
         body: { token, slotId: selectedSlot },
       });
-      if (fnError) throw fnError;
+
+      // supabase.functions.invoke does NOT parse the response body when status >= 400,
+      // it just returns a generic FunctionsHttpError. Pull the real message out of the response.
+      if (fnError) {
+        let detail = fnError.message;
+        const ctx = (fnError as any)?.context;
+        try {
+          if (ctx?.json) {
+            const j = await ctx.json();
+            if (j?.error) detail = j.error;
+          } else if (ctx?.text) {
+            const t = await ctx.text();
+            if (t) detail = t;
+          }
+        } catch {
+          /* ignore parse errors */
+        }
+        throw new Error(detail);
+      }
       if (result?.error) throw new Error(result.error);
+
+      if (result?.alreadyBooked) {
+        setAlreadyBooked(true);
+        setBooked(true);
+        return;
+      }
 
       // Send appointment confirmation
       const apptDate = format(parseISO(slot.start_time), "EEEE d MMMM yyyy 'at' HH:mm", { locale: enGB });
-      supabase.functions.invoke("send-template-email", {
-        body: {
-          templateKey: "appointment_booked",
-          to: request.clients.email,
-          bookingRequestId: request.id,
-          vars: { name: request.clients.name, appointmentTime: apptDate },
-        },
-      }).catch((e) => console.error("appt email failed", e));
+      supabase.functions
+        .invoke("send-template-email", {
+          body: {
+            templateKey: "appointment_booked",
+            to: request.clients.email,
+            bookingRequestId: request.id,
+            vars: { name: request.clients.name, appointmentTime: apptDate },
+          },
+        })
+        .catch((e) => console.error("appt email failed", e));
 
       setBooked(true);
     } catch (err) {
       console.error("Booking error:", err);
-      toast.error("Could not book the slot. Please try again.");
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      // Slot got taken between the page load and this click — refresh the list
+      if (/no longer available|Slot not found/i.test(msg)) {
+        await fetchSlots();
+        setSelectedSlot(null);
+        toast.error("That slot was just taken. Please pick another.");
+      } else {
+        toast.error(`Could not book the slot: ${msg}`);
+      }
     } finally {
       setBooking(false);
     }
