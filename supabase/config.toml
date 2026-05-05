@@ -1,1 +1,4 @@
 project_id = "wtrmrhfjrxdfkqpxteuq"
+
+[functions.book-slot]
+verify_jwt = false
