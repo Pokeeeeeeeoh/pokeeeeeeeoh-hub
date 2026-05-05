@@ -153,6 +153,15 @@ const BookingForm = () => {
 
       if (requestError) throw requestError;
 
+      // Send confirmation email to client + notification to admin (fire and forget)
+      supabase.functions.invoke("send-booking-confirmation", {
+        body: {
+          to: clientInfo.email,
+          name: clientInfo.name,
+          adminEmail: "jakehaynes@gmail.com",
+        },
+      }).catch((e) => console.error("Email send failed:", e));
+
       navigate("/book/confirmation");
     } catch (error: any) {
       console.error("Submission error:", error);
