@@ -995,110 +995,118 @@ const AdminCalendar = () => {
                   </span>
                 </p>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Start Time</Label>
-                    <Select
-                      value={newSlot.startTime}
-                      onValueChange={(v) =>
-                        setNewSlot((prev) => ({ ...prev, startTime: v }))
-                      }
+                {/* Time Slots (multiple) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Time slots</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={addPattern}
+                      className="h-7 px-2 text-xs"
                     >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {timeOptions.map((time) => (
-                          <SelectItem key={time} value={time}>
-                            {time}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add slot
+                    </Button>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">End Time</Label>
-                    <Select
-                      value={newSlot.endTime}
-                      onValueChange={(v) =>
-                        setNewSlot((prev) => ({ ...prev, endTime: v }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {timeOptions.map((time) => (
-                          <SelectItem key={time} value={time}>
-                            {time}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Repeat Options */}
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-center gap-2">
-                    <Repeat className="h-4 w-4 text-muted-foreground" />
-                    <Label className="text-sm font-medium">Repeat</Label>
-                  </div>
-
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="repeat-none"
-                        checked={repeatMode === "none"}
-                        onCheckedChange={() => setRepeatMode("none")}
-                      />
-                      <Label htmlFor="repeat-none" className="text-sm cursor-pointer">
-                        Single slot only
-                      </Label>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="repeat-weeks"
-                        checked={repeatMode === "weeks"}
-                        onCheckedChange={() => setRepeatMode("weeks")}
-                      />
-                      <Label htmlFor="repeat-weeks" className="text-sm cursor-pointer">
-                        Repeat for number of weeks
-                      </Label>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="repeat-until"
-                        checked={repeatMode === "until"}
-                        onCheckedChange={() => setRepeatMode("until")}
-                      />
-                      <Label htmlFor="repeat-until" className="text-sm cursor-pointer">
-                        Repeat until date
-                      </Label>
-                    </div>
-                  </div>
-
-                  {repeatMode !== "none" && (
-                    <div className="space-y-3 pl-6">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Weekday</Label>
+                    {patterns.map((p, i) => (
+                      <div key={i} className="flex items-center gap-2">
                         <Select
-                          value={repeatWeekday.toString()}
-                          onValueChange={(v) => setRepeatWeekday(parseInt(v))}
+                          value={p.startTime}
+                          onValueChange={(v) => updatePattern(i, "startTime", v)}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="flex-1">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {WEEKDAYS.map((day) => (
-                              <SelectItem key={day.value} value={day.value.toString()}>
-                                {day.label}
-                              </SelectItem>
+                            {timeOptions.map((time) => (
+                              <SelectItem key={time} value={time}>{time}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
+                        <span className="text-xs text-muted-foreground">–</span>
+                        <Select
+                          value={p.endTime}
+                          onValueChange={(v) => updatePattern(i, "endTime", v)}
+                        >
+                          <SelectTrigger className="flex-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {timeOptions.map((time) => (
+                              <SelectItem key={time} value={time}>{time}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {patterns.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0"
+                            onClick={() => removePattern(i)}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Apply To */}
+                <div className="space-y-3 pt-2 border-t border-border">
+                  <div className="flex items-center gap-2">
+                    <Repeat className="h-4 w-4 text-muted-foreground" />
+                    <Label className="text-sm font-medium">Apply to</Label>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      { v: "none", label: "Just this day" },
+                      { v: "weeks", label: "Next N weeks" },
+                      { v: "until", label: "Until date" },
+                      { v: "custom", label: "Custom dates" },
+                    ] as const).map((opt) => (
+                      <button
+                        key={opt.v}
+                        type="button"
+                        onClick={() => setRepeatMode(opt.v)}
+                        className={cn(
+                          "px-3 py-2 text-xs rounded-md border transition-colors text-left",
+                          repeatMode === opt.v
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background border-border hover:border-primary/50"
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {(repeatMode === "weeks" || repeatMode === "until") && (
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Weekdays</Label>
+                        <div className="flex flex-wrap gap-1">
+                          {WEEKDAYS.map((day) => (
+                            <button
+                              key={day.value}
+                              type="button"
+                              onClick={() => toggleRepeatWeekday(day.value)}
+                              className={cn(
+                                "px-2.5 py-1 text-xs rounded-full border transition-colors",
+                                repeatWeekdays.includes(day.value)
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-background border-border hover:border-primary/50"
+                              )}
+                            >
+                              {day.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
                       {repeatMode === "weeks" && (
@@ -1109,9 +1117,7 @@ const AdminCalendar = () => {
                             min={1}
                             max={52}
                             value={repeatWeeks}
-                            onChange={(e) =>
-                              setRepeatWeeks(parseInt(e.target.value) || 1)
-                            }
+                            onChange={(e) => setRepeatWeeks(parseInt(e.target.value) || 1)}
                           />
                         </div>
                       )}
@@ -1149,6 +1155,25 @@ const AdminCalendar = () => {
                           </Popover>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {repeatMode === "custom" && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">
+                        Pick dates ({customDates.length} selected)
+                      </Label>
+                      <div className="rounded-md border border-border flex justify-center">
+                        <Calendar
+                          mode="multiple"
+                          selected={customDates}
+                          onSelect={(dates) => setCustomDates(dates || [])}
+                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                          weekStartsOn={1}
+                          locale={enGB}
+                          className="p-3 pointer-events-auto"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
