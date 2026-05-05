@@ -102,6 +102,47 @@ const AdminDashboard = () => {
     }
   };
 
+  const resendConfirmation = async (request: BookingRequest) => {
+    setActionLoading(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-booking-confirmation", {
+        body: {
+          to: request.clients.email,
+          name: request.clients.name,
+          adminEmail: "jakehaynes@gmail.com",
+        },
+      });
+      if (error) throw error;
+      toast.success("Confirmation email resent");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to resend confirmation email");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const resendApproval = async (request: BookingRequest) => {
+    setActionLoading(true);
+    try {
+      const bookingUrl = `${window.location.origin}/select-slot?token=${request.approval_token}`;
+      const { error } = await supabase.functions.invoke("send-approval-email", {
+        body: {
+          to: request.clients.email,
+          name: request.clients.name,
+          bookingUrl,
+        },
+      });
+      if (error) throw error;
+      toast.success("Approval email resent");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to resend approval email");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleDecline = async () => {
     if (!selectedRequest) return;
     setActionLoading(true);
@@ -388,6 +429,33 @@ const AdminDashboard = () => {
                     </Button>
                   </div>
                 )}
+
+                {/* Resend Emails */}
+                <div className="pt-4 border-t border-border">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                    Resend Emails
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => resendConfirmation(selectedRequest)}
+                      disabled={actionLoading}
+                    >
+                      Resend confirmation
+                    </Button>
+                    {selectedRequest.status === "approved" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => resendApproval(selectedRequest)}
+                        disabled={actionLoading}
+                      >
+                        Resend approval link
+                      </Button>
+                    )}
+                  </div>
+                </div>
 
                 {/* Status */}
                 <div className="flex items-center justify-between text-sm">
