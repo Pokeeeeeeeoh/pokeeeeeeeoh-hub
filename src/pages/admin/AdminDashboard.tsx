@@ -330,11 +330,17 @@ const AdminDashboard = () => {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
+                    <div className="flex items-center gap-3 mb-1 flex-wrap">
                       <h3 className="font-medium truncate">
                         {request.clients?.name || "Unknown"}
                       </h3>
                       {getStatusBadge(request.status)}
+                      {request.status === "approved" && differenceInDays(new Date(), parseISO(request.created_at)) >= 7 && (
+                        <Badge variant="outline" className="border-amber-500 text-amber-600">
+                          <Clock className="h-3 w-3 mr-1" />
+                          No slot picked · {differenceInDays(new Date(), parseISO(request.created_at))}d
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground truncate">
                       {request.clients?.email}
