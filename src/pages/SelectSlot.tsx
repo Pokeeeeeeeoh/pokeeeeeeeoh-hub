@@ -233,26 +233,54 @@ const SelectSlot = () => {
 
       <main className="max-w-4xl mx-auto py-6 px-4 pb-32">
         {/* Week Navigation */}
-        <div className="flex items-center justify-between gap-2 mb-6">
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={() => setCurrentWeekStart(prev => addDays(prev, -7))}
-          >
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <Button variant="outline" size="icon" onClick={() => setCurrentWeekStart(prev => addDays(prev, -7))}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="text-center min-w-0">
+          <div className="text-center min-w-0 flex-1">
             <p className="font-mono text-xs text-muted-foreground">Week {weekNumber}</p>
             <p className="text-sm font-medium truncate">
               {format(currentWeekStart, "d MMM", { locale: enGB })} – {format(addDays(currentWeekStart, 6), "d MMM yyyy", { locale: enGB })}
             </p>
           </div>
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={() => setCurrentWeekStart(prev => addDays(prev, 7))}
-          >
+          <Button variant="outline" size="icon" onClick={() => setCurrentWeekStart(prev => addDays(prev, 7))}>
             <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Month jump + next available */}
+        <div className="flex items-center gap-2 mb-6">
+          <Select
+            value={format(startOfMonth(currentWeekStart), "yyyy-MM")}
+            onValueChange={(v) => {
+              const [y, m] = v.split("-").map(Number);
+              const target = new Date(y, m - 1, 1);
+              setCurrentWeekStart(startOfWeek(target, { weekStartsOn: 1 }));
+            }}
+          >
+            <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 12 }, (_, i) => addMonths(startOfMonth(new Date()), i)).map((m) => (
+                <SelectItem key={format(m, "yyyy-MM")} value={format(m, "yyyy-MM")}>
+                  {format(m, "MMMM yyyy", { locale: enGB })}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const next = slots.find(s => parseISO(s.start_time) >= new Date());
+              if (next) {
+                setCurrentWeekStart(startOfWeek(parseISO(next.start_time), { weekStartsOn: 1 }));
+                setSelectedSlot(next.id);
+              } else {
+                toast.info("No upcoming slots available");
+              }
+            }}
+          >
+            <FastForward className="h-4 w-4 mr-1" /> Next available
           </Button>
         </div>
 
