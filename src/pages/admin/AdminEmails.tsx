@@ -120,9 +120,14 @@ const AdminEmails = () => {
             <h1 className="text-2xl font-bold tracking-tight">Emails</h1>
             <p className="text-muted-foreground">Edit templates, send custom emails, and view delivery log</p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setSendOpen(true)}>
-            <Send className="h-4 w-4 mr-2" /> Send custom
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={sendTestReminders}>
+              <Bell className="h-4 w-4 mr-2" /> Send test reminders
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setSendOpen(true)}>
+              <Send className="h-4 w-4 mr-2" /> Send custom
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="templates" className="space-y-6">
