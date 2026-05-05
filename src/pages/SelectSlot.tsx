@@ -139,12 +139,17 @@ const SelectSlot = () => {
     }
   };
 
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
-  const weekNumber = getISOWeek(currentWeekStart);
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(currentMonth);
+  const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+  const monthDays = eachDayOfInterval({ start: gridStart, end: gridEnd });
 
   const getSlotsForDay = (date: Date) => {
     return slots.filter(slot => isSameDay(parseISO(slot.start_time), date));
   };
+
+  const selectedDaySlots = selectedDay ? getSlotsForDay(selectedDay) : [];
 
   if (loading) {
     return (
