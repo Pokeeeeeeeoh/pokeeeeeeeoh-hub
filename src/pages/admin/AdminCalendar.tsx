@@ -477,48 +477,66 @@ const AdminCalendar = () => {
     setAddingSlot(true);
 
     try {
-      const [startHour, startMin] = newSlot.startTime.split(":").map(Number);
-      const [endHour, endMin] = newSlot.endTime.split(":").map(Number);
+      const validPatterns = patterns.filter((p) => p.startTime && p.endTime);
+      if (validPatterns.length === 0) {
+        toast.error("Add at least one time slot");
+        setAddingSlot(false);
+        return;
+      }
 
-      const slotsToCreate: { start_time: string; end_time: string }[] = [];
+      // Determine target dates
+      let targetDates: Date[] = [];
 
       if (repeatMode === "none") {
-        const startTime = setMinutes(setHours(selectedDay, startHour), startMin);
-        const endTime = setMinutes(setHours(selectedDay, endHour), endMin);
-        slotsToCreate.push({
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
-        });
+        targetDates = [selectedDay];
       } else if (repeatMode === "weeks") {
+        if (repeatWeekdays.length === 0) {
+          toast.error("Select at least one weekday");
+          setAddingSlot(false);
+          return;
+        }
+        const weekStart = startOfWeek(selectedDay, { weekStartsOn: 1 });
         for (let i = 0; i < repeatWeeks; i++) {
-          let date = addWeeks(selectedDay, i);
-          const currentDay = getDay(date);
-          const diff = repeatWeekday - currentDay;
-          date = addDays(date, diff);
-
-          const startTime = setMinutes(setHours(date, startHour), startMin);
-          const endTime = setMinutes(setHours(date, endHour), endMin);
-          slotsToCreate.push({
-            start_time: startTime.toISOString(),
-            end_time: endTime.toISOString(),
-          });
+          for (const wd of repeatWeekdays) {
+            // Map: Mon=1..Sun=0 → offset from Monday
+            const offset = wd === 0 ? 6 : wd - 1;
+            const date = addDays(addWeeks(weekStart, i), offset);
+            if (date >= selectedDay || isSameDay(date, selectedDay)) {
+              targetDates.push(date);
+            }
+          }
         }
       } else if (repeatMode === "until" && repeatUntilDate) {
+        if (repeatWeekdays.length === 0) {
+          toast.error("Select at least one weekday");
+          setAddingSlot(false);
+          return;
+        }
         const days = eachDayOfInterval({ start: selectedDay, end: repeatUntilDate });
-        const matchingDays = days.filter((d) => getDay(d) === repeatWeekday);
+        targetDates = days.filter((d) => repeatWeekdays.includes(getDay(d)));
+      } else if (repeatMode === "custom") {
+        if (customDates.length === 0) {
+          toast.error("Select at least one date");
+          setAddingSlot(false);
+          return;
+        }
+        targetDates = customDates;
+      }
 
-        for (const date of matchingDays) {
-          const startTime = setMinutes(setHours(date, startHour), startMin);
-          const endTime = setMinutes(setHours(date, endHour), endMin);
+      const slotsToCreate: { start_time: string; end_time: string }[] = [];
+      for (const date of targetDates) {
+        for (const p of validPatterns) {
+          const [sh, sm] = p.startTime.split(":").map(Number);
+          const [eh, em] = p.endTime.split(":").map(Number);
           slotsToCreate.push({
-            start_time: startTime.toISOString(),
-            end_time: endTime.toISOString(),
+            start_time: setMinutes(setHours(date, sh), sm).toISOString(),
+            end_time: setMinutes(setHours(date, eh), em).toISOString(),
           });
         }
       }
 
       if (slotsToCreate.length === 0) {
-        toast.error("No slots to create with these settings");
+        toast.error("No slots to create");
         setAddingSlot(false);
         return;
       }
@@ -540,6 +558,24 @@ const AdminCalendar = () => {
     } finally {
       setAddingSlot(false);
     }
+  };
+
+  const toggleRepeatWeekday = (day: number) => {
+    setRepeatWeekdays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  };
+
+  const updatePattern = (i: number, field: "startTime" | "endTime", value: string) => {
+    setPatterns((prev) => prev.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
+  };
+
+  const addPattern = () => {
+    setPatterns((prev) => [...prev, { startTime: "10:00", endTime: "12:00" }]);
+  };
+
+  const removePattern = (i: number) => {
+    setPatterns((prev) => prev.filter((_, idx) => idx !== i));
   };
 
   const handleRepeatSlot = async () => {
