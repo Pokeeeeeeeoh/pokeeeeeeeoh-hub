@@ -31,6 +31,12 @@ interface BookingRequest {
   };
 }
 
+interface ConfirmedSlot {
+  id: string;
+  start_time: string;
+  end_time: string;
+}
+
 const SelectSlot = () => {
   const t = useUiText();
   const [searchParams] = useSearchParams();
@@ -42,6 +48,7 @@ const SelectSlot = () => {
   const [request, setRequest] = useState<BookingRequest | null>(null);
   const [slots, setSlots] = useState<AvailableSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [confirmedSlot, setConfirmedSlot] = useState<ConfirmedSlot | null>(null);
   const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [booking, setBooking] = useState(false);
@@ -83,6 +90,30 @@ const SelectSlot = () => {
       }
 
       setRequest(requestData as unknown as BookingRequest);
+
+      if (requestData.status === "booked") {
+        const { data: appointment } = await supabase
+          .from("appointments")
+          .select("slot_id, start_time, end_time")
+          .eq("booking_request_id", requestData.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (appointment) {
+          setConfirmedSlot({
+            id: appointment.slot_id ?? requestData.id,
+            start_time: appointment.start_time,
+            end_time: appointment.end_time,
+          });
+        }
+
+        setAlreadyBooked(true);
+        setBooked(true);
+        setLoading(false);
+        return;
+      }
+
       await fetchSlots();
       setLoading(false);
     }
@@ -138,31 +169,23 @@ const SelectSlot = () => {
       if (result?.error) throw new Error(result.error);
 
       if (result?.alreadyBooked) {
+        if (result?.start_time && result?.end_time) {
+          setConfirmedSlot({
+            id: result?.slot_id ?? selectedSlot,
+            start_time: result.start_time,
+            end_time: result.end_time,
+          });
+        }
         setAlreadyBooked(true);
         setBooked(true);
         return;
       }
 
-      // Send appointment confirmation (best-effort, but await so the request isn't cancelled by re-render)
-      try {
-        const apptDate = format(parseISO(slot.start_time), "EEEE d MMMM yyyy 'at' HH:mm", { locale: enGB });
-        const clientEmail = request?.clients?.email;
-        const clientName = request?.clients?.name ?? "";
-        if (clientEmail) {
-          const { error: emailErr } = await supabase.functions.invoke("send-template-email", {
-            body: {
-              templateKey: "appointment_booked",
-              to: clientEmail,
-              bookingRequestId: request.id,
-              vars: { name: clientName, appointmentTime: apptDate },
-            },
-          });
-          if (emailErr) console.error("appt confirmation email failed", emailErr);
-        }
-      } catch (e) {
-        console.error("appt email setup failed", e);
-      }
-
+      setConfirmedSlot({
+        id: slot.id,
+        start_time: result?.start_time ?? slot.start_time,
+        end_time: result?.end_time ?? slot.end_time,
+      });
       setBooked(true);
     } catch (err) {
       console.error("Booking error:", err);
@@ -216,7 +239,7 @@ const SelectSlot = () => {
   }
 
   if (booked) {
-    const bookedSlot = slots.find(s => s.id === selectedSlot);
+    const bookedSlot = confirmedSlot ?? slots.find(s => s.id === selectedSlot);
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="max-w-md text-center">
@@ -231,7 +254,7 @@ const SelectSlot = () => {
           <p className="text-muted-foreground mb-6">
             {alreadyBooked
               ? t("slot_booked_existing_subtitle", "This booking link has already been used and your appointment is already confirmed.")
-              : t("slot_booked_subtitle", "Your appointment is confirmed. We'll send a confirmation email with all the details.")}
+              : t("slot_booked_subtitle", `Your appointment is confirmed. A confirmation email has been sent to ${request?.clients?.email ?? "your email"}.`)}
           </p>
           {bookedSlot && (
             <div className="p-4 rounded-lg border border-border bg-card mb-6 text-left">
@@ -263,12 +286,21 @@ const SelectSlot = () => {
         <div className="max-w-4xl mx-auto">
           <h1 className="text-xl font-semibold">{t("slot_title", "Select Your Appointment")}</h1>
           <p className="text-sm text-muted-foreground">
-            {t("slot_subtitle", "Choose from the available slots below")}
+            {t("slot_subtitle", "Choose from the available slots below. This booking link is already connected to your saved details.")}
           </p>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto py-6 px-4 pb-32">
+        {request?.clients && (
+          <div className="mb-6 rounded-lg border border-border bg-card p-4">
+            <p className="text-sm font-medium">Booking for {request.clients.name}</p>
+            <p className="text-sm text-muted-foreground">
+              Confirmation will be sent to {request.clients.email}. You do not need to enter your details again.
+            </p>
+          </div>
+        )}
+
         {/* Month Navigation */}
         <div className="flex items-center justify-between gap-2 mb-4">
           <Button variant="outline" size="icon" onClick={() => { setCurrentMonth(prev => addMonths(prev, -1)); setSelectedDay(null); }}>
