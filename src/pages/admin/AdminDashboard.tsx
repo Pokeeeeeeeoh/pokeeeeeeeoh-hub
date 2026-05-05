@@ -198,7 +198,7 @@ const AdminDashboard = () => {
 
       const { error: rErr } = await supabase
         .from("booking_requests")
-        .update({ form_responses: editResponses })
+        .update({ form_responses: editResponses as never })
         .eq("id", selectedRequest.id);
       if (rErr) throw rErr;
 
