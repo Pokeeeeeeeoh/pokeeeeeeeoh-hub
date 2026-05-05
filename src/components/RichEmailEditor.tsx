@@ -157,7 +157,7 @@ export const RichEmailEditor = ({ value, onChange, variables = DEFAULT_VARS }: P
         ref={ref}
         contentEditable
         suppressContentEditableWarning
-        onInput={(e) => onChange((e.target as HTMLDivElement).innerHTML)}
+        onInput={(e) => emit((e.target as HTMLDivElement).innerHTML)}
         className="min-h-[320px] max-h-[500px] overflow-auto p-4 text-sm focus:outline-none prose prose-sm max-w-none [&_h1]:text-xl [&_h1]:font-bold [&_h2]:text-lg [&_h2]:font-semibold [&_a]:text-primary [&_a]:underline"
       />
     </div>
