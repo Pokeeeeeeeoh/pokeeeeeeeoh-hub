@@ -14,6 +14,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminClients from "./pages/admin/AdminClients";
 import AdminCalendar from "./pages/admin/AdminCalendar";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminEmails from "./pages/admin/AdminEmails";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="clients" element={<AdminClients />} />
             <Route path="calendar" element={<AdminCalendar />} />
             <Route path="settings" element={<AdminSettings />} />
+            <Route path="emails" element={<AdminEmails />} />
           </Route>
           
           {/* Catch-all */}

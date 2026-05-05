@@ -10,7 +10,8 @@ import {
   LogOut,
   Menu,
   X,
-  ExternalLink
+  ExternalLink,
+  Mail
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -67,6 +68,7 @@ const AdminLayout = () => {
     { href: "/admin/dashboard", label: "Requests", icon: Inbox },
     { href: "/admin/clients", label: "Clients", icon: Users },
     { href: "/admin/calendar", label: "Calendar", icon: Calendar },
+    { href: "/admin/emails", label: "Emails", icon: Mail },
     { href: "/admin/settings", label: "Settings", icon: Settings },
   ];
 
