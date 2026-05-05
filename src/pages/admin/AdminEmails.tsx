@@ -112,6 +112,17 @@ const AdminEmails = () => {
     }
   };
 
+  const sendTestReminders = async () => {
+    toast.info("Sending test reminders…");
+    const { data, error } = await supabase.functions.invoke("send-appointment-reminders", {
+      body: { test: true },
+    });
+    if (error) return toast.error("Failed to send test reminders");
+    const count = (data as any)?.processed ?? 0;
+    toast.success(`Sent ${count} test reminder${count === 1 ? "" : "s"}`);
+    loadAll();
+  };
+
   return (
     <div className="p-6 lg:p-8">
       <div className="max-w-6xl mx-auto">
