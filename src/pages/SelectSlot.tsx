@@ -143,22 +143,21 @@ const SelectSlot = () => {
         return;
       }
 
-      // Send appointment confirmation (best-effort, never block booking)
+      // Send appointment confirmation (best-effort, but await so the request isn't cancelled by re-render)
       try {
         const apptDate = format(parseISO(slot.start_time), "EEEE d MMMM yyyy 'at' HH:mm", { locale: enGB });
         const clientEmail = request?.clients?.email;
         const clientName = request?.clients?.name ?? "";
         if (clientEmail) {
-          supabase.functions
-            .invoke("send-template-email", {
-              body: {
-                templateKey: "appointment_booked",
-                to: clientEmail,
-                bookingRequestId: request.id,
-                vars: { name: clientName, appointmentTime: apptDate },
-              },
-            })
-            .catch((e) => console.error("appt email failed", e));
+          const { error: emailErr } = await supabase.functions.invoke("send-template-email", {
+            body: {
+              templateKey: "appointment_booked",
+              to: clientEmail,
+              bookingRequestId: request.id,
+              vars: { name: clientName, appointmentTime: apptDate },
+            },
+          });
+          if (emailErr) console.error("appt confirmation email failed", emailErr);
         }
       } catch (e) {
         console.error("appt email setup failed", e);
