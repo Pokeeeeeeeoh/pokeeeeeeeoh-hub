@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
+import { useUiText } from "@/hooks/useUiText";
 
 const BookingInfo = () => {
+  const t = useUiText();
   const [infoContent, setInfoContent] = useState<string>("");
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
@@ -83,13 +85,13 @@ const BookingInfo = () => {
         <div className="container mx-auto max-w-2xl">
           <div className="mb-8 animate-fade-in">
             <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase mb-2">
-              Step 1 of 2
+              {t("booking_info_step", "Step 1 of 2")}
             </p>
             <h1 className="text-3xl font-bold tracking-tight mb-2">
-              Before You Book
+              {t("booking_info_title", "Before You Book")}
             </h1>
             <p className="text-muted-foreground">
-              Please read through the following information carefully before submitting your request.
+              {t("booking_info_subtitle", "Please read through the following information carefully before submitting your request.")}
             </p>
           </div>
 
@@ -162,7 +164,7 @@ const BookingInfo = () => {
               className="text-sm text-muted-foreground cursor-pointer"
               onClick={() => hasScrolledToBottom && setAcknowledged(!acknowledged)}
             >
-              I have read and understood the booking information, policies, and preparation guidelines.
+              {t("booking_info_acknowledge", "I have read and understood the booking information, policies, and preparation guidelines.")}
             </label>
           </div>
         </div>
