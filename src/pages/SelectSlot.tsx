@@ -42,9 +42,8 @@ const SelectSlot = () => {
   const [request, setRequest] = useState<BookingRequest | null>(null);
   const [slots, setSlots] = useState<AvailableSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const [currentWeekStart, setCurrentWeekStart] = useState(() => 
-    startOfWeek(new Date(), { weekStartsOn: 1 })
-  );
+  const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [booking, setBooking] = useState(false);
   const [booked, setBooked] = useState(false);
   const [alreadyBooked, setAlreadyBooked] = useState(false);
