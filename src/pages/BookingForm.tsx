@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Upload, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useUiText } from "@/hooks/useUiText";
 
 interface FormField {
   id: string;
