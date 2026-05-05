@@ -110,30 +110,11 @@ const SelectSlot = () => {
       const slot = slots.find(s => s.id === selectedSlot);
       if (!slot) throw new Error("Slot not found");
 
-      // Create appointment
-      const { error: appointmentError } = await supabase
-        .from("appointments")
-        .insert({
-          booking_request_id: request.id,
-          client_id: request.client_id,
-          slot_id: slot.id,
-          start_time: slot.start_time,
-          end_time: slot.end_time,
-        });
-
-      if (appointmentError) throw appointmentError;
-
-      // Mark slot as booked
-      await supabase
-        .from("availability_slots")
-        .update({ is_booked: true })
-        .eq("id", selectedSlot);
-
-      // Update request status
-      await supabase
-        .from("booking_requests")
-        .update({ status: "booked" })
-        .eq("id", request.id);
+      const { data: result, error: fnError } = await supabase.functions.invoke("book-slot", {
+        body: { token, slotId: selectedSlot },
+      });
+      if (fnError) throw fnError;
+      if (result?.error) throw new Error(result.error);
 
       // Send appointment confirmation
       const apptDate = format(parseISO(slot.start_time), "EEEE d MMMM yyyy 'at' HH:mm", { locale: enGB });
