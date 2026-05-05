@@ -40,6 +40,7 @@ const SelectSlot = () => {
   );
   const [booking, setBooking] = useState(false);
   const [booked, setBooked] = useState(false);
+  const [alreadyBooked, setAlreadyBooked] = useState(false);
 
   useEffect(() => {
     async function verifyToken() {
@@ -69,12 +70,16 @@ const SelectSlot = () => {
         return;
       }
 
+      if (requestData.status === "booked") {
+        setRequest(requestData as unknown as BookingRequest);
+        setAlreadyBooked(true);
+        setBooked(true);
+        setLoading(false);
+        return;
+      }
+
       if (requestData.status !== "approved") {
-        if (requestData.status === "booked") {
-          setError("This request has already been booked.");
-        } else {
-          setError("This request is no longer available for booking.");
-        }
+        setError("This request is no longer available for booking.");
         setLoading(false);
         return;
       }
@@ -175,10 +180,14 @@ const SelectSlot = () => {
             <CheckCircle className="h-10 w-10 text-green-600" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight mb-4">
-            {t("slot_booked_title", "Appointment Booked!")}
+            {alreadyBooked
+              ? t("slot_booked_existing_title", "Appointment Already Booked")
+              : t("slot_booked_title", "Appointment Booked!")}
           </h1>
           <p className="text-muted-foreground mb-6">
-            {t("slot_booked_subtitle", "Your appointment is confirmed. We'll send a confirmation email with all the details.")}
+            {alreadyBooked
+              ? t("slot_booked_existing_subtitle", "This booking link has already been used and your appointment is already confirmed.")
+              : t("slot_booked_subtitle", "Your appointment is confirmed. We'll send a confirmation email with all the details.")}
           </p>
           {bookedSlot && (
             <div className="p-4 rounded-lg border border-border bg-card mb-6 text-left">
