@@ -20,6 +20,7 @@ interface FormField {
 }
 
 const BookingForm = () => {
+  const t = useUiText();
   const [fields, setFields] = useState<FormField[]>([]);
   const [formData, setFormData] = useState<Record<string, string | boolean>>({});
   const [clientInfo, setClientInfo] = useState({ name: "", email: "", phone: "" });
@@ -204,13 +205,13 @@ const BookingForm = () => {
         <div className="container mx-auto max-w-2xl">
           <div className="mb-8 animate-fade-in">
             <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase mb-2">
-              Step 2 of 2
+              {t("form_step", "Step 2 of 2")}
             </p>
             <h1 className="text-3xl font-bold tracking-tight mb-2">
-              Tell Us About Your Idea
+              {t("form_title", "Tell Us About Your Idea")}
             </h1>
             <p className="text-muted-foreground">
-              Fill out the form below with details about your tattoo concept.
+              {t("form_subtitle", "Fill out the form below with details about your tattoo concept.")}
             </p>
           </div>
 
@@ -218,7 +219,7 @@ const BookingForm = () => {
             {/* Contact Info */}
             <section className="space-y-4 animate-fade-in stagger-1">
               <h2 className="text-lg font-semibold border-b border-border pb-2">
-                Contact Information
+                {t("form_contact_heading", "Contact Information")}
               </h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -264,7 +265,7 @@ const BookingForm = () => {
             {/* Dynamic Fields */}
             <section className="space-y-4 animate-fade-in stagger-2">
               <h2 className="text-lg font-semibold border-b border-border pb-2">
-                Tattoo Details
+                {t("form_details_heading", "Tattoo Details")}
               </h2>
               <div className="space-y-6">
                 {fields.map((field) => (
@@ -336,10 +337,10 @@ const BookingForm = () => {
             {/* Image Upload */}
             <section className="space-y-4 animate-fade-in stagger-3">
               <h2 className="text-lg font-semibold border-b border-border pb-2">
-                Reference Images *
+                {t("form_images_heading", "Reference Images *")}
               </h2>
               <p className="text-sm text-muted-foreground">
-                Upload reference images, inspiration, or sketches of your idea.
+                {t("form_images_subtitle", "Upload reference images, inspiration, or sketches of your idea.")}
               </p>
               
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -388,12 +389,11 @@ const BookingForm = () => {
                     Submitting...
                   </>
                 ) : (
-                  "Submit Booking Request"
+                  t("form_submit", "Submit Booking Request")
                 )}
               </Button>
               <p className="text-xs text-center text-muted-foreground mt-4">
-                By submitting, you agree to our booking policies.
-                Your request will be reviewed within 24-48 hours.
+                {t("form_submit_disclaimer", "By submitting, you agree to our booking policies. Your request will be reviewed within 24-48 hours.")}
               </p>
             </div>
           </form>
