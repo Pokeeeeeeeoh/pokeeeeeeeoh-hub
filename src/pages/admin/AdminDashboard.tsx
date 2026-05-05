@@ -607,7 +607,12 @@ const AdminDashboard = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Decline Dialog */}
+        <ImageLightbox
+          images={selectedRequest?.images || []}
+          startIndex={lightbox.index}
+          open={lightbox.open}
+          onOpenChange={(o) => setLightbox((p) => ({ ...p, open: o }))}
+        />
         <Dialog open={showDeclineDialog} onOpenChange={setShowDeclineDialog}>
           <DialogContent>
             <DialogHeader>
