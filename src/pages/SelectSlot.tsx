@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Calendar, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, FastForward } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, startOfWeek, addDays, isSameDay, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, endOfWeek, isSameMonth } from "date-fns";
@@ -42,23 +45,32 @@ const SelectSlot = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get("token");
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [request, setRequest] = useState<BookingRequest | null>(null);
   const [slots, setSlots] = useState<AvailableSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [confirmedSlot, setConfirmedSlot] = useState<ConfirmedSlot | null>(null);
+  const [confirmedClient, setConfirmedClient] = useState<{ name: string | null; email: string | null } | null>(null);
   const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [booking, setBooking] = useState(false);
   const [booked, setBooked] = useState(false);
   const [alreadyBooked, setAlreadyBooked] = useState(false);
 
+  // Open-link details form (only used when no token)
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [notes, setNotes] = useState("");
+
   useEffect(() => {
-    async function verifyToken() {
+    async function init() {
       if (!token) {
-        setError("Invalid or missing booking link.");
+        // Open-calendar mode — no token, anyone can pick a slot and enter details
+        await fetchSlots();
         setLoading(false);
         return;
       }
@@ -118,7 +130,7 @@ const SelectSlot = () => {
       setLoading(false);
     }
 
-    verifyToken();
+    init();
   }, [token]);
 
   const fetchSlots = async () => {
@@ -135,8 +147,32 @@ const SelectSlot = () => {
     }
   };
 
+  const validateDetails = () => {
+    if (!name.trim()) return "Please enter your name.";
+    if (!email.trim()) return "Please enter your email.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return "Please enter a valid email address.";
+    return null;
+  };
+
+  const handlePickSlot = () => {
+    if (!selectedSlot) return;
+    if (token) {
+      handleBookSlot();
+    } else {
+      // Show details form first
+      setDetailsOpen(true);
+    }
+  };
+
   const handleBookSlot = async () => {
-    if (!selectedSlot || !request) return;
+    if (!selectedSlot) return;
+    if (!token) {
+      const err = validateDetails();
+      if (err) {
+        toast.error(err);
+        return;
+      }
+    }
 
     setBooking(true);
 
@@ -144,12 +180,20 @@ const SelectSlot = () => {
       const slot = slots.find((s) => s.id === selectedSlot);
       if (!slot) throw new Error("Slot not found");
 
+      const payload: Record<string, unknown> = { slotId: selectedSlot };
+      if (token) {
+        payload.token = token;
+      } else {
+        payload.name = name.trim();
+        payload.email = email.trim();
+        payload.phone = phone.trim();
+        payload.notes = notes.trim();
+      }
+
       const { data: result, error: fnError } = await supabase.functions.invoke("book-slot", {
-        body: { token, slotId: selectedSlot },
+        body: payload,
       });
 
-      // supabase.functions.invoke does NOT parse the response body when status >= 400,
-      // it just returns a generic FunctionsHttpError. Pull the real message out of the response.
       if (fnError) {
         let detail = fnError.message;
         const ctx = (fnError as any)?.context;
@@ -167,6 +211,12 @@ const SelectSlot = () => {
         throw new Error(detail);
       }
       if (result?.error) throw new Error(result.error);
+
+      const resultClient = {
+        name: result?.client_name ?? request?.clients?.name ?? name ?? null,
+        email: result?.client_email ?? request?.clients?.email ?? email ?? null,
+      };
+      setConfirmedClient(resultClient);
 
       if (result?.alreadyBooked) {
         if (result?.start_time && result?.end_time) {
@@ -190,7 +240,6 @@ const SelectSlot = () => {
     } catch (err) {
       console.error("Booking error:", err);
       const msg = err instanceof Error ? err.message : "Unknown error";
-      // Slot got taken between the page load and this click — refresh the list
       if (/no longer available|Slot not found/i.test(msg)) {
         await fetchSlots();
         setSelectedSlot(null);
@@ -218,7 +267,7 @@ const SelectSlot = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="animate-pulse text-muted-foreground">Verifying your booking link...</div>
+        <div className="animate-pulse text-muted-foreground">Loading available times...</div>
       </div>
     );
   }
@@ -240,6 +289,7 @@ const SelectSlot = () => {
 
   if (booked) {
     const bookedSlot = confirmedSlot ?? slots.find(s => s.id === selectedSlot);
+    const confirmEmail = confirmedClient?.email ?? request?.clients?.email ?? email;
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="max-w-md text-center">
@@ -254,7 +304,7 @@ const SelectSlot = () => {
           <p className="text-muted-foreground mb-6">
             {alreadyBooked
               ? t("slot_booked_existing_subtitle", "This booking link has already been used and your appointment is already confirmed.")
-              : t("slot_booked_subtitle", `Your appointment is confirmed. A confirmation email has been sent to ${request?.clients?.email ?? "your email"}.`)}
+              : `Your appointment is confirmed. A confirmation email has been sent to ${confirmEmail ?? "your email"}.`}
           </p>
           {bookedSlot && (
             <div className="p-4 rounded-lg border border-border bg-card mb-6 text-left">
@@ -286,13 +336,15 @@ const SelectSlot = () => {
         <div className="max-w-4xl mx-auto">
           <h1 className="text-xl font-semibold">{t("slot_title", "Select Your Appointment")}</h1>
           <p className="text-sm text-muted-foreground">
-            {t("slot_subtitle", "Choose from the available slots below. This booking link is already connected to your saved details.")}
+            {token
+              ? t("slot_subtitle", "Choose from the available slots below. This booking link is already connected to your saved details.")
+              : "Pick a time that works for you. You'll enter your details on the next step."}
           </p>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto py-6 px-4 pb-32">
-        {request?.clients && (
+        {token && request?.clients && (
           <div className="mb-6 rounded-lg border border-border bg-card p-4">
             <p className="text-sm font-medium">Booking for {request.clients.name}</p>
             <p className="text-sm text-muted-foreground">
@@ -432,6 +484,34 @@ const SelectSlot = () => {
           </p>
         )}
 
+        {/* Details form (open-link mode only) */}
+        {!token && detailsOpen && selectedSlot && (
+          <div className="rounded-lg border border-border bg-card p-4 mb-8 space-y-4">
+            <div>
+              <h2 className="font-medium">Your details</h2>
+              <p className="text-sm text-muted-foreground">
+                If your email matches an existing booking request, we'll link them. Otherwise we'll create a new client profile.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="name">Name *</Label>
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Optional" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Anything we should know? (optional)" />
+            </div>
+          </div>
+        )}
+
         {/* Booking Action */}
         {selectedSlot && (
           <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background p-4 z-50">
@@ -452,9 +532,15 @@ const SelectSlot = () => {
                   );
                 })()}
               </div>
-              <Button onClick={handleBookSlot} disabled={booking} className="shrink-0">
-                {booking ? "Booking..." : "Confirm"}
-              </Button>
+              {!token && !detailsOpen ? (
+                <Button onClick={handlePickSlot} className="shrink-0">
+                  Continue
+                </Button>
+              ) : (
+                <Button onClick={handleBookSlot} disabled={booking} className="shrink-0">
+                  {booking ? "Booking..." : "Confirm"}
+                </Button>
+              )}
             </div>
           </div>
         )}
