@@ -118,14 +118,23 @@ const AdminSettings = () => {
   const persistUiTexts = async () => {
     setSaving(true);
     try {
-      await Promise.all(
+      const results = await Promise.all(
         uiTexts.map((u) =>
-          supabase.from("ui_text").update({ value: u.value }).eq("id", u.id)
+          supabase
+            .from("ui_text")
+            .update({ value: u.value })
+            .eq("id", u.id)
+            .select("id")
         )
       );
+      const failed = results.find((r) => r.error);
+      if (failed?.error) throw failed.error;
+      const noRows = results.find((r) => !r.data || r.data.length === 0);
+      if (noRows) throw new Error("No rows updated — admin permission missing");
       toast.success("Page text saved");
-    } catch {
-      toast.error("Failed to save page text");
+    } catch (err: any) {
+      console.error("Save UI text error:", err);
+      toast.error(err?.message || "Failed to save page text");
     } finally {
       setSaving(false);
     }
@@ -134,7 +143,7 @@ const AdminSettings = () => {
   const handleSaveSiteSettings = async () => {
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("site_settings")
         .update({
           site_name: siteSettings.site_name,
@@ -142,13 +151,17 @@ const AdminSettings = () => {
           email: siteSettings.email,
           address: siteSettings.address,
         })
-        .eq("id", siteSettings.id);
+        .eq("id", siteSettings.id)
+        .select();
 
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("No rows updated — admin permission missing");
+      }
       toast.success("Homepage settings saved");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Save error:", err);
-      toast.error("Failed to save settings");
+      toast.error(err?.message || "Failed to save settings");
     } finally {
       setSaving(false);
     }
@@ -157,25 +170,31 @@ const AdminSettings = () => {
   const handleSaveFormConfig = async () => {
     setSaving(true);
     try {
-      const { data: existingConfig } = await supabase
+      const { data: existingConfig, error: fetchErr } = await supabase
         .from("form_config")
         .select("id")
         .single();
 
-      if (existingConfig) {
-        await supabase
-          .from("form_config")
-          .update({
-            info_content: infoContent,
-            fields: JSON.parse(JSON.stringify(fields)),
-          })
-          .eq("id", existingConfig.id);
-      }
+      if (fetchErr) throw fetchErr;
+      if (!existingConfig) throw new Error("Form config row missing");
 
+      const { data, error } = await supabase
+        .from("form_config")
+        .update({
+          info_content: infoContent,
+          fields: JSON.parse(JSON.stringify(fields)),
+        })
+        .eq("id", existingConfig.id)
+        .select();
+
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("No rows updated — admin permission missing");
+      }
       toast.success("Form settings saved");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Save error:", err);
-      toast.error("Failed to save settings");
+      toast.error(err?.message || "Failed to save settings");
     } finally {
       setSaving(false);
     }
