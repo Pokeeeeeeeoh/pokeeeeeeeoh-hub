@@ -9,9 +9,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { token, slotId } = await req.json();
-    if (!token || !slotId) {
-      return new Response(JSON.stringify({ error: "Missing token or slotId" }), {
+    const body = await req.json();
+    const { token, slotId, name, email, phone, notes } = body ?? {};
+
+    if (!slotId) {
+      return new Response(JSON.stringify({ error: "Missing slotId" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -23,18 +25,90 @@ Deno.serve(async (req) => {
     const projectUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verify request via token
-    const { data: request, error: reqErr } = await supabase
-      .from("booking_requests")
-      .select("id, client_id, status, clients(name, email)")
-      .eq("approval_token", token)
-      .single();
-    if (reqErr || !request) throw new Error("Invalid token");
+    // Resolve client + booking request — either via token (legacy approval link)
+    // or by email (open booking link).
+    let request: { id: string; client_id: string; status: string; clients: { name: string; email: string } | null } | null = null;
 
-    if (request.status !== "approved" && request.status !== "booked") {
-      throw new Error("Request is not approved");
+    if (token) {
+      const { data, error } = await supabase
+        .from("booking_requests")
+        .select("id, client_id, status, clients(name, email)")
+        .eq("approval_token", token)
+        .single();
+      if (error || !data) throw new Error("Invalid token");
+      if (data.status !== "approved" && data.status !== "booked") {
+        throw new Error("Request is not approved");
+      }
+      request = data as any;
+    } else {
+      const cleanEmail = (email ?? "").trim().toLowerCase();
+      const cleanName = (name ?? "").trim();
+      const cleanPhone = (phone ?? "").trim() || null;
+      const cleanNotes = (notes ?? "").trim() || null;
+
+      if (!cleanEmail || !cleanName) {
+        throw new Error("Name and email are required");
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+        throw new Error("Invalid email address");
+      }
+
+      // Find or create client by email
+      const { data: existingClient } = await supabase
+        .from("clients")
+        .select("id, name, email")
+        .ilike("email", cleanEmail)
+        .maybeSingle();
+
+      let clientId: string;
+      let clientName: string;
+      let clientEmail: string;
+
+      if (existingClient) {
+        clientId = existingClient.id;
+        clientName = existingClient.name;
+        clientEmail = existingClient.email;
+        // Optionally update phone if provided and missing — keep simple, don't overwrite.
+        if (cleanPhone) {
+          await supabase
+            .from("clients")
+            .update({ phone: cleanPhone })
+            .eq("id", clientId)
+            .is("phone", null);
+        }
+      } else {
+        const { data: newClient, error: clientErr } = await supabase
+          .from("clients")
+          .insert({ name: cleanName, email: cleanEmail, phone: cleanPhone })
+          .select("id, name, email")
+          .single();
+        if (clientErr || !newClient) throw new Error("Could not create client");
+        clientId = newClient.id;
+        clientName = newClient.name;
+        clientEmail = newClient.email;
+      }
+
+      // Create a booking_request marked as approved/booked so appointment is linked
+      const { data: newReq, error: reqErr } = await supabase
+        .from("booking_requests")
+        .insert({
+          client_id: clientId,
+          status: "approved",
+          form_responses: { source: "open_calendar_link", notes: cleanNotes },
+        })
+        .select("id, client_id, status")
+        .single();
+      if (reqErr || !newReq) throw new Error("Could not create booking request");
+
+      request = {
+        id: newReq.id,
+        client_id: newReq.client_id,
+        status: newReq.status,
+        clients: { name: clientName, email: clientEmail },
+      };
     }
 
+    if (!request) throw new Error("Could not resolve booking request");
 
     // Verify slot is available
     const { data: slot, error: slotErr } = await supabase
@@ -109,7 +183,14 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, slot_id: slot.id, start_time: slot.start_time, end_time: slot.end_time }),
+      JSON.stringify({
+        success: true,
+        slot_id: slot.id,
+        start_time: slot.start_time,
+        end_time: slot.end_time,
+        client_name: request.clients?.name ?? null,
+        client_email: request.clients?.email ?? null,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
