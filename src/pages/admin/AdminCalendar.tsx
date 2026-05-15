@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import {
   format,
@@ -35,6 +36,7 @@ import {
   Mail,
   Phone,
   Copy,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -180,6 +182,77 @@ const AdminCalendar = () => {
   const [repeatingDay, setRepeatingDay] = useState(false);
   const [lightbox, setLightbox] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
 
+  // Booking edit state
+  const [editingBooking, setEditingBooking] = useState(false);
+  const [editClient, setEditClient] = useState({ name: "", email: "", phone: "" });
+  const [editResponses, setEditResponses] = useState<Record<string, string>>({});
+  const [editAdminNotes, setEditAdminNotes] = useState("");
+  const [savingBooking, setSavingBooking] = useState(false);
+
+  const startEditBooking = () => {
+    const appt = selectedSlot?.appointments?.[0];
+    if (!appt) return;
+    const c = appt.clients ?? { name: "", email: "", phone: "" };
+    setEditClient({ name: c.name ?? "", email: c.email ?? "", phone: c.phone ?? "" });
+    const responses = (appt.booking_requests?.form_responses as Record<string, unknown>) || {};
+    const stringified: Record<string, string> = {};
+    Object.entries(responses).forEach(([k, v]) => {
+      if (k === "manual_booking") return;
+      stringified[k] = typeof v === "string" ? v : v == null ? "" : JSON.stringify(v);
+    });
+    if (Object.keys(stringified).length === 0) {
+      stringified["tattoo_description"] = "";
+    }
+    setEditResponses(stringified);
+    setEditAdminNotes(appt.booking_requests?.admin_notes ?? "");
+    setEditingBooking(true);
+  };
+
+  const saveBookingEdit = async () => {
+    const appt = selectedSlot?.appointments?.[0];
+    if (!appt) return;
+    setSavingBooking(true);
+    try {
+      const { error: cErr } = await supabase
+        .from("clients")
+        .update({
+          name: editClient.name.trim(),
+          email: editClient.email.trim(),
+          phone: editClient.phone.trim() || null,
+        })
+        .eq("id", appt.client_id);
+      if (cErr) throw cErr;
+
+      if (appt.booking_request_id) {
+        const cleaned: Record<string, string> = {};
+        Object.entries(editResponses).forEach(([k, v]) => {
+          if (k.trim()) cleaned[k] = v;
+        });
+        const { error: rErr } = await supabase
+          .from("booking_requests")
+          .update({
+            form_responses: cleaned as never,
+            admin_notes: editAdminNotes.trim() || null,
+          })
+          .eq("id", appt.booking_request_id);
+        if (rErr) throw rErr;
+      }
+
+      supabase.functions
+        .invoke("sync-gcal-event", { body: { appointmentId: appt.id } })
+        .catch((e) => console.warn("gcal resync failed", e));
+
+      toast.success("Booking updated");
+      setEditingBooking(false);
+      await fetchSlots();
+    } catch (err) {
+      console.error("Edit booking failed", err);
+      toast.error("Could not save changes");
+    } finally {
+      setSavingBooking(false);
+    }
+  };
+
   useEffect(() => {
     fetchSlots();
   }, [currentWeekStart, currentDate, viewMode]);
@@ -187,6 +260,10 @@ const AdminCalendar = () => {
   useEffect(() => {
     fetchClients();
   }, []);
+
+  useEffect(() => {
+    setEditingBooking(false);
+  }, [selectedSlot?.id]);
 
   const fetchSlots = async () => {
     let startDate: Date;
@@ -1311,50 +1388,114 @@ const AdminCalendar = () => {
                   )}
                 </div>
 
-                {selectedSlot.is_booked && getClientFromSlot(selectedSlot) && (
-                  <div className="space-y-3 p-4 border border-green-500/30 bg-green-500/5 rounded-lg">
-                    <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                      <User className="h-4 w-4" />
-                      <span className="font-medium">{getClientFromSlot(selectedSlot)?.name}</span>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(getClientFromSlot(selectedSlot)?.email || "");
-                          toast.success("Email copied");
-                        }}
-                        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full"
-                      >
-                        <Mail className="h-3.5 w-3.5" />
-                        <span>{getClientFromSlot(selectedSlot)?.email}</span>
-                        <Copy className="h-3 w-3 ml-auto opacity-50" />
-                      </button>
-                      {getClientFromSlot(selectedSlot)?.phone && (
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(getClientFromSlot(selectedSlot)?.phone || "");
-                            toast.success("Phone copied");
-                          }}
-                          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full"
-                        >
-                          <Phone className="h-3.5 w-3.5" />
-                          <span>{getClientFromSlot(selectedSlot)?.phone}</span>
-                          <Copy className="h-3 w-3 ml-auto opacity-50" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Booking details for booked slot */}
-                {selectedSlot.is_booked && (() => {
-                  const appt = selectedSlot.appointments?.[0];
-                  const br = appt?.booking_requests;
+                {selectedSlot.is_booked && selectedSlot.appointments?.[0] && (() => {
+                  const appt = selectedSlot.appointments![0];
+                  const client = appt.clients;
+                  const br = appt.booking_requests;
                   const responses = (br?.form_responses as Record<string, unknown>) || {};
                   const images = br?.images || [];
                   const responseEntries = Object.entries(responses).filter(([k]) => k !== "manual_booking");
+
+                  if (editingBooking) {
+                    return (
+                      <div className="space-y-4 p-4 border border-primary/30 bg-primary/5 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-medium">Edit booking</h3>
+                          <Button size="sm" variant="ghost" onClick={() => setEditingBooking(false)}>
+                            Cancel
+                          </Button>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-xs">Name</Label>
+                          <Input value={editClient.name} onChange={(e) => setEditClient({ ...editClient, name: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Email</Label>
+                          <Input type="email" value={editClient.email} onChange={(e) => setEditClient({ ...editClient, email: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Phone</Label>
+                          <Input value={editClient.phone} onChange={(e) => setEditClient({ ...editClient, phone: e.target.value })} />
+                        </div>
+
+                        {br && (
+                          <>
+                            <div className="space-y-3 pt-2 border-t border-border">
+                              <Label className="text-xs">Tattoo details</Label>
+                              {Object.entries(editResponses).map(([key, value]) => (
+                                <div key={key} className="space-y-1">
+                                  <p className="text-[11px] text-muted-foreground capitalize">{key.replace(/_/g, " ")}</p>
+                                  <Textarea
+                                    value={value}
+                                    onChange={(e) => setEditResponses({ ...editResponses, [key]: e.target.value })}
+                                    rows={3}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label className="text-xs">Admin notes</Label>
+                              <Textarea
+                                value={editAdminNotes}
+                                onChange={(e) => setEditAdminNotes(e.target.value)}
+                                rows={3}
+                                placeholder="Internal notes (not visible to client)"
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        <Button onClick={saveBookingEdit} disabled={savingBooking} className="w-full">
+                          {savingBooking ? "Saving…" : "Save changes"}
+                        </Button>
+                      </div>
+                    );
+                  }
+
                   return (
                     <>
+                      {client && (
+                        <div className="space-y-3 p-4 border border-green-500/30 bg-green-500/5 rounded-lg">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 text-green-700 dark:text-green-400 min-w-0">
+                              <User className="h-4 w-4 shrink-0" />
+                              <span className="font-medium truncate">{client.name}</span>
+                            </div>
+                            <Button size="sm" variant="outline" onClick={startEditBooking} className="h-7 px-2 text-xs">
+                              <Pencil className="h-3 w-3 mr-1" /> Edit
+                            </Button>
+                          </div>
+                          <div className="space-y-2 text-sm">
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(client.email || "");
+                                toast.success("Email copied");
+                              }}
+                              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full"
+                            >
+                              <Mail className="h-3.5 w-3.5" />
+                              <span className="truncate">{client.email}</span>
+                              <Copy className="h-3 w-3 ml-auto opacity-50 shrink-0" />
+                            </button>
+                            {client.phone && (
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(client.phone || "");
+                                  toast.success("Phone copied");
+                                }}
+                                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full"
+                              >
+                                <Phone className="h-3.5 w-3.5" />
+                                <span>{client.phone}</span>
+                                <Copy className="h-3 w-3 ml-auto opacity-50 shrink-0" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {responseEntries.length > 0 && (
                         <div>
                           <h3 className="text-sm font-medium text-muted-foreground mb-2">Tattoo Details</h3>
@@ -1394,6 +1535,7 @@ const AdminCalendar = () => {
                     </>
                   );
                 })()}
+
 
                 {!selectedSlot.is_booked && (
                   <div className="space-y-4">
