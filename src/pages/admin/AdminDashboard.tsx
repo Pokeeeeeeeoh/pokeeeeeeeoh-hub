@@ -360,7 +360,7 @@ const AdminDashboard = () => {
                       {format(parseISO(request.created_at), "MMM d, yyyy 'at' h:mm a")}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     {request.status === "new" && (
                       <>
                         <Button
