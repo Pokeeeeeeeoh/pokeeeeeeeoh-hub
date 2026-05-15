@@ -158,7 +158,7 @@ const AdminClients = () => {
 
         {/* Client Detail Dialog */}
         <Dialog open={!!selectedClient} onOpenChange={() => setSelectedClient(null)}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Client Details</DialogTitle>
             </DialogHeader>
