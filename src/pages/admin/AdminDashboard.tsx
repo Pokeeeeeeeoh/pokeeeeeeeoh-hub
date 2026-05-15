@@ -328,7 +328,16 @@ const AdminDashboard = () => {
             {filteredRequests.map((request) => (
               <div
                 key={request.id}
-                className="p-4 rounded-lg border border-border bg-card hover:bg-card/80 transition-colors"
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedRequest(request)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelectedRequest(request);
+                  }
+                }}
+                className="p-4 rounded-lg border border-border bg-card hover:bg-card/80 transition-colors cursor-pointer"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
