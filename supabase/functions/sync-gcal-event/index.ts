@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
       (client as any).notes ||
       "";
 
-    const summary = `Tattoo — ${client.name ?? "Client"}`;
+    const summary = `${client.name ?? "Client"} — Tattoo`;
     const descriptionParts = [
       client.name ? `Name: ${client.name}` : null,
       client.phone ? `Phone: ${client.phone}` : null,
