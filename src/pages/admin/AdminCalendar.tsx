@@ -1224,6 +1224,9 @@ const AdminCalendar = () => {
                     <div className="space-y-3">
                       <div className="space-y-1.5">
                         <Label className="text-xs">Weekdays</Label>
+                        <p className="text-[11px] text-muted-foreground">
+                          Slots will be created on every selected weekday {repeatMode === "until" ? "between this day and the end date" : "for the next N weeks"}.
+                        </p>
                         <div className="flex flex-wrap gap-1">
                           {WEEKDAYS.map((day) => (
                             <button
