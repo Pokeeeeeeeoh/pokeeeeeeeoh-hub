@@ -1200,8 +1200,8 @@ const AdminCalendar = () => {
                   <div className="grid grid-cols-2 gap-2">
                     {([
                       { v: "none", label: "Just this day" },
-                      { v: "weeks", label: "Next N weeks" },
-                      { v: "until", label: "Until date" },
+                      { v: "weeks", label: "Weekdays · next N weeks" },
+                      { v: "until", label: "Weekdays · until date" },
                       { v: "custom", label: "Custom dates" },
                     ] as const).map((opt) => (
                       <button
