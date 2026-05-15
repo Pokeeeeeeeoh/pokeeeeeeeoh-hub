@@ -180,6 +180,77 @@ const AdminCalendar = () => {
   const [repeatingDay, setRepeatingDay] = useState(false);
   const [lightbox, setLightbox] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
 
+  // Booking edit state
+  const [editingBooking, setEditingBooking] = useState(false);
+  const [editClient, setEditClient] = useState({ name: "", email: "", phone: "" });
+  const [editResponses, setEditResponses] = useState<Record<string, string>>({});
+  const [editAdminNotes, setEditAdminNotes] = useState("");
+  const [savingBooking, setSavingBooking] = useState(false);
+
+  const startEditBooking = () => {
+    const appt = selectedSlot?.appointments?.[0];
+    if (!appt) return;
+    const c = appt.clients ?? { name: "", email: "", phone: "" };
+    setEditClient({ name: c.name ?? "", email: c.email ?? "", phone: c.phone ?? "" });
+    const responses = (appt.booking_requests?.form_responses as Record<string, unknown>) || {};
+    const stringified: Record<string, string> = {};
+    Object.entries(responses).forEach(([k, v]) => {
+      if (k === "manual_booking") return;
+      stringified[k] = typeof v === "string" ? v : v == null ? "" : JSON.stringify(v);
+    });
+    if (Object.keys(stringified).length === 0) {
+      stringified["tattoo_description"] = "";
+    }
+    setEditResponses(stringified);
+    setEditAdminNotes(appt.booking_requests?.admin_notes ?? "");
+    setEditingBooking(true);
+  };
+
+  const saveBookingEdit = async () => {
+    const appt = selectedSlot?.appointments?.[0];
+    if (!appt) return;
+    setSavingBooking(true);
+    try {
+      const { error: cErr } = await supabase
+        .from("clients")
+        .update({
+          name: editClient.name.trim(),
+          email: editClient.email.trim(),
+          phone: editClient.phone.trim() || null,
+        })
+        .eq("id", appt.client_id);
+      if (cErr) throw cErr;
+
+      if (appt.booking_request_id) {
+        const cleaned: Record<string, string> = {};
+        Object.entries(editResponses).forEach(([k, v]) => {
+          if (k.trim()) cleaned[k] = v;
+        });
+        const { error: rErr } = await supabase
+          .from("booking_requests")
+          .update({
+            form_responses: cleaned as never,
+            admin_notes: editAdminNotes.trim() || null,
+          })
+          .eq("id", appt.booking_request_id);
+        if (rErr) throw rErr;
+      }
+
+      supabase.functions
+        .invoke("sync-gcal-event", { body: { appointmentId: appt.id } })
+        .catch((e) => console.warn("gcal resync failed", e));
+
+      toast.success("Booking updated");
+      setEditingBooking(false);
+      await fetchSlots();
+    } catch (err) {
+      console.error("Edit booking failed", err);
+      toast.error("Could not save changes");
+    } finally {
+      setSavingBooking(false);
+    }
+  };
+
   useEffect(() => {
     fetchSlots();
   }, [currentWeekStart, currentDate, viewMode]);
