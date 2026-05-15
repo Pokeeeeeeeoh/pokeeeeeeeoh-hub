@@ -88,6 +88,7 @@ Deno.serve(async (req) => {
       formResponses.description ||
       formResponses.notes ||
       formResponses.idea ||
+      (client as any).notes ||
       "";
 
     const summary = `Tattoo — ${client.name ?? "Client"}`;
