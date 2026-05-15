@@ -261,6 +261,10 @@ const AdminCalendar = () => {
     fetchClients();
   }, []);
 
+  useEffect(() => {
+    setEditingBooking(false);
+  }, [selectedSlot?.id]);
+
   const fetchSlots = async () => {
     let startDate: Date;
     let endDate: Date;
