@@ -36,6 +36,7 @@ import {
   Mail,
   Phone,
   Copy,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
