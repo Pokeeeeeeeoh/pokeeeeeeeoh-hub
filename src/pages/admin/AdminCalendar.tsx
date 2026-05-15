@@ -384,15 +384,20 @@ const AdminCalendar = () => {
 
       if (brError) throw brError;
 
-      const { error: apptError } = await supabase.from("appointments").insert({
+      const { data: apptRow, error: apptError } = await supabase.from("appointments").insert({
         client_id: clientId,
         slot_id: selectedSlot.id,
         booking_request_id: bookingRequest.id,
         start_time: selectedSlot.start_time,
         end_time: selectedSlot.end_time,
-      });
+      }).select("id").single();
 
       if (apptError) throw apptError;
+
+      if (apptRow?.id) {
+        supabase.functions.invoke("sync-gcal-event", { body: { appointmentId: apptRow.id } })
+          .catch((e) => console.warn("gcal sync failed", e));
+      }
 
       const { error: slotError } = await supabase
         .from("availability_slots")

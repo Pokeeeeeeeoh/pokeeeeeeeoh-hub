@@ -41,6 +41,7 @@ export type Database = {
           client_id: string
           created_at: string
           end_time: string
+          google_event_id: string | null
           id: string
           reminder_sent: boolean
           slot_id: string | null
@@ -51,6 +52,7 @@ export type Database = {
           client_id: string
           created_at?: string
           end_time: string
+          google_event_id?: string | null
           id?: string
           reminder_sent?: boolean
           slot_id?: string | null
@@ -61,6 +63,7 @@ export type Database = {
           client_id?: string
           created_at?: string
           end_time?: string
+          google_event_id?: string | null
           id?: string
           reminder_sent?: boolean
           slot_id?: string | null
@@ -321,6 +324,7 @@ export type Database = {
         Row: {
           address: string
           email: string
+          google_calendar_id: string | null
           id: string
           site_name: string
           tagline: string
@@ -329,6 +333,7 @@ export type Database = {
         Insert: {
           address?: string
           email?: string
+          google_calendar_id?: string | null
           id?: string
           site_name?: string
           tagline?: string
@@ -337,6 +342,7 @@ export type Database = {
         Update: {
           address?: string
           email?: string
+          google_calendar_id?: string | null
           id?: string
           site_name?: string
           tagline?: string
