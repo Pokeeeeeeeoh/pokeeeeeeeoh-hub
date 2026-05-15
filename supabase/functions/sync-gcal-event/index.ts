@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     // Load appointment with client + booking_request
     const { data: appt, error: apptErr } = await supabase
       .from("appointments")
-      .select("id, start_time, end_time, google_event_id, booking_request_id, clients(name, email, phone), booking_requests(form_responses)")
+      .select("id, start_time, end_time, google_event_id, booking_request_id, clients(name, email, phone, notes), booking_requests(form_responses)")
       .eq("id", appointmentId)
       .single();
     if (apptErr || !appt) throw new Error("Appointment not found");
