@@ -134,14 +134,27 @@ Deno.serve(async (req) => {
     }
 
     // Create appointment
-    const { error: apptErr } = await supabase.from("appointments").insert({
+    const { data: apptRow, error: apptErr } = await supabase.from("appointments").insert({
       booking_request_id: request.id,
       client_id: request.client_id,
       slot_id: slot.id,
       start_time: slot.start_time,
       end_time: slot.end_time,
-    });
+    }).select("id").single();
     if (apptErr) throw apptErr;
+
+    // Fire-and-forget: push to Google Calendar
+    if (apptRow?.id) {
+      fetch(`${projectUrl}/functions/v1/sync-gcal-event`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({ appointmentId: apptRow.id }),
+      }).catch((e) => console.warn("gcal sync invoke failed", e));
+    }
 
     // Mark slot booked
     await supabase.from("availability_slots").update({ is_booked: true }).eq("id", slotId);
