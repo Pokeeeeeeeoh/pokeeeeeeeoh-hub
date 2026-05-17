@@ -19,6 +19,20 @@ interface FormField {
   options?: string[];
 }
 
+type ContactKey = "name" | "email" | "phone";
+interface ContactFieldConfig {
+  label: string;
+  required: boolean;
+  enabled: boolean;
+}
+type ContactFields = Record<ContactKey, ContactFieldConfig>;
+
+const DEFAULT_CONTACT_FIELDS: ContactFields = {
+  name: { label: "Name", required: true, enabled: true },
+  email: { label: "Email", required: true, enabled: true },
+  phone: { label: "Phone", required: false, enabled: true },
+};
+
 const BookingForm = () => {
   const t = useUiText();
   const [fields, setFields] = useState<FormField[]>([]);
