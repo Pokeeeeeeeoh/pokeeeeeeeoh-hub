@@ -111,11 +111,6 @@ const BookingForm = () => {
       return;
     }
 
-    if (images.length === 0) {
-      toast.error("Please upload at least one reference image.");
-      return;
-    }
-
     setSubmitting(true);
 
     try {
