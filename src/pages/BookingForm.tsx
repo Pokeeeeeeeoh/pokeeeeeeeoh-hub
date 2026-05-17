@@ -36,6 +36,7 @@ const DEFAULT_CONTACT_FIELDS: ContactFields = {
 const BookingForm = () => {
   const t = useUiText();
   const [fields, setFields] = useState<FormField[]>([]);
+  const [contactFields, setContactFields] = useState<ContactFields>(DEFAULT_CONTACT_FIELDS);
   const [formData, setFormData] = useState<Record<string, string | boolean>>({});
   const [clientInfo, setClientInfo] = useState({ name: "", email: "", phone: "" });
   const [images, setImages] = useState<File[]>([]);
@@ -48,14 +49,19 @@ const BookingForm = () => {
     async function fetchConfig() {
       const { data } = await supabase
         .from("form_config")
-        .select("fields")
+        .select("fields, contact_fields")
         .single();
-      
+
       if (data?.fields) {
-        const parsedFields = typeof data.fields === 'string' 
-          ? JSON.parse(data.fields) 
+        const parsedFields = typeof data.fields === 'string'
+          ? JSON.parse(data.fields)
           : data.fields;
         setFields(parsedFields as FormField[]);
+      }
+      if ((data as any)?.contact_fields) {
+        const raw = (data as any).contact_fields;
+        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        setContactFields({ ...DEFAULT_CONTACT_FIELDS, ...(parsed || {}) });
       }
       setLoading(false);
     }
