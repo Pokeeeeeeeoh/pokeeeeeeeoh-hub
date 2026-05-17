@@ -710,51 +710,26 @@ const AdminSettings = () => {
             </div>
           </TabsContent>
 
-          {/* Page Text */}
+          {/* Live Preview / Page Text */}
           <TabsContent value="text" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Page Text</CardTitle>
+                <CardTitle>Live Preview</CardTitle>
                 <CardDescription>
-                  Edit every label, heading and button shown across the booking flow.
+                  A mirror of the public booking flow. Step through each page and click any text to edit it — changes save automatically.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {Array.from(new Set(uiTexts.map((u) => u.category))).map((cat) => (
-                  <div key={cat} className="space-y-3">
-                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                      {cat.replace(/_/g, " ")}
-                    </h3>
-                    {uiTexts
-                      .filter((u) => u.category === cat)
-                      .map((u) => (
-                        <div key={u.id} className="space-y-1">
-                          <Label className="text-xs">{u.label}</Label>
-                          {u.value.length > 60 ? (
-                            <Textarea
-                              value={u.value}
-                              rows={2}
-                              onChange={(e) => saveUiText(u.id, e.target.value)}
-                            />
-                          ) : (
-                            <Input
-                              value={u.value}
-                              onChange={(e) => saveUiText(u.id, e.target.value)}
-                            />
-                          )}
-                        </div>
-                      ))}
-                  </div>
-                ))}
+              <CardContent>
+                <LivePreviewEditor
+                  uiTexts={uiTexts}
+                  setUiTexts={setUiTexts}
+                  siteSettings={siteSettings}
+                  setSiteSettings={setSiteSettings}
+                  infoContent={infoContent}
+                  setInfoContent={setInfoContent}
+                />
               </CardContent>
             </Card>
-
-            <div className="flex justify-end">
-              <Button onClick={persistUiTexts} disabled={saving}>
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? "Saving..." : "Save Page Text"}
-              </Button>
-            </div>
           </TabsContent>
         </Tabs>
       </div>
