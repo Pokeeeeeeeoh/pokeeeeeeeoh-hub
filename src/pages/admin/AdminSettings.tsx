@@ -150,6 +150,14 @@ const AdminSettings = () => {
           ? JSON.parse(formRes.data.fields)
           : formRes.data.fields;
       setFields(parsedFields || []);
+
+      const rawContact = (formRes.data as any).contact_fields;
+      const parsedContact =
+        typeof rawContact === "string" ? JSON.parse(rawContact) : rawContact;
+      setContactFields({
+        ...DEFAULT_CONTACT_FIELDS,
+        ...(parsedContact || {}),
+      });
     }
 
     if (uiRes.data) setUiTexts(uiRes.data);
