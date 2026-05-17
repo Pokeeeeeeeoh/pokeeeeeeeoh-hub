@@ -113,15 +113,14 @@ const BookingInfo = () => {
                     <p className="mb-4 text-muted-foreground leading-relaxed">{children}</p>
                   ),
                   ul: ({ children }) => (
-                    <ul className="mb-4 space-y-2 text-muted-foreground">{children}</ul>
+                    <ul className="mb-4 space-y-2 text-muted-foreground list-disc pl-5 marker:text-primary">{children}</ul>
                   ),
                   ol: ({ children }) => (
-                    <ol className="mb-4 space-y-2 text-muted-foreground list-decimal list-inside">{children}</ol>
+                    <ol className="mb-4 space-y-2 text-muted-foreground list-decimal pl-5 marker:text-primary">{children}</ol>
                   ),
                   li: ({ children }) => (
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-1.5">•</span>
-                      <span>{children}</span>
+                    <li className="pl-1 leading-relaxed [&>p]:mb-0 [&>p]:inline">
+                      {children}
                     </li>
                   ),
                   strong: ({ children }) => (
