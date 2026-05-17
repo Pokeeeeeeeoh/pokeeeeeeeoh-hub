@@ -233,7 +233,25 @@ const AdminDashboard = () => {
         })
         .eq("id", selectedRequest.id);
 
-      toast.success("Request declined.");
+      const { error: emailError } = await supabase.functions.invoke("send-template-email", {
+        body: {
+          templateKey: "decline",
+          to: selectedRequest.clients.email,
+          bookingRequestId: selectedRequest.id,
+          vars: {
+            name: selectedRequest.clients.name,
+            reason: declineReason || "",
+          },
+        },
+      });
+
+      if (emailError) {
+        console.error("Decline email failed:", emailError);
+        toast.success("Request declined (email failed to send)");
+      } else {
+        toast.success("Request declined & email sent.");
+      }
+
       fetchRequests();
       setSelectedRequest(null);
       setShowDeclineDialog(false);

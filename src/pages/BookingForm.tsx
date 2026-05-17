@@ -111,11 +111,6 @@ const BookingForm = () => {
       return;
     }
 
-    if (images.length === 0) {
-      toast.error("Please upload at least one reference image.");
-      return;
-    }
-
     setSubmitting(true);
 
     try {
@@ -373,7 +368,7 @@ const BookingForm = () => {
             {/* Image Upload */}
             <section className="space-y-4 animate-fade-in stagger-3">
               <h2 className="text-lg font-semibold border-b border-border pb-2">
-                {t("form_images_heading", "Reference Images *")}
+                {t("form_images_heading", "Reference Images")}
               </h2>
               <p className="text-sm text-muted-foreground">
                 {t("form_images_subtitle", "Upload reference images, inspiration, or sketches of your idea.")}
