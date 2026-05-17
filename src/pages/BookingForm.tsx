@@ -106,6 +106,10 @@ const BookingForm = () => {
       toast.error("Please fill in your name and email.");
       return;
     }
+    if (contactFields.phone.enabled && contactFields.phone.required && !clientInfo.phone) {
+      toast.error(`Please fill in your ${contactFields.phone.label.toLowerCase()}.`);
+      return;
+    }
 
     if (images.length === 0) {
       toast.error("Please upload at least one reference image.");
