@@ -99,11 +99,14 @@ const AdminSettings = () => {
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const hasHydratedRef = useRef(false);
 
+  // Contact fields config
+  const [contactFields, setContactFields] = useState<ContactFields>(DEFAULT_CONTACT_FIELDS);
+
   useEffect(() => {
     fetchAllConfig();
   }, []);
 
-  // Autosave form config (fields + info content) with debounce
+  // Autosave form config (fields + info content + contact fields) with debounce
   useEffect(() => {
     if (!hasHydratedRef.current || !formConfigId) return;
     setAutoSaveStatus("saving");
@@ -113,6 +116,7 @@ const AdminSettings = () => {
         .update({
           info_content: infoContent,
           fields: JSON.parse(JSON.stringify(fields)),
+          contact_fields: JSON.parse(JSON.stringify(contactFields)),
         })
         .eq("id", formConfigId);
       if (error) {
@@ -125,7 +129,7 @@ const AdminSettings = () => {
       }
     }, 700);
     return () => clearTimeout(handle);
-  }, [fields, infoContent, formConfigId]);
+  }, [fields, infoContent, contactFields, formConfigId]);
 
   const fetchAllConfig = async () => {
     const [siteRes, formRes, uiRes] = await Promise.all([
