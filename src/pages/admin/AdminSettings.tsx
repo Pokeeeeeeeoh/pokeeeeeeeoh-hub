@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -81,10 +81,37 @@ const AdminSettings = () => {
 
   // New field state
   const [newFieldType, setNewFieldType] = useState<FormField["type"]>("text");
+  const [formConfigId, setFormConfigId] = useState<string>("");
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const hasHydratedRef = useRef(false);
 
   useEffect(() => {
     fetchAllConfig();
   }, []);
+
+  // Autosave form config (fields + info content) with debounce
+  useEffect(() => {
+    if (!hasHydratedRef.current || !formConfigId) return;
+    setAutoSaveStatus("saving");
+    const handle = setTimeout(async () => {
+      const { error } = await supabase
+        .from("form_config")
+        .update({
+          info_content: infoContent,
+          fields: JSON.parse(JSON.stringify(fields)),
+        })
+        .eq("id", formConfigId);
+      if (error) {
+        console.error("Autosave error:", error);
+        toast.error(error.message || "Failed to autosave form");
+        setAutoSaveStatus("idle");
+      } else {
+        setAutoSaveStatus("saved");
+        setTimeout(() => setAutoSaveStatus("idle"), 1500);
+      }
+    }, 700);
+    return () => clearTimeout(handle);
+  }, [fields, infoContent, formConfigId]);
 
   const fetchAllConfig = async () => {
     const [siteRes, formRes, uiRes] = await Promise.all([
@@ -98,6 +125,7 @@ const AdminSettings = () => {
     }
 
     if (formRes.data) {
+      setFormConfigId(formRes.data.id);
       setInfoContent(formRes.data.info_content || "");
       const parsedFields =
         typeof formRes.data.fields === "string"
@@ -109,6 +137,10 @@ const AdminSettings = () => {
     if (uiRes.data) setUiTexts(uiRes.data);
 
     setLoading(false);
+    // Allow autosave to fire after initial hydration completes
+    setTimeout(() => {
+      hasHydratedRef.current = true;
+    }, 50);
   };
 
   const saveUiText = async (id: string, value: string) => {
@@ -533,11 +565,13 @@ const AdminSettings = () => {
               </CardContent>
             </Card>
 
-            <div className="flex justify-end">
-              <Button onClick={handleSaveFormConfig} disabled={saving}>
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? "Saving..." : "Save Form"}
-              </Button>
+            <div className="flex justify-end items-center gap-2 text-sm text-muted-foreground">
+              <Save className="h-3.5 w-3.5" />
+              {autoSaveStatus === "saving"
+                ? "Saving…"
+                : autoSaveStatus === "saved"
+                ? "All changes saved"
+                : "Changes save automatically"}
             </div>
           </TabsContent>
 
@@ -562,11 +596,13 @@ const AdminSettings = () => {
               </CardContent>
             </Card>
 
-            <div className="flex justify-end">
-              <Button onClick={handleSaveFormConfig} disabled={saving}>
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? "Saving..." : "Save Content"}
-              </Button>
+            <div className="flex justify-end items-center gap-2 text-sm text-muted-foreground">
+              <Save className="h-3.5 w-3.5" />
+              {autoSaveStatus === "saving"
+                ? "Saving…"
+                : autoSaveStatus === "saved"
+                ? "All changes saved"
+                : "Changes save automatically"}
             </div>
           </TabsContent>
 
