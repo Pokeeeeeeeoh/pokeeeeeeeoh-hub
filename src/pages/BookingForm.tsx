@@ -306,7 +306,7 @@ const BookingForm = () => {
                           <SelectValue placeholder="Select an option" />
                         </SelectTrigger>
                         <SelectContent>
-                          {field.options.map((option) => (
+                          {field.options.filter((o) => o.trim()).map((option) => (
                             <SelectItem key={option} value={option}>
                               {option}
                             </SelectItem>

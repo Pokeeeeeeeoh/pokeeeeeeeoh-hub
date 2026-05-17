@@ -230,7 +230,8 @@ const AdminSettings = () => {
   };
 
   const updateFieldOptions = (index: number, optionsText: string) => {
-    const options = optionsText.split("\n").filter((o) => o.trim());
+    // Preserve empty lines while typing; only trim trailing whitespace per line.
+    const options = optionsText.split("\n").map((o) => o.replace(/\s+$/, ""));
     updateField(index, { options });
   };
 
