@@ -125,6 +125,7 @@ const AdminSettings = () => {
     }
 
     if (formRes.data) {
+      setFormConfigId(formRes.data.id);
       setInfoContent(formRes.data.info_content || "");
       const parsedFields =
         typeof formRes.data.fields === "string"
@@ -136,6 +137,10 @@ const AdminSettings = () => {
     if (uiRes.data) setUiTexts(uiRes.data);
 
     setLoading(false);
+    // Allow autosave to fire after initial hydration completes
+    setTimeout(() => {
+      hasHydratedRef.current = true;
+    }, 50);
   };
 
   const saveUiText = async (id: string, value: string) => {
