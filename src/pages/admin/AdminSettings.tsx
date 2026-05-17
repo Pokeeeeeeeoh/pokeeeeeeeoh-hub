@@ -81,10 +81,37 @@ const AdminSettings = () => {
 
   // New field state
   const [newFieldType, setNewFieldType] = useState<FormField["type"]>("text");
+  const [formConfigId, setFormConfigId] = useState<string>("");
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const hasHydratedRef = useRef(false);
 
   useEffect(() => {
     fetchAllConfig();
   }, []);
+
+  // Autosave form config (fields + info content) with debounce
+  useEffect(() => {
+    if (!hasHydratedRef.current || !formConfigId) return;
+    setAutoSaveStatus("saving");
+    const handle = setTimeout(async () => {
+      const { error } = await supabase
+        .from("form_config")
+        .update({
+          info_content: infoContent,
+          fields: JSON.parse(JSON.stringify(fields)),
+        })
+        .eq("id", formConfigId);
+      if (error) {
+        console.error("Autosave error:", error);
+        toast.error(error.message || "Failed to autosave form");
+        setAutoSaveStatus("idle");
+      } else {
+        setAutoSaveStatus("saved");
+        setTimeout(() => setAutoSaveStatus("idle"), 1500);
+      }
+    }, 700);
+    return () => clearTimeout(handle);
+  }, [fields, infoContent, formConfigId]);
 
   const fetchAllConfig = async () => {
     const [siteRes, formRes, uiRes] = await Promise.all([
