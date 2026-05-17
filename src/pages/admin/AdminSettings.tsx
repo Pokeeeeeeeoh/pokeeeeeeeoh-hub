@@ -565,11 +565,13 @@ const AdminSettings = () => {
               </CardContent>
             </Card>
 
-            <div className="flex justify-end">
-              <Button onClick={handleSaveFormConfig} disabled={saving}>
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? "Saving..." : "Save Form"}
-              </Button>
+            <div className="flex justify-end items-center gap-2 text-sm text-muted-foreground">
+              <Save className="h-3.5 w-3.5" />
+              {autoSaveStatus === "saving"
+                ? "Saving…"
+                : autoSaveStatus === "saved"
+                ? "All changes saved"
+                : "Changes save automatically"}
             </div>
           </TabsContent>
 
