@@ -301,18 +301,21 @@ export type Database = {
       }
       form_config: {
         Row: {
+          contact_fields: Json
           fields: Json
           id: string
           info_content: string | null
           updated_at: string
         }
         Insert: {
+          contact_fields?: Json
           fields?: Json
           id?: string
           info_content?: string | null
           updated_at?: string
         }
         Update: {
+          contact_fields?: Json
           fields?: Json
           id?: string
           info_content?: string | null

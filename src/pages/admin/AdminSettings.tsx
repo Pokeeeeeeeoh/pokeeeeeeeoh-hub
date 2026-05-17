@@ -53,6 +53,20 @@ interface FormField {
   options?: string[];
 }
 
+type ContactKey = "name" | "email" | "phone";
+interface ContactFieldConfig {
+  label: string;
+  required: boolean;
+  enabled: boolean;
+}
+type ContactFields = Record<ContactKey, ContactFieldConfig>;
+
+const DEFAULT_CONTACT_FIELDS: ContactFields = {
+  name: { label: "Name", required: true, enabled: true },
+  email: { label: "Email", required: true, enabled: true },
+  phone: { label: "Phone", required: false, enabled: true },
+};
+
 interface SiteSettings {
   id: string;
   site_name: string;
@@ -85,11 +99,14 @@ const AdminSettings = () => {
   const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const hasHydratedRef = useRef(false);
 
+  // Contact fields config
+  const [contactFields, setContactFields] = useState<ContactFields>(DEFAULT_CONTACT_FIELDS);
+
   useEffect(() => {
     fetchAllConfig();
   }, []);
 
-  // Autosave form config (fields + info content) with debounce
+  // Autosave form config (fields + info content + contact fields) with debounce
   useEffect(() => {
     if (!hasHydratedRef.current || !formConfigId) return;
     setAutoSaveStatus("saving");
@@ -99,6 +116,7 @@ const AdminSettings = () => {
         .update({
           info_content: infoContent,
           fields: JSON.parse(JSON.stringify(fields)),
+          contact_fields: JSON.parse(JSON.stringify(contactFields)),
         })
         .eq("id", formConfigId);
       if (error) {
@@ -111,7 +129,7 @@ const AdminSettings = () => {
       }
     }, 700);
     return () => clearTimeout(handle);
-  }, [fields, infoContent, formConfigId]);
+  }, [fields, infoContent, contactFields, formConfigId]);
 
   const fetchAllConfig = async () => {
     const [siteRes, formRes, uiRes] = await Promise.all([
@@ -132,6 +150,14 @@ const AdminSettings = () => {
           ? JSON.parse(formRes.data.fields)
           : formRes.data.fields;
       setFields(parsedFields || []);
+
+      const rawContact = (formRes.data as any).contact_fields;
+      const parsedContact =
+        typeof rawContact === "string" ? JSON.parse(rawContact) : rawContact;
+      setContactFields({
+        ...DEFAULT_CONTACT_FIELDS,
+        ...(parsedContact || {}),
+      });
     }
 
     if (uiRes.data) setUiTexts(uiRes.data);
@@ -389,6 +415,84 @@ const AdminSettings = () => {
 
           {/* Form Builder */}
           <TabsContent value="form" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Contact Details</CardTitle>
+                <CardDescription>
+                  These appear at the top of the booking form. Name and email are always shown and required.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {(["name", "email", "phone"] as ContactKey[]).map((key) => {
+                  const cf = contactFields[key];
+                  const isPhone = key === "phone";
+                  return (
+                    <div
+                      key={key}
+                      className="border border-border rounded-lg p-4 bg-card space-y-3"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                          {key}
+                        </span>
+                        {isPhone && (
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor={`contact-${key}-enabled`} className="text-xs text-muted-foreground">
+                              Show
+                            </Label>
+                            <Switch
+                              id={`contact-${key}-enabled`}
+                              checked={cf.enabled}
+                              onCheckedChange={(v) =>
+                                setContactFields((prev) => ({
+                                  ...prev,
+                                  [key]: { ...prev[key], enabled: v },
+                                }))
+                              }
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Label</Label>
+                        <Input
+                          value={cf.label}
+                          onChange={(e) =>
+                            setContactFields((prev) => ({
+                              ...prev,
+                              [key]: { ...prev[key], label: e.target.value },
+                            }))
+                          }
+                          placeholder={key}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id={`contact-${key}-required`}
+                          checked={cf.required}
+                          disabled={!isPhone}
+                          onCheckedChange={(v) =>
+                            setContactFields((prev) => ({
+                              ...prev,
+                              [key]: { ...prev[key], required: v },
+                            }))
+                          }
+                        />
+                        <Label htmlFor={`contact-${key}-required`} className="text-sm">
+                          Required
+                        </Label>
+                        {!isPhone && (
+                          <span className="text-xs text-muted-foreground">
+                            (always required)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>Booking Form Questions</CardTitle>

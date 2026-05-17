@@ -19,9 +19,24 @@ interface FormField {
   options?: string[];
 }
 
+type ContactKey = "name" | "email" | "phone";
+interface ContactFieldConfig {
+  label: string;
+  required: boolean;
+  enabled: boolean;
+}
+type ContactFields = Record<ContactKey, ContactFieldConfig>;
+
+const DEFAULT_CONTACT_FIELDS: ContactFields = {
+  name: { label: "Name", required: true, enabled: true },
+  email: { label: "Email", required: true, enabled: true },
+  phone: { label: "Phone", required: false, enabled: true },
+};
+
 const BookingForm = () => {
   const t = useUiText();
   const [fields, setFields] = useState<FormField[]>([]);
+  const [contactFields, setContactFields] = useState<ContactFields>(DEFAULT_CONTACT_FIELDS);
   const [formData, setFormData] = useState<Record<string, string | boolean>>({});
   const [clientInfo, setClientInfo] = useState({ name: "", email: "", phone: "" });
   const [images, setImages] = useState<File[]>([]);
@@ -34,14 +49,19 @@ const BookingForm = () => {
     async function fetchConfig() {
       const { data } = await supabase
         .from("form_config")
-        .select("fields")
+        .select("fields, contact_fields")
         .single();
-      
+
       if (data?.fields) {
-        const parsedFields = typeof data.fields === 'string' 
-          ? JSON.parse(data.fields) 
+        const parsedFields = typeof data.fields === 'string'
+          ? JSON.parse(data.fields)
           : data.fields;
         setFields(parsedFields as FormField[]);
+      }
+      if ((data as any)?.contact_fields) {
+        const raw = (data as any).contact_fields;
+        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        setContactFields({ ...DEFAULT_CONTACT_FIELDS, ...(parsed || {}) });
       }
       setLoading(false);
     }
@@ -84,6 +104,10 @@ const BookingForm = () => {
     
     if (!clientInfo.name || !clientInfo.email) {
       toast.error("Please fill in your name and email.");
+      return;
+    }
+    if (contactFields.phone.enabled && contactFields.phone.required && !clientInfo.phone) {
+      toast.error(`Please fill in your ${contactFields.phone.label.toLowerCase()}.`);
       return;
     }
 
@@ -226,19 +250,22 @@ const BookingForm = () => {
               </h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Name *</Label>
+                  <Label htmlFor="name">
+                    {contactFields.name.label} {contactFields.name.required && "*"}
+                  </Label>
                   <Input
                     id="name"
                     name="name"
                     autoComplete="name"
                     value={clientInfo.name}
                     onChange={(e) => setClientInfo(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Your full name"
-                    required
+                    required={contactFields.name.required}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
+                  <Label htmlFor="email">
+                    {contactFields.email.label} {contactFields.email.required && "*"}
+                  </Label>
                   <Input
                     id="email"
                     name="email"
@@ -246,22 +273,28 @@ const BookingForm = () => {
                     autoComplete="email"
                     value={clientInfo.email}
                     onChange={(e) => setClientInfo(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="your@email.com"
-                    required
+                    required={contactFields.email.required}
                   />
                 </div>
-                <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="phone">Phone (optional)</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    autoComplete="tel"
-                    value={clientInfo.phone}
-                    onChange={(e) => setClientInfo(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="Your phone number"
-                  />
-                </div>
+                {contactFields.phone.enabled && (
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="phone">
+                      {contactFields.phone.label}{" "}
+                      {contactFields.phone.required ? "*" : (
+                        <span className="text-muted-foreground font-normal">(optional)</span>
+                      )}
+                    </Label>
+                    <Input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      autoComplete="tel"
+                      value={clientInfo.phone}
+                      onChange={(e) => setClientInfo(prev => ({ ...prev, phone: e.target.value }))}
+                      required={contactFields.phone.required}
+                    />
+                  </div>
+                )}
               </div>
             </section>
 
