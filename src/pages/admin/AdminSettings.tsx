@@ -417,6 +417,84 @@ const AdminSettings = () => {
           <TabsContent value="form" className="space-y-6">
             <Card>
               <CardHeader>
+                <CardTitle>Contact Details</CardTitle>
+                <CardDescription>
+                  These appear at the top of the booking form. Name and email are always shown and required.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {(["name", "email", "phone"] as ContactKey[]).map((key) => {
+                  const cf = contactFields[key];
+                  const isPhone = key === "phone";
+                  return (
+                    <div
+                      key={key}
+                      className="border border-border rounded-lg p-4 bg-card space-y-3"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                          {key}
+                        </span>
+                        {isPhone && (
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor={`contact-${key}-enabled`} className="text-xs text-muted-foreground">
+                              Show
+                            </Label>
+                            <Switch
+                              id={`contact-${key}-enabled`}
+                              checked={cf.enabled}
+                              onCheckedChange={(v) =>
+                                setContactFields((prev) => ({
+                                  ...prev,
+                                  [key]: { ...prev[key], enabled: v },
+                                }))
+                              }
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Label</Label>
+                        <Input
+                          value={cf.label}
+                          onChange={(e) =>
+                            setContactFields((prev) => ({
+                              ...prev,
+                              [key]: { ...prev[key], label: e.target.value },
+                            }))
+                          }
+                          placeholder={key}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id={`contact-${key}-required`}
+                          checked={cf.required}
+                          disabled={!isPhone}
+                          onCheckedChange={(v) =>
+                            setContactFields((prev) => ({
+                              ...prev,
+                              [key]: { ...prev[key], required: v },
+                            }))
+                          }
+                        />
+                        <Label htmlFor={`contact-${key}-required`} className="text-sm">
+                          Required
+                        </Label>
+                        {!isPhone && (
+                          <span className="text-xs text-muted-foreground">
+                            (always required)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle>Booking Form Questions</CardTitle>
                 <CardDescription>
                   Add, edit, or remove questions on the booking form. Toggle required fields.
