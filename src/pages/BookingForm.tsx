@@ -250,19 +250,22 @@ const BookingForm = () => {
               </h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Name *</Label>
+                  <Label htmlFor="name">
+                    {contactFields.name.label} {contactFields.name.required && "*"}
+                  </Label>
                   <Input
                     id="name"
                     name="name"
                     autoComplete="name"
                     value={clientInfo.name}
                     onChange={(e) => setClientInfo(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Your full name"
-                    required
+                    required={contactFields.name.required}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
+                  <Label htmlFor="email">
+                    {contactFields.email.label} {contactFields.email.required && "*"}
+                  </Label>
                   <Input
                     id="email"
                     name="email"
@@ -270,22 +273,28 @@ const BookingForm = () => {
                     autoComplete="email"
                     value={clientInfo.email}
                     onChange={(e) => setClientInfo(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="your@email.com"
-                    required
+                    required={contactFields.email.required}
                   />
                 </div>
-                <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="phone">Phone (optional)</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    autoComplete="tel"
-                    value={clientInfo.phone}
-                    onChange={(e) => setClientInfo(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="Your phone number"
-                  />
-                </div>
+                {contactFields.phone.enabled && (
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="phone">
+                      {contactFields.phone.label}{" "}
+                      {contactFields.phone.required ? "*" : (
+                        <span className="text-muted-foreground font-normal">(optional)</span>
+                      )}
+                    </Label>
+                    <Input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      autoComplete="tel"
+                      value={clientInfo.phone}
+                      onChange={(e) => setClientInfo(prev => ({ ...prev, phone: e.target.value }))}
+                      required={contactFields.phone.required}
+                    />
+                  </div>
+                )}
               </div>
             </section>
 
