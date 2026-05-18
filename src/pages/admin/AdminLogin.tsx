@@ -115,9 +115,6 @@ const AdminLogin = () => {
             <Lock className="h-8 w-8 text-foreground" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Admin Access</h1>
-          <p className="text-sm text-muted-foreground mt-2">
-            Sign in to manage your booking system
-          </p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
