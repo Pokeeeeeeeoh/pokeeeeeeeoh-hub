@@ -812,6 +812,15 @@ const AdminCalendar = () => {
           .eq("slot_id", selectedSlot.id);
       }
 
+      pushUndo({
+        type: "updateTime",
+        slotId: selectedSlot.id,
+        prevStart: selectedSlot.start_time,
+        prevEnd: selectedSlot.end_time,
+        wasBooked: selectedSlot.is_booked,
+        label: "Slot time changed",
+      });
+
       toast.success("Slot updated");
       setShowSlotDialog(false);
       fetchSlots();
