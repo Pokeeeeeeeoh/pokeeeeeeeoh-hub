@@ -117,7 +117,7 @@ const BookingForm = () => {
     try {
       // Upload images first to the private bucket (anon allowed). Use a temp folder
       // keyed by email so paths are stable before we have a client id.
-      const tempKey = `pending/${cleanHashForPath(clientInfo.email)}-${Date.now()}`;
+      const tempKey = `pending/${clientInfo.email.toLowerCase().replace(/[^a-z0-9]/g, "_")}-${Date.now()}`;
       const imageUrls: string[] = [];
       for (const image of images) {
         const fileName = `${tempKey}/${image.name}`;
