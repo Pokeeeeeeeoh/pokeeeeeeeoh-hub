@@ -189,6 +189,15 @@ Deno.serve(async (req) => {
     }).select("id").single();
     if (apptErr) throw apptErr;
 
+    // Record successful attempt for rate limiting (open-link mode only)
+    if (!token) {
+      await supabase.from("booking_attempts").insert({
+        ip_hash: ipHash,
+        link_key: linkKey ?? null,
+        success: true,
+      });
+    }
+
     // Fire-and-forget: push to Google Calendar
     if (apptRow?.id) {
       fetch(`${projectUrl}/functions/v1/sync-gcal-event`, {
