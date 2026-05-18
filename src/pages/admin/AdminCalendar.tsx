@@ -834,7 +834,24 @@ const AdminCalendar = () => {
 
   const handleDeleteSlot = async (slotId: string) => {
     try {
+      const slotRow =
+        slots.find((s) => s.id === slotId) ||
+        (selectedSlot && selectedSlot.id === slotId ? selectedSlot : null);
       await supabase.from("availability_slots").delete().eq("id", slotId);
+      if (slotRow) {
+        pushUndo({
+          type: "delete",
+          row: {
+            id: slotRow.id,
+            start_time: slotRow.start_time,
+            end_time: slotRow.end_time,
+            is_blocked: slotRow.is_blocked,
+            is_booked: false,
+            notes: slotRow.notes,
+          },
+          label: "Slot removed",
+        });
+      }
       toast.success("Slot removed");
       setShowSlotDialog(false);
       fetchSlots();
@@ -849,6 +866,12 @@ const AdminCalendar = () => {
         .from("availability_slots")
         .update({ is_blocked: blocked })
         .eq("id", slotId);
+      pushUndo({
+        type: "block",
+        slotId,
+        prevBlocked: !blocked,
+        label: blocked ? "Slot blocked" : "Slot unblocked",
+      });
       fetchSlots();
       setShowSlotDialog(false);
     } catch (err) {
