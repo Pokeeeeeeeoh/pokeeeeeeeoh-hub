@@ -16,16 +16,19 @@ export type Database = {
     Tables: {
       admin_settings: {
         Row: {
+          booking_link_key: string | null
           google_calendar_id: string | null
           id: string
           updated_at: string
         }
         Insert: {
+          booking_link_key?: string | null
           google_calendar_id?: string | null
           id?: string
           updated_at?: string
         }
         Update: {
+          booking_link_key?: string | null
           google_calendar_id?: string | null
           id?: string
           updated_at?: string
@@ -174,6 +177,30 @@ export type Database = {
           is_booked?: boolean
           notes?: string | null
           start_time?: string
+        }
+        Relationships: []
+      }
+      booking_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          ip_hash: string
+          link_key: string | null
+          success: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_hash: string
+          link_key?: string | null
+          success?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_hash?: string
+          link_key?: string | null
+          success?: boolean
         }
         Relationships: []
       }
@@ -521,6 +548,7 @@ export type Database = {
       }
       get_booking_by_token: { Args: { _token: string }; Returns: Json }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_valid_booking_link_key: { Args: { _key: string }; Returns: boolean }
       move_to_dlq: {
         Args: {
           dlq_name: string
