@@ -198,14 +198,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fire-and-forget: push to Google Calendar
+    // Fire-and-forget: push to Google Calendar (authenticated as service role)
     if (apptRow?.id) {
+      const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       fetch(`${projectUrl}/functions/v1/sync-gcal-event`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           apikey: anonKey,
-          Authorization: `Bearer ${anonKey}`,
+          Authorization: `Bearer ${serviceRole}`,
         },
         body: JSON.stringify({ appointmentId: apptRow.id }),
       }).catch((e) => console.warn("gcal sync invoke failed", e));

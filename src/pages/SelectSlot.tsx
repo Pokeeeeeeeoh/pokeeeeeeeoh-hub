@@ -17,6 +17,7 @@ import {
 import { enGB } from "date-fns/locale";
 import { toast } from "sonner";
 import { useUiText } from "@/hooks/useUiText";
+import GdprNotice from "@/components/GdprNotice";
 
 interface AvailableSlot {
   id: string;
@@ -536,7 +537,12 @@ const SelectSlot = () => {
               <label htmlFor="website">Website</label>
               <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
             </div>
+            <GdprNotice />
           </div>
+        )}
+
+        {!token && !detailsOpen && (
+          <GdprNotice className="mt-4 text-center" />
         )}
 
         {/* Booking Action */}

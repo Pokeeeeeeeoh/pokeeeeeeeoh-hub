@@ -34,13 +34,39 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Auth: allow internal callers (service role bearer) OR authenticated admins.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+
+    let authorized = false;
+    if (bearer && bearer === serviceRole) {
+      authorized = true;
+    } else if (bearer) {
+      // Validate as user JWT and check admin
+      const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: `Bearer ${bearer}` } },
+      });
+      const { data: userData } = await userClient.auth.getUser();
+      const userId = userData?.user?.id;
+      if (userId) {
+        const adminClient = createClient(supabaseUrl, serviceRole);
+        const { data: isAdmin } = await adminClient.rpc("is_admin", { _user_id: userId });
+        if (isAdmin === true) authorized = true;
+      }
+    }
+
+    if (!authorized) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { appointmentId } = await req.json();
     if (!appointmentId) throw new Error("appointmentId required");
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabase = createClient(supabaseUrl, serviceRole);
 
     // Load appointment with client + booking_request
     const { data: appt, error: apptErr } = await supabase

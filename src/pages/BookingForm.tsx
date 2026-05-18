@@ -10,6 +10,7 @@ import { ArrowLeft, UploadCloud, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUiText } from "@/hooks/useUiText";
+import GdprNotice from "@/components/GdprNotice";
 
 interface FormField {
   id: string;
@@ -429,6 +430,7 @@ const BookingForm = () => {
               <p className="text-xs text-center text-muted-foreground mt-4">
                 {t("form_submit_disclaimer", "By submitting, you agree to our booking policies. Your request will be reviewed within 24-48 hours.")}
               </p>
+              <GdprNotice className="text-center mt-3" />
             </div>
           </form>
         </div>

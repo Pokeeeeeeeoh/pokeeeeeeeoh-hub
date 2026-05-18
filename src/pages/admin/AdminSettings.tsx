@@ -76,6 +76,8 @@ interface SiteSettings {
   tagline: string;
   email: string;
   address: string;
+  gdpr_short: string;
+  gdpr_full: string;
 }
 
 const AdminSettings = () => {
@@ -89,6 +91,8 @@ const AdminSettings = () => {
     tagline: "",
     email: "",
     address: "",
+    gdpr_short: "",
+    gdpr_full: "",
   });
 
   // Form config state
@@ -211,6 +215,8 @@ const AdminSettings = () => {
           tagline: siteSettings.tagline,
           email: siteSettings.email,
           address: siteSettings.address,
+          gdpr_short: siteSettings.gdpr_short,
+          gdpr_full: siteSettings.gdpr_full,
         })
         .eq("id", siteSettings.id)
         .select();
@@ -411,6 +417,44 @@ const AdminSettings = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Privacy / GDPR</CardTitle>
+                <CardDescription>
+                  The short notice is shown beneath the booking form and the slot-picker details form. The full text is shown on the public /privacy page that the short notice links to.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="gdpr_short">Short notice (shown on forms)</Label>
+                  <Textarea
+                    id="gdpr_short"
+                    rows={3}
+                    value={siteSettings.gdpr_short}
+                    onChange={(e) =>
+                      setSiteSettings((prev) => ({ ...prev, gdpr_short: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gdpr_full">Full privacy notice (/privacy page)</Label>
+                  <Textarea
+                    id="gdpr_full"
+                    rows={14}
+                    className="font-mono text-xs"
+                    value={siteSettings.gdpr_full}
+                    onChange={(e) =>
+                      setSiteSettings((prev) => ({ ...prev, gdpr_full: e.target.value }))
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Plain text with line breaks. Markdown-style headings (#, ##) are shown as-is.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
 
             <div className="flex justify-end">
               <Button onClick={handleSaveSiteSettings} disabled={saving}>

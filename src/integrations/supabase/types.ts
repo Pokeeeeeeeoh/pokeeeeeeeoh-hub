@@ -459,6 +459,8 @@ export type Database = {
         Row: {
           address: string
           email: string
+          gdpr_full: string
+          gdpr_short: string
           id: string
           site_name: string
           tagline: string
@@ -467,6 +469,8 @@ export type Database = {
         Insert: {
           address?: string
           email?: string
+          gdpr_full?: string
+          gdpr_short?: string
           id?: string
           site_name?: string
           tagline?: string
@@ -475,6 +479,8 @@ export type Database = {
         Update: {
           address?: string
           email?: string
+          gdpr_full?: string
+          gdpr_short?: string
           id?: string
           site_name?: string
           tagline?: string
