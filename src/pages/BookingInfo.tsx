@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+const ICON_STROKE = 1.5;
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import { useUiText } from "@/hooks/useUiText";
@@ -70,7 +71,7 @@ const BookingInfo = () => {
             to="/" 
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" strokeWidth={ICON_STROKE} />
             Back
           </Link>
           <span className="mx-auto font-mono text-sm tracking-widest uppercase">
@@ -157,7 +158,7 @@ const BookingInfo = () => {
                   : "border-border hover:border-primary/50"
               }`}
             >
-              {acknowledged && <Check className="h-3 w-3 text-primary-foreground" />}
+              {acknowledged && <Check className="h-3 w-3 text-primary-foreground" strokeWidth={2.5} />}
             </button>
             <label 
               className="text-sm text-muted-foreground cursor-pointer"
@@ -178,7 +179,7 @@ const BookingInfo = () => {
             className="group"
           >
             {t("booking_info_continue", "Continue to Form")}
-            <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+            <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" strokeWidth={ICON_STROKE} />
           </Button>
         </div>
       </footer>

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Mail, Clock, ArrowRight } from "lucide-react";
+import { CheckCircle2, Mail, Clock, ArrowRight } from "lucide-react";
 import { useUiText } from "@/hooks/useUiText";
 
 const BookingConfirmation = () => {
@@ -9,8 +9,8 @@ const BookingConfirmation = () => {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
         <div className="mb-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-success/10 mb-6">
-            <CheckCircle className="h-10 w-10 text-success" />
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-success/10 ring-8 ring-success/5 mb-6">
+            <CheckCircle2 className="h-12 w-12 text-success" strokeWidth={1.5} />
           </div>
           <h1 className="text-3xl font-bold tracking-tight mb-4">
             {t("confirmation_title", "Request Submitted!")}
@@ -21,8 +21,10 @@ const BookingConfirmation = () => {
         </div>
 
         <div className="space-y-4 mb-8 animate-fade-in stagger-1">
-          <div className="flex items-start gap-4 p-4 rounded-lg border border-border bg-card/50 text-left">
-            <Mail className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+          <div className="flex items-start gap-4 p-4 rounded-2xl border border-border bg-card/50 text-left">
+            <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-muted shrink-0">
+              <Mail className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+            </div>
             <div>
               <h3 className="font-medium text-sm mb-1">{t("confirmation_email_heading", "Check Your Email")}</h3>
               <p className="text-sm text-muted-foreground">
@@ -31,8 +33,10 @@ const BookingConfirmation = () => {
             </div>
           </div>
 
-          <div className="flex items-start gap-4 p-4 rounded-lg border border-border bg-card/50 text-left">
-            <Clock className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+          <div className="flex items-start gap-4 p-4 rounded-2xl border border-border bg-card/50 text-left">
+            <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-muted shrink-0">
+              <Clock className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+            </div>
             <div>
               <h3 className="font-medium text-sm mb-1">{t("confirmation_next_heading", "What Happens Next")}</h3>
               <p className="text-sm text-muted-foreground">
@@ -49,7 +53,7 @@ const BookingConfirmation = () => {
           <Link to="/">
             <Button variant="outline" className="group">
               Return Home
-              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" strokeWidth={1.5} />
             </Button>
           </Link>
         </div>
