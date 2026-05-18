@@ -215,6 +215,8 @@ const AdminSettings = () => {
           tagline: siteSettings.tagline,
           email: siteSettings.email,
           address: siteSettings.address,
+          gdpr_short: siteSettings.gdpr_short,
+          gdpr_full: siteSettings.gdpr_full,
         })
         .eq("id", siteSettings.id)
         .select();
