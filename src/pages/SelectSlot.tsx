@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, FastForward } from "lucide-react";
+import { CalendarDays, Clock, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight, FastForward } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, startOfWeek, addDays, isSameDay, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, endOfWeek, isSameMonth } from "date-fns";
 import {
@@ -276,7 +276,9 @@ const SelectSlot = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="max-w-md text-center">
-          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-destructive/10 ring-8 ring-destructive/5 mx-auto mb-4">
+            <AlertCircle className="h-10 w-10 text-destructive" strokeWidth={1.5} />
+          </div>
           <h1 className="text-2xl font-bold mb-2">Cannot Access</h1>
           <p className="text-muted-foreground mb-6">{error}</p>
           <Button variant="outline" onClick={() => navigate("/")}>
@@ -293,8 +295,8 @@ const SelectSlot = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="max-w-md text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-500/10 mb-6">
-            <CheckCircle className="h-10 w-10 text-green-600" />
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-500/10 ring-8 ring-green-500/5 mb-6">
+            <CheckCircle2 className="h-12 w-12 text-green-600" strokeWidth={1.5} />
           </div>
           <h1 className="text-3xl font-bold tracking-tight mb-4">
             {alreadyBooked
@@ -307,15 +309,19 @@ const SelectSlot = () => {
               : `Your appointment is confirmed. A confirmation email has been sent to ${confirmEmail ?? "your email"}.`}
           </p>
           {bookedSlot && (
-            <div className="p-4 rounded-lg border border-border bg-card mb-6 text-left">
+            <div className="p-4 rounded-2xl border border-border bg-card mb-6 text-left">
               <div className="flex items-center gap-3 mb-2">
-                <Calendar className="h-5 w-5 text-muted-foreground shrink-0" />
+                <div className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-muted shrink-0">
+                  <CalendarDays className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+                </div>
                 <span className="font-medium">
                   {format(parseISO(bookedSlot.start_time), "EEEE d MMMM yyyy", { locale: enGB })}
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <Clock className="h-5 w-5 text-muted-foreground shrink-0" />
+                <div className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-muted shrink-0">
+                  <Clock className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+                </div>
                 <span>
                   {format(parseISO(bookedSlot.start_time), "HH:mm")} – {format(parseISO(bookedSlot.end_time), "HH:mm")}
                 </span>
@@ -356,7 +362,7 @@ const SelectSlot = () => {
         {/* Month Navigation */}
         <div className="flex items-center justify-between gap-2 mb-4">
           <Button variant="outline" size="icon" onClick={() => { setCurrentMonth(prev => addMonths(prev, -1)); setSelectedDay(null); }}>
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
           </Button>
           <div className="text-center min-w-0 flex-1">
             <p className="text-base font-medium capitalize">
@@ -364,7 +370,7 @@ const SelectSlot = () => {
             </p>
           </div>
           <Button variant="outline" size="icon" onClick={() => { setCurrentMonth(prev => addMonths(prev, 1)); setSelectedDay(null); }}>
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
           </Button>
         </div>
 
@@ -402,7 +408,7 @@ const SelectSlot = () => {
               }
             }}
           >
-            <FastForward className="h-4 w-4 mr-1" /> Next available
+            <FastForward className="h-4 w-4 mr-1" strokeWidth={1.5} /> Next available
           </Button>
         </div>
 

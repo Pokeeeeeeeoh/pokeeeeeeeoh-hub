@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Upload, X, Loader2 } from "lucide-react";
+import { ArrowLeft, UploadCloud, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUiText } from "@/hooks/useUiText";
@@ -212,7 +212,7 @@ const BookingForm = () => {
             to="/book" 
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
             Back
           </Link>
           <span className="mx-auto font-mono text-sm tracking-widest uppercase">
@@ -387,13 +387,15 @@ const BookingForm = () => {
                       onClick={() => removeImage(index)}
                       className="absolute top-2 right-2 p-1 rounded-full bg-background/80 hover:bg-background transition-colors"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-4 w-4" strokeWidth={1.5} />
                     </button>
                   </div>
                 ))}
                 
                 <label className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center cursor-pointer transition-colors bg-card/50">
-                  <Upload className="h-6 w-6 text-muted-foreground mb-2" />
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-2">
+                    <UploadCloud className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
+                  </div>
                   <span className="text-xs text-muted-foreground">Add Image</span>
                   <input
                     type="file"
