@@ -76,6 +76,8 @@ interface SiteSettings {
   tagline: string;
   email: string;
   address: string;
+  gdpr_short: string;
+  gdpr_full: string;
 }
 
 const AdminSettings = () => {
