@@ -56,6 +56,34 @@ Deno.serve(async (req) => {
       }
       request = data as any;
     } else {
+      // Open-link mode requires a valid linkKey
+      const cleanKey = typeof linkKey === "string" ? linkKey.trim() : "";
+      if (!cleanKey) throw new Error("Missing booking link key");
+
+      const { data: settings } = await supabase
+        .from("admin_settings")
+        .select("booking_link_key")
+        .not("booking_link_key", "is", null)
+        .limit(1)
+        .maybeSingle();
+
+      if (!settings?.booking_link_key || settings.booking_link_key !== cleanKey) {
+        throw new Error("Invalid booking link");
+      }
+
+      // Rate limit: max 3 bookings per IP per hour
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const { count: recentCount } = await supabase
+        .from("booking_attempts")
+        .select("id", { count: "exact", head: true })
+        .eq("ip_hash", ipHash)
+        .eq("success", true)
+        .gte("created_at", oneHourAgo);
+
+      if ((recentCount ?? 0) >= 3) {
+        throw new Error("Too many bookings from your network. Please try again later.");
+      }
+
       const cleanEmail = (email ?? "").trim().toLowerCase();
       const cleanName = (name ?? "").trim();
       const cleanPhone = (phone ?? "").trim() || null;
@@ -63,6 +91,9 @@ Deno.serve(async (req) => {
 
       if (!cleanEmail || !cleanName) {
         throw new Error("Name and email are required");
+      }
+      if (cleanName.length > 200 || cleanEmail.length > 320) {
+        throw new Error("Input too long");
       }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
         throw new Error("Invalid email address");
