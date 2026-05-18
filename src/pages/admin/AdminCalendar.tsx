@@ -37,6 +37,7 @@ import {
   Phone,
   Copy,
   Pencil,
+  Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -188,6 +189,28 @@ const AdminCalendar = () => {
   const [editResponses, setEditResponses] = useState<Record<string, string>>({});
   const [editAdminNotes, setEditAdminNotes] = useState("");
   const [savingBooking, setSavingBooking] = useState(false);
+
+  // Undo history for schedule edits
+  type UndoAction =
+    | { type: "insert"; ids: string[]; label: string }
+    | {
+        type: "updateTime";
+        slotId: string;
+        prevStart: string;
+        prevEnd: string;
+        wasBooked: boolean;
+        label: string;
+      }
+    | {
+        type: "delete";
+        row: { id: string; start_time: string; end_time: string; is_blocked: boolean; is_booked: boolean; notes: string | null };
+        label: string;
+      }
+    | { type: "block"; slotId: string; prevBlocked: boolean; label: string };
+  const [undoStack, setUndoStack] = useState<UndoAction[]>([]);
+  const [undoing, setUndoing] = useState(false);
+  const pushUndo = (action: UndoAction) =>
+    setUndoStack((prev) => [...prev.slice(-19), action]);
 
   const startEditBooking = () => {
     const appt = selectedSlot?.appointments?.[0];
@@ -629,11 +652,21 @@ const AdminCalendar = () => {
         return;
       }
 
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from("availability_slots")
-        .insert(slotsToCreate);
+        .insert(slotsToCreate)
+        .select("id");
 
       if (error) throw error;
+
+      const ids = (inserted || []).map((r) => r.id as string);
+      if (ids.length > 0) {
+        pushUndo({
+          type: "insert",
+          ids,
+          label: `${ids.length} slot${ids.length > 1 ? "s" : ""} added`,
+        });
+      }
 
       toast.success(`${slotsToCreate.length} slot${slotsToCreate.length > 1 ? "s" : ""} added`);
       setShowDayDialog(false);
@@ -716,11 +749,21 @@ const AdminCalendar = () => {
         return;
       }
 
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from("availability_slots")
-        .insert(slotsToCreate);
+        .insert(slotsToCreate)
+        .select("id");
 
       if (error) throw error;
+
+      const ids = (inserted || []).map((r) => r.id as string);
+      if (ids.length > 0) {
+        pushUndo({
+          type: "insert",
+          ids,
+          label: `${ids.length} repeated slot${ids.length > 1 ? "s" : ""}`,
+        });
+      }
 
       toast.success(`${slotsToCreate.length} slot${slotsToCreate.length > 1 ? "s" : ""} added`);
       setShowSlotDialog(false);
@@ -769,6 +812,15 @@ const AdminCalendar = () => {
           .eq("slot_id", selectedSlot.id);
       }
 
+      pushUndo({
+        type: "updateTime",
+        slotId: selectedSlot.id,
+        prevStart: selectedSlot.start_time,
+        prevEnd: selectedSlot.end_time,
+        wasBooked: selectedSlot.is_booked,
+        label: "Slot time changed",
+      });
+
       toast.success("Slot updated");
       setShowSlotDialog(false);
       fetchSlots();
@@ -782,7 +834,24 @@ const AdminCalendar = () => {
 
   const handleDeleteSlot = async (slotId: string) => {
     try {
+      const slotRow =
+        slots.find((s) => s.id === slotId) ||
+        (selectedSlot && selectedSlot.id === slotId ? selectedSlot : null);
       await supabase.from("availability_slots").delete().eq("id", slotId);
+      if (slotRow) {
+        pushUndo({
+          type: "delete",
+          row: {
+            id: slotRow.id,
+            start_time: slotRow.start_time,
+            end_time: slotRow.end_time,
+            is_blocked: slotRow.is_blocked,
+            is_booked: false,
+            notes: slotRow.notes,
+          },
+          label: "Slot removed",
+        });
+      }
       toast.success("Slot removed");
       setShowSlotDialog(false);
       fetchSlots();
@@ -797,12 +866,77 @@ const AdminCalendar = () => {
         .from("availability_slots")
         .update({ is_blocked: blocked })
         .eq("id", slotId);
+      pushUndo({
+        type: "block",
+        slotId,
+        prevBlocked: !blocked,
+        label: blocked ? "Slot blocked" : "Slot unblocked",
+      });
       fetchSlots();
       setShowSlotDialog(false);
     } catch (err) {
       toast.error("Could not update slot");
     }
   };
+
+  const handleUndo = async () => {
+    if (undoStack.length === 0 || undoing) return;
+    const action = undoStack[undoStack.length - 1];
+    setUndoing(true);
+    try {
+      if (action.type === "insert") {
+        const { error } = await supabase
+          .from("availability_slots")
+          .delete()
+          .in("id", action.ids);
+        if (error) throw error;
+      } else if (action.type === "updateTime") {
+        const { error } = await supabase
+          .from("availability_slots")
+          .update({ start_time: action.prevStart, end_time: action.prevEnd })
+          .eq("id", action.slotId);
+        if (error) throw error;
+        if (action.wasBooked) {
+          await supabase
+            .from("appointments")
+            .update({ start_time: action.prevStart, end_time: action.prevEnd })
+            .eq("slot_id", action.slotId);
+        }
+      } else if (action.type === "delete") {
+        const { error } = await supabase
+          .from("availability_slots")
+          .insert(action.row);
+        if (error) throw error;
+      } else if (action.type === "block") {
+        const { error } = await supabase
+          .from("availability_slots")
+          .update({ is_blocked: action.prevBlocked })
+          .eq("id", action.slotId);
+        if (error) throw error;
+      }
+      setUndoStack((prev) => prev.slice(0, -1));
+      toast.success(`Undone: ${action.label}`);
+      fetchSlots();
+    } catch (err) {
+      console.error("Undo failed:", err);
+      toast.error("Could not undo last change");
+    } finally {
+      setUndoing(false);
+    }
+  };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !e.shiftKey) {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+        e.preventDefault();
+        handleUndo();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
 
   const toggleRepeatDay = (day: number) => {
     setSlotRepeatDays((prev) =>
@@ -930,6 +1064,20 @@ const AdminCalendar = () => {
 
           {/* View Toggle */}
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleUndo}
+              disabled={undoStack.length === 0 || undoing}
+              title={
+                undoStack.length === 0
+                  ? "Nothing to undo"
+                  : `Undo: ${undoStack[undoStack.length - 1].label} (⌘Z)`
+              }
+            >
+              <Undo2 className="h-4 w-4 mr-1.5" strokeWidth={1.5} />
+              Undo
+            </Button>
             <Button
               variant={viewMode === "week" ? "default" : "outline"}
               size="sm"
