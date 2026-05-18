@@ -33,8 +33,8 @@ export default function Privacy() {
         {loading ? (
           <p className="text-muted-foreground">Loading…</p>
         ) : (
-          <article className="prose prose-sm max-w-none whitespace-pre-wrap font-sans">
-            {text}
+          <article className="prose prose-sm max-w-none font-sans">
+            <ReactMarkdown>{text}</ReactMarkdown>
           </article>
         )}
       </main>
