@@ -17,6 +17,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminEmails from "./pages/admin/AdminEmails";
 import NotFound from "./pages/NotFound";
 import Unsubscribe from "./pages/Unsubscribe";
+import Privacy from "./pages/Privacy";
 
 const queryClient = new QueryClient();
 
