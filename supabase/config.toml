@@ -1,10 +1,11 @@
 project_id = "wtrmrhfjrxdfkqpxteuq"
 
-[functions.book-slot]
-verify_jwt = false
-
-[functions.send-appointment-reminders]
-verify_jwt = false
-
-[functions.process-email-queue]
-verify_jwt = true
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.book-slot]
+    verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
+  [functions.send-appointment-reminders]
+    verify_jwt = false
