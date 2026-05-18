@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Instagram } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SiteSettings {
@@ -61,13 +61,23 @@ const Index = () => {
           <p className="mb-8 text-lg text-muted-foreground max-w-md mx-auto animate-fade-in stagger-1">
             {settings.tagline}
           </p>
-          <div className="animate-fade-in stagger-2">
+          <div className="animate-fade-in stagger-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link to="/book">
               <Button size="lg" className="group">
                 Book a Tattoo
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" strokeWidth={1.5} />
               </Button>
             </Link>
+            <a
+              href="https://instagram.com/Pokeeeeeeeoh"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button size="lg" variant="outline" className="group">
+                <Instagram className="mr-2 h-4 w-4" strokeWidth={1.5} />
+                @Pokeeeeeeeoh
+              </Button>
+            </a>
           </div>
         </div>
       </section>
