@@ -16,6 +16,7 @@ import AdminCalendar from "./pages/admin/AdminCalendar";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminEmails from "./pages/admin/AdminEmails";
 import NotFound from "./pages/NotFound";
+import Unsubscribe from "./pages/Unsubscribe";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,8 @@ const App = () => (
           <Route path="/book/form" element={<BookingForm />} />
           <Route path="/book/confirmation" element={<BookingConfirmation />} />
           <Route path="/select-slot" element={<SelectSlot />} />
+          <Route path="/unsubscribe" element={<Unsubscribe />} />
+          
           
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminLogin />} />
