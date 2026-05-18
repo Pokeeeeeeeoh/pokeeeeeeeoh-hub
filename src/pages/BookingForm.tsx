@@ -115,36 +115,18 @@ const BookingForm = () => {
     setSubmitting(true);
 
     try {
-      // Create or find client
-      const { data: existingClient } = await supabase
-        .from("clients")
-        .select("id")
-        .eq("email", clientInfo.email)
-        .maybeSingle();
+      // Find-or-create client via SECURITY DEFINER RPC (anon can't SELECT clients table)
+      const { data: clientIdData, error: clientError } = await supabase.rpc(
+        "upsert_client_for_booking",
+        {
+          _email: clientInfo.email,
+          _name: clientInfo.name,
+          _phone: clientInfo.phone || "",
+        }
+      );
 
-      let clientId: string;
-
-      if (existingClient) {
-        clientId = existingClient.id;
-        // Update client info
-        await supabase
-          .from("clients")
-          .update({ name: clientInfo.name, phone: clientInfo.phone || null })
-          .eq("id", clientId);
-      } else {
-        const { data: newClient, error: clientError } = await supabase
-          .from("clients")
-          .insert({
-            name: clientInfo.name,
-            email: clientInfo.email,
-            phone: clientInfo.phone || null,
-          })
-          .select("id")
-          .single();
-
-        if (clientError) throw clientError;
-        clientId = newClient.id;
-      }
+      if (clientError) throw clientError;
+      const clientId = clientIdData as string;
 
       // Upload images (store the storage path, not a public URL — bucket is private)
       const imageUrls: string[] = [];
