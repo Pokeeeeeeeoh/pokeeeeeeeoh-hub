@@ -1781,6 +1781,55 @@ const AdminCalendar = () => {
                   );
                 })()}
 
+                {selectedSlot.is_booked && (
+                  <div className="space-y-3 pt-4 border-t border-border">
+                    <h3 className="text-sm font-medium">Manage booking</h3>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Move to another available slot</Label>
+                      <div className="flex gap-2">
+                        <Select value={rebookSlotId} onValueChange={setRebookSlotId}>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue
+                              placeholder={
+                                loadingAvailable
+                                  ? "Loading…"
+                                  : availableSlots.length === 0
+                                  ? "No upcoming free slots"
+                                  : "Select a slot"
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableSlots.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {format(parseISO(s.start_time), "EEE d MMM, HH:mm", { locale: enGB })}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          size="sm"
+                          onClick={handleRebookBooking}
+                          disabled={!rebookSlotId || rebooking}
+                        >
+                          {rebooking ? "Moving…" : "Move"}
+                        </Button>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        The client won't be notified automatically.
+                      </p>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      className="w-full"
+                      onClick={handleCancelBooking}
+                      disabled={cancellingBooking}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      {cancellingBooking ? "Cancelling…" : "Cancel booking"}
+                    </Button>
+                  </div>
+                )}
 
                 {!selectedSlot.is_booked && (
                   <div className="space-y-4">
