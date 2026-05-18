@@ -46,6 +46,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import LivePreviewEditor from "./LivePreviewEditor";
+import BookingLinkPanel from "./BookingLinkPanel";
 
 interface FormField {
   id: string;
