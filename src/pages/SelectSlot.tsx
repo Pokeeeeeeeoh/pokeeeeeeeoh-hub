@@ -66,11 +66,24 @@ const SelectSlot = () => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
+  const [website, setWebsite] = useState(""); // honeypot
 
   useEffect(() => {
     async function init() {
       if (!token) {
-        // Open-calendar mode — no token, anyone can pick a slot and enter details
+        // Open-link mode requires a valid key
+        if (!linkKey) {
+          setError("This page is not publicly accessible. You need a valid booking link.");
+          setLoading(false);
+          return;
+        }
+        const { data: valid, error: keyErr } = await supabase
+          .rpc("is_valid_booking_link_key", { _key: linkKey });
+        if (keyErr || !valid) {
+          setError("This booking link is invalid or has been revoked.");
+          setLoading(false);
+          return;
+        }
         await fetchSlots();
         setLoading(false);
         return;
