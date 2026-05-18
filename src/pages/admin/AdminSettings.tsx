@@ -91,6 +91,8 @@ const AdminSettings = () => {
     tagline: "",
     email: "",
     address: "",
+    gdpr_short: "",
+    gdpr_full: "",
   });
 
   // Form config state
