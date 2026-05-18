@@ -75,19 +75,19 @@ const SelectSlot = () => {
         return;
       }
 
-      const { data: requestData, error: requestError } = await supabase
-        .from("booking_requests")
-        .select(`
-          id,
-          client_id,
-          status,
-          clients (
-            name,
-            email
-          )
-        `)
-        .eq("approval_token", token)
-        .single();
+      const { data: rpcData, error: requestError } = await supabase
+        .rpc("get_booking_by_token", { _token: token });
+
+      const requestData = rpcData as
+        | {
+            id: string;
+            client_id: string;
+            status: string;
+            client_name: string | null;
+            client_email: string | null;
+            appointment: { slot_id: string | null; start_time: string; end_time: string } | null;
+          }
+        | null;
 
       if (requestError || !requestData) {
         setError("Booking request not found or link has expired.");
@@ -101,22 +101,22 @@ const SelectSlot = () => {
         return;
       }
 
-      setRequest(requestData as unknown as BookingRequest);
+      setRequest({
+        id: requestData.id,
+        client_id: requestData.client_id,
+        status: requestData.status,
+        clients: {
+          name: requestData.client_name ?? "",
+          email: requestData.client_email ?? "",
+        },
+      } as unknown as BookingRequest);
 
       if (requestData.status === "booked") {
-        const { data: appointment } = await supabase
-          .from("appointments")
-          .select("slot_id, start_time, end_time")
-          .eq("booking_request_id", requestData.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (appointment) {
+        if (requestData.appointment) {
           setConfirmedSlot({
-            id: appointment.slot_id ?? requestData.id,
-            start_time: appointment.start_time,
-            end_time: appointment.end_time,
+            id: requestData.appointment.slot_id ?? requestData.id,
+            start_time: requestData.appointment.start_time,
+            end_time: requestData.appointment.end_time,
           });
         }
 
