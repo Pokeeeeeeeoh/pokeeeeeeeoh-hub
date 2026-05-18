@@ -16,6 +16,7 @@ import AdminCalendar from "./pages/admin/AdminCalendar";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminEmails from "./pages/admin/AdminEmails";
 import NotFound from "./pages/NotFound";
+import Unsubscribe from "./pages/Unsubscribe";
 
 const queryClient = new QueryClient();
 
