@@ -198,10 +198,12 @@ const SelectSlot = () => {
       if (token) {
         payload.token = token;
       } else {
+        payload.linkKey = linkKey;
         payload.name = name.trim();
         payload.email = email.trim();
         payload.phone = phone.trim();
         payload.notes = notes.trim();
+        payload.website = website; // honeypot
       }
 
       const { data: result, error: fnError } = await supabase.functions.invoke("book-slot", {
