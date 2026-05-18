@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageLightbox } from "@/components/ImageLightbox";
+import { BookingImage } from "@/components/BookingImage";
 
 interface Client {
   name: string;
@@ -418,7 +419,7 @@ const AdminDashboard = () => {
                         key={i}
                         className="w-12 h-12 rounded border border-border overflow-hidden"
                       >
-                        <img
+                        <BookingImage
                           src={img}
                           alt=""
                           className="w-full h-full object-cover"
@@ -537,7 +538,7 @@ const AdminDashboard = () => {
                           onClick={() => setLightbox({ open: true, index: i })}
                           className="aspect-square rounded-lg border border-border overflow-hidden hover:border-primary/50 transition-colors"
                         >
-                          <img
+                          <BookingImage
                             src={img}
                             alt={`Reference ${i + 1}`}
                             className="w-full h-full object-cover"
