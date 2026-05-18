@@ -115,46 +115,39 @@ const BookingForm = () => {
     setSubmitting(true);
 
     try {
-      // Find-or-create client via SECURITY DEFINER RPC (anon can't SELECT clients table)
-      const { data: clientIdData, error: clientError } = await supabase.rpc(
-        "upsert_client_for_booking",
-        {
-          _email: clientInfo.email,
-          _name: clientInfo.name,
-          _phone: clientInfo.phone || "",
-        }
-      );
-
-      if (clientError) throw clientError;
-      const clientId = clientIdData as string;
-
-      // Upload images (store the storage path, not a public URL — bucket is private)
+      // Upload images first to the private bucket (anon allowed). Use a temp folder
+      // keyed by email so paths are stable before we have a client id.
+      const tempKey = `pending/${cleanHashForPath(clientInfo.email)}-${Date.now()}`;
       const imageUrls: string[] = [];
       for (const image of images) {
-        const fileName = `${clientId}/${Date.now()}-${image.name}`;
+        const fileName = `${tempKey}/${image.name}`;
         const { error: uploadError } = await supabase.storage
           .from("booking-images")
           .upload(fileName, image);
-
         if (uploadError) throw uploadError;
-
         imageUrls.push(fileName);
       }
 
-      const bookingRequestId = crypto.randomUUID();
+      // Submit booking request through rate-limited edge function
+      const { data: result, error: fnError } = await supabase.functions.invoke(
+        "submit-booking-request",
+        {
+          body: {
+            name: clientInfo.name,
+            email: clientInfo.email,
+            phone: clientInfo.phone,
+            formResponses: formData,
+            images: imageUrls,
+          },
+        },
+      );
 
-      // Create booking request without reading it back (public users cannot SELECT this table)
-      const { error: requestError } = await supabase
-        .from("booking_requests")
-        .insert({
-          id: bookingRequestId,
-          client_id: clientId,
-          form_responses: formData,
-          images: imageUrls,
-          status: "new",
-        });
+      if (fnError || (result as any)?.error) {
+        const msg = (result as any)?.error || fnError?.message || "Please try again.";
+        throw new Error(msg);
+      }
 
-      if (requestError) throw requestError;
+      const bookingRequestId = (result as any).bookingRequestId as string;
 
       // Send confirmation email to client + notification to admin (fire and forget)
       supabase.functions.invoke("send-booking-confirmation", {
@@ -167,6 +160,7 @@ const BookingForm = () => {
       }).catch((e) => console.error("Email send failed:", e));
 
       navigate("/book/confirmation");
+
     } catch (error: any) {
       console.error("Submission error:", error);
       toast.error(`Failed to submit: ${error?.message || "Please try again."}`);
