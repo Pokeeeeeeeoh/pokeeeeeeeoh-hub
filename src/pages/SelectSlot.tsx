@@ -17,6 +17,7 @@ import {
 import { enGB } from "date-fns/locale";
 import { toast } from "sonner";
 import { useUiText } from "@/hooks/useUiText";
+import GdprNotice from "@/components/GdprNotice";
 
 interface AvailableSlot {
   id: string;
