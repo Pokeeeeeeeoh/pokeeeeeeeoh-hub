@@ -35,6 +35,7 @@ const App = () => (
           <Route path="/book/confirmation" element={<BookingConfirmation />} />
           <Route path="/select-slot" element={<SelectSlot />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
+          <Route path="/privacy" element={<Privacy />} />
           
           
           {/* Admin Routes */}
