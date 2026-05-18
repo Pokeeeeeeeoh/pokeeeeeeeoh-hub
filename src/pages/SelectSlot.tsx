@@ -145,7 +145,7 @@ const SelectSlot = () => {
     }
 
     init();
-  }, [token]);
+  }, [token, linkKey]);
 
   const fetchSlots = async () => {
     const { data } = await supabase
