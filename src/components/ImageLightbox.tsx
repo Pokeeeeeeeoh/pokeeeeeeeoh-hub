@@ -3,6 +3,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { toast } from "sonner";
+import { getBookingImageSignedUrl } from "@/lib/bookingImages";
 
 interface ImageLightboxProps {
   images: string[];
@@ -13,13 +14,24 @@ interface ImageLightboxProps {
 
 export const ImageLightbox = ({ images, startIndex, open, onOpenChange }: ImageLightboxProps) => {
   const [index, setIndex] = useState(startIndex);
+  const [src, setSrc] = useState<string>("");
 
   useEffect(() => {
     if (open) setIndex(startIndex);
   }, [open, startIndex]);
 
+  useEffect(() => {
+    let cancelled = false;
+    setSrc("");
+    const raw = images[index];
+    if (!raw) return;
+    getBookingImageSignedUrl(raw).then((u) => {
+      if (!cancelled) setSrc(u ?? "");
+    });
+    return () => { cancelled = true; };
+  }, [images, index]);
+
   if (!images.length) return null;
-  const src = images[index];
 
   const isIOS = typeof navigator !== "undefined" &&
     (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
