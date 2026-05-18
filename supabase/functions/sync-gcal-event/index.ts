@@ -50,12 +50,12 @@ Deno.serve(async (req) => {
       .single();
     if (apptErr || !appt) throw new Error("Appointment not found");
 
-    // Ensure dedicated calendar exists
+    // Ensure dedicated calendar exists (admin-only table)
     const { data: settings } = await supabase
-      .from("site_settings")
+      .from("admin_settings")
       .select("id, google_calendar_id")
       .limit(1)
-      .single();
+      .maybeSingle();
 
     let calendarId = settings?.google_calendar_id as string | null;
     if (!calendarId) {
@@ -68,16 +68,17 @@ Deno.serve(async (req) => {
         }),
       });
       calendarId = created.id;
-      // Set color (optional, ignore failures)
       try {
         await gcalFetch(`/users/me/calendarList/${encodeURIComponent(calendarId!)}`, {
           method: "PATCH",
-          body: JSON.stringify({ colorId: "11" }), // tomato red
+          body: JSON.stringify({ colorId: "11" }),
         });
       } catch (e) { console.warn("color set failed", e); }
 
       if (settings?.id) {
-        await supabase.from("site_settings").update({ google_calendar_id: calendarId }).eq("id", settings.id);
+        await supabase.from("admin_settings").update({ google_calendar_id: calendarId }).eq("id", settings.id);
+      } else {
+        await supabase.from("admin_settings").insert({ google_calendar_id: calendarId });
       }
     }
 
