@@ -146,7 +146,7 @@ const BookingForm = () => {
         clientId = newClient.id;
       }
 
-      // Upload images
+      // Upload images (store the storage path, not a public URL — bucket is private)
       const imageUrls: string[] = [];
       for (const image of images) {
         const fileName = `${clientId}/${Date.now()}-${image.name}`;
@@ -156,11 +156,7 @@ const BookingForm = () => {
 
         if (uploadError) throw uploadError;
 
-        const { data: urlData } = supabase.storage
-          .from("booking-images")
-          .getPublicUrl(fileName);
-
-        imageUrls.push(urlData.publicUrl);
+        imageUrls.push(fileName);
       }
 
       // Create booking request
