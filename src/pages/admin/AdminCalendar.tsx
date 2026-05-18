@@ -190,6 +190,13 @@ const AdminCalendar = () => {
   const [editAdminNotes, setEditAdminNotes] = useState("");
   const [savingBooking, setSavingBooking] = useState(false);
 
+  // Cancel / rebook state
+  const [cancellingBooking, setCancellingBooking] = useState(false);
+  const [availableSlots, setAvailableSlots] = useState<{ id: string; start_time: string; end_time: string }[]>([]);
+  const [loadingAvailable, setLoadingAvailable] = useState(false);
+  const [rebookSlotId, setRebookSlotId] = useState<string>("");
+  const [rebooking, setRebooking] = useState(false);
+
   // Undo history for schedule edits
   type UndoAction =
     | { type: "insert"; ids: string[]; label: string }
