@@ -1065,6 +1065,20 @@ const AdminCalendar = () => {
           {/* View Toggle */}
           <div className="flex items-center gap-2">
             <Button
+              variant="outline"
+              size="sm"
+              onClick={handleUndo}
+              disabled={undoStack.length === 0 || undoing}
+              title={
+                undoStack.length === 0
+                  ? "Nothing to undo"
+                  : `Undo: ${undoStack[undoStack.length - 1].label} (⌘Z)`
+              }
+            >
+              <Undo2 className="h-4 w-4 mr-1.5" strokeWidth={1.5} />
+              Undo
+            </Button>
+            <Button
               variant={viewMode === "week" ? "default" : "outline"}
               size="sm"
               onClick={() => setViewMode("week")}
