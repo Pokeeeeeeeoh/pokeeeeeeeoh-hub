@@ -367,11 +367,12 @@ const BookingForm = () => {
 
             {/* Image Upload */}
             <section className="space-y-4 animate-fade-in stagger-3">
-              <h2 className="text-lg font-semibold border-b border-border pb-2">
+              <h2 className="text-lg font-semibold border-b border-border pb-2 flex items-center gap-2">
                 {t("form_images_heading", "Reference Images")}
+                <span className="text-xs font-normal text-muted-foreground">(optional)</span>
               </h2>
               <p className="text-sm text-muted-foreground">
-                {t("form_images_subtitle", "Upload reference images, inspiration, or sketches of your idea.")}
+                {t("form_images_subtitle", "Upload reference images, inspiration, or sketches of your idea. You can skip this and submit without images.")}
               </p>
               
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
