@@ -190,6 +190,13 @@ const AdminCalendar = () => {
   const [editAdminNotes, setEditAdminNotes] = useState("");
   const [savingBooking, setSavingBooking] = useState(false);
 
+  // Cancel / rebook state
+  const [cancellingBooking, setCancellingBooking] = useState(false);
+  const [availableSlots, setAvailableSlots] = useState<{ id: string; start_time: string; end_time: string }[]>([]);
+  const [loadingAvailable, setLoadingAvailable] = useState(false);
+  const [rebookSlotId, setRebookSlotId] = useState<string>("");
+  const [rebooking, setRebooking] = useState(false);
+
   // Undo history for schedule edits
   type UndoAction =
     | { type: "insert"; ids: string[]; label: string }
@@ -286,7 +293,94 @@ const AdminCalendar = () => {
 
   useEffect(() => {
     setEditingBooking(false);
+    setRebookSlotId("");
+    if (selectedSlot?.is_booked) {
+      fetchAvailableSlotsForRebook();
+    }
   }, [selectedSlot?.id]);
+
+  const fetchAvailableSlotsForRebook = async () => {
+    setLoadingAvailable(true);
+    const { data } = await supabase
+      .from("availability_slots")
+      .select("id, start_time, end_time")
+      .eq("is_booked", false)
+      .eq("is_blocked", false)
+      .gte("start_time", new Date().toISOString())
+      .order("start_time", { ascending: true })
+      .limit(200);
+    setAvailableSlots(data || []);
+    setLoadingAvailable(false);
+  };
+
+  const handleCancelBooking = async () => {
+    const appt = selectedSlot?.appointments?.[0];
+    if (!selectedSlot || !appt) return;
+    if (!confirm("Cancel this booking? The slot will become available again.")) return;
+    setCancellingBooking(true);
+    try {
+      const { error: aErr } = await supabase.from("appointments").delete().eq("id", appt.id);
+      if (aErr) throw aErr;
+      await supabase
+        .from("availability_slots")
+        .update({ is_booked: false })
+        .eq("id", selectedSlot.id);
+      if (appt.booking_request_id) {
+        await supabase
+          .from("booking_requests")
+          .update({ status: "approved" })
+          .eq("id", appt.booking_request_id);
+      }
+      toast.success("Booking cancelled");
+      setShowSlotDialog(false);
+      fetchSlots();
+    } catch (err) {
+      console.error("Cancel booking failed", err);
+      toast.error("Could not cancel booking");
+    } finally {
+      setCancellingBooking(false);
+    }
+  };
+
+  const handleRebookBooking = async () => {
+    const appt = selectedSlot?.appointments?.[0];
+    if (!selectedSlot || !appt || !rebookSlotId) return;
+    const target = availableSlots.find((s) => s.id === rebookSlotId);
+    if (!target) return;
+    setRebooking(true);
+    try {
+      const { error: uErr } = await supabase
+        .from("appointments")
+        .update({
+          slot_id: target.id,
+          start_time: target.start_time,
+          end_time: target.end_time,
+        })
+        .eq("id", appt.id);
+      if (uErr) throw uErr;
+      await supabase
+        .from("availability_slots")
+        .update({ is_booked: true })
+        .eq("id", target.id);
+      await supabase
+        .from("availability_slots")
+        .update({ is_booked: false })
+        .eq("id", selectedSlot.id);
+
+      supabase.functions
+        .invoke("sync-gcal-event", { body: { appointmentId: appt.id } })
+        .catch((e) => console.warn("gcal resync failed", e));
+
+      toast.success("Booking moved");
+      setShowSlotDialog(false);
+      fetchSlots();
+    } catch (err) {
+      console.error("Rebook failed", err);
+      toast.error("Could not move booking");
+    } finally {
+      setRebooking(false);
+    }
+  };
 
   const fetchSlots = async () => {
     let startDate: Date;
@@ -1687,6 +1781,55 @@ const AdminCalendar = () => {
                   );
                 })()}
 
+                {selectedSlot.is_booked && (
+                  <div className="space-y-3 pt-4 border-t border-border">
+                    <h3 className="text-sm font-medium">Manage booking</h3>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Move to another available slot</Label>
+                      <div className="flex gap-2">
+                        <Select value={rebookSlotId} onValueChange={setRebookSlotId}>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue
+                              placeholder={
+                                loadingAvailable
+                                  ? "Loading…"
+                                  : availableSlots.length === 0
+                                  ? "No upcoming free slots"
+                                  : "Select a slot"
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableSlots.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {format(parseISO(s.start_time), "EEE d MMM, HH:mm", { locale: enGB })}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          size="sm"
+                          onClick={handleRebookBooking}
+                          disabled={!rebookSlotId || rebooking}
+                        >
+                          {rebooking ? "Moving…" : "Move"}
+                        </Button>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        The client won't be notified automatically.
+                      </p>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      className="w-full"
+                      onClick={handleCancelBooking}
+                      disabled={cancellingBooking}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      {cancellingBooking ? "Cancelling…" : "Cancel booking"}
+                    </Button>
+                  </div>
+                )}
 
                 {!selectedSlot.is_booked && (
                   <div className="space-y-4">
