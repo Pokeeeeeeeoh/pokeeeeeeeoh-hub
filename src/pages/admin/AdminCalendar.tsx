@@ -71,6 +71,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { ImageLightbox } from "@/components/ImageLightbox";
+import { BookingImage } from "@/components/BookingImage";
 
 interface BookingRequestLite {
   id: string;
@@ -1771,7 +1772,7 @@ const AdminCalendar = () => {
                                 onClick={() => setLightbox({ open: true, index: i })}
                                 className="aspect-square rounded-lg border border-border overflow-hidden hover:border-primary/50 transition-colors"
                               >
-                                <img src={img} alt={`Reference ${i + 1}`} className="w-full h-full object-cover" />
+                                <BookingImage src={img} alt={`Reference ${i + 1}`} className="w-full h-full object-cover" />
                               </button>
                             ))}
                           </div>
