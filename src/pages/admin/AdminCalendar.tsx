@@ -879,6 +879,65 @@ const AdminCalendar = () => {
     }
   };
 
+  const handleUndo = async () => {
+    if (undoStack.length === 0 || undoing) return;
+    const action = undoStack[undoStack.length - 1];
+    setUndoing(true);
+    try {
+      if (action.type === "insert") {
+        const { error } = await supabase
+          .from("availability_slots")
+          .delete()
+          .in("id", action.ids);
+        if (error) throw error;
+      } else if (action.type === "updateTime") {
+        const { error } = await supabase
+          .from("availability_slots")
+          .update({ start_time: action.prevStart, end_time: action.prevEnd })
+          .eq("id", action.slotId);
+        if (error) throw error;
+        if (action.wasBooked) {
+          await supabase
+            .from("appointments")
+            .update({ start_time: action.prevStart, end_time: action.prevEnd })
+            .eq("slot_id", action.slotId);
+        }
+      } else if (action.type === "delete") {
+        const { error } = await supabase
+          .from("availability_slots")
+          .insert(action.row);
+        if (error) throw error;
+      } else if (action.type === "block") {
+        const { error } = await supabase
+          .from("availability_slots")
+          .update({ is_blocked: action.prevBlocked })
+          .eq("id", action.slotId);
+        if (error) throw error;
+      }
+      setUndoStack((prev) => prev.slice(0, -1));
+      toast.success(`Undone: ${action.label}`);
+      fetchSlots();
+    } catch (err) {
+      console.error("Undo failed:", err);
+      toast.error("Could not undo last change");
+    } finally {
+      setUndoing(false);
+    }
+  };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !e.shiftKey) {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+        e.preventDefault();
+        handleUndo();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
   const toggleRepeatDay = (day: number) => {
     setSlotRepeatDays((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
