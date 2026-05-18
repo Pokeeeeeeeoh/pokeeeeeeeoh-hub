@@ -317,7 +317,7 @@ const AdminSettings = () => {
         </div>
 
         <Tabs defaultValue="homepage" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="homepage" className="flex items-center gap-2">
               <Home className="h-4 w-4" />
               <span className="hidden sm:inline">Homepage</span>
@@ -333,6 +333,10 @@ const AdminSettings = () => {
             <TabsTrigger value="text" className="flex items-center gap-2">
               <Type className="h-4 w-4" />
               <span className="hidden sm:inline">Live Preview</span>
+            </TabsTrigger>
+            <TabsTrigger value="link" className="flex items-center gap-2">
+              <LinkIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Booking Link</span>
             </TabsTrigger>
           </TabsList>
 
