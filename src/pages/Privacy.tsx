@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Privacy() {
@@ -32,8 +33,8 @@ export default function Privacy() {
         {loading ? (
           <p className="text-muted-foreground">Loading…</p>
         ) : (
-          <article className="prose prose-sm max-w-none whitespace-pre-wrap font-sans">
-            {text}
+          <article className="prose prose-sm max-w-none font-sans">
+            <ReactMarkdown>{text}</ReactMarkdown>
           </article>
         )}
       </main>
