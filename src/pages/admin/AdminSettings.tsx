@@ -737,6 +737,10 @@ const AdminSettings = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="link" className="space-y-6">
+            <BookingLinkPanel />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
