@@ -572,6 +572,10 @@ export type Database = {
           read_ct: number
         }[]
       }
+      upsert_client_for_booking: {
+        Args: { _email: string; _name: string; _phone: string }
+        Returns: string
+      }
     }
     Enums: {
       request_status:
