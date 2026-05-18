@@ -385,6 +385,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_booking_by_token: { Args: { _token: string }; Returns: Json }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
