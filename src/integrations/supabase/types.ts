@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_settings: {
+        Row: {
+          google_calendar_id: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          google_calendar_id?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          google_calendar_id?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           created_at: string
@@ -327,7 +345,6 @@ export type Database = {
         Row: {
           address: string
           email: string
-          google_calendar_id: string | null
           id: string
           site_name: string
           tagline: string
@@ -336,7 +353,6 @@ export type Database = {
         Insert: {
           address?: string
           email?: string
-          google_calendar_id?: string | null
           id?: string
           site_name?: string
           tagline?: string
@@ -345,7 +361,6 @@ export type Database = {
         Update: {
           address?: string
           email?: string
-          google_calendar_id?: string | null
           id?: string
           site_name?: string
           tagline?: string
