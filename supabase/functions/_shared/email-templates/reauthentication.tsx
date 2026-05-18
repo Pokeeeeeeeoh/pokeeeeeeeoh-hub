@@ -36,7 +36,7 @@ export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => 
 
 export default ReauthenticationEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
+const main = { backgroundColor: '#ffffff', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, Arial, sans-serif' }
 const container = { padding: '20px 25px' }
 const h1 = {
   fontSize: '22px',
@@ -51,7 +51,7 @@ const text = {
   margin: '0 0 25px',
 }
 const codeStyle = {
-  fontFamily: 'Courier, monospace',
+  fontFamily: 'JetBrains Mono, Courier, monospace',
   fontSize: '22px',
   fontWeight: 'bold' as const,
   color: '#000000',
