@@ -531,6 +531,11 @@ const SelectSlot = () => {
               <Label htmlFor="notes">Notes</Label>
               <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Anything we should know? (optional)" />
             </div>
+            {/* Honeypot — hidden from real users */}
+            <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
+              <label htmlFor="website">Website</label>
+              <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
+            </div>
           </div>
         )}
 
