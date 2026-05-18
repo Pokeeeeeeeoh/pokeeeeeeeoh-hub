@@ -10,7 +10,14 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { token, slotId, name, email, phone, notes } = body ?? {};
+    const { token, linkKey, slotId, name, email, phone, notes, website } = body ?? {};
+
+    // Honeypot — bots fill hidden field; real users don't.
+    if (typeof website === "string" && website.trim() !== "") {
+      return new Response(JSON.stringify({ error: "Invalid submission" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!slotId) {
       return new Response(JSON.stringify({ error: "Missing slotId" }), {
@@ -25,8 +32,16 @@ Deno.serve(async (req) => {
     const projectUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Resolve client + booking request — either via token (legacy approval link)
-    // or by email (open booking link).
+    // Hash client IP for rate limiting (don't store raw IP).
+    const rawIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || req.headers.get("cf-connecting-ip")
+      || "unknown";
+    const ipBytes = new TextEncoder().encode(rawIp + "|pokeeeeeeeoh");
+    const hashBuf = await crypto.subtle.digest("SHA-256", ipBytes);
+    const ipHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, "0")).join("");
+
+    // Resolve client + booking request — either via token (approval link)
+    // or open-link mode (requires valid linkKey).
     let request: { id: string; client_id: string; status: string; clients: { name: string; email: string } | null } | null = null;
 
     if (token) {
@@ -41,6 +56,34 @@ Deno.serve(async (req) => {
       }
       request = data as any;
     } else {
+      // Open-link mode requires a valid linkKey
+      const cleanKey = typeof linkKey === "string" ? linkKey.trim() : "";
+      if (!cleanKey) throw new Error("Missing booking link key");
+
+      const { data: settings } = await supabase
+        .from("admin_settings")
+        .select("booking_link_key")
+        .not("booking_link_key", "is", null)
+        .limit(1)
+        .maybeSingle();
+
+      if (!settings?.booking_link_key || settings.booking_link_key !== cleanKey) {
+        throw new Error("Invalid booking link");
+      }
+
+      // Rate limit: max 3 bookings per IP per hour
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const { count: recentCount } = await supabase
+        .from("booking_attempts")
+        .select("id", { count: "exact", head: true })
+        .eq("ip_hash", ipHash)
+        .eq("success", true)
+        .gte("created_at", oneHourAgo);
+
+      if ((recentCount ?? 0) >= 3) {
+        throw new Error("Too many bookings from your network. Please try again later.");
+      }
+
       const cleanEmail = (email ?? "").trim().toLowerCase();
       const cleanName = (name ?? "").trim();
       const cleanPhone = (phone ?? "").trim() || null;
@@ -48,6 +91,9 @@ Deno.serve(async (req) => {
 
       if (!cleanEmail || !cleanName) {
         throw new Error("Name and email are required");
+      }
+      if (cleanName.length > 200 || cleanEmail.length > 320) {
+        throw new Error("Input too long");
       }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
         throw new Error("Invalid email address");
@@ -142,6 +188,15 @@ Deno.serve(async (req) => {
       end_time: slot.end_time,
     }).select("id").single();
     if (apptErr) throw apptErr;
+
+    // Record successful attempt for rate limiting (open-link mode only)
+    if (!token) {
+      await supabase.from("booking_attempts").insert({
+        ip_hash: ipHash,
+        link_key: linkKey ?? null,
+        success: true,
+      });
+    }
 
     // Fire-and-forget: push to Google Calendar
     if (apptRow?.id) {

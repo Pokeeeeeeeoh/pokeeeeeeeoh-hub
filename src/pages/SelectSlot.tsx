@@ -45,6 +45,7 @@ const SelectSlot = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get("token");
+  const linkKey = searchParams.get("key");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,11 +66,24 @@ const SelectSlot = () => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
+  const [website, setWebsite] = useState(""); // honeypot
 
   useEffect(() => {
     async function init() {
       if (!token) {
-        // Open-calendar mode — no token, anyone can pick a slot and enter details
+        // Open-link mode requires a valid key
+        if (!linkKey) {
+          setError("This page is not publicly accessible. You need a valid booking link.");
+          setLoading(false);
+          return;
+        }
+        const { data: valid, error: keyErr } = await supabase
+          .rpc("is_valid_booking_link_key", { _key: linkKey });
+        if (keyErr || !valid) {
+          setError("This booking link is invalid or has been revoked.");
+          setLoading(false);
+          return;
+        }
         await fetchSlots();
         setLoading(false);
         return;
@@ -131,7 +145,7 @@ const SelectSlot = () => {
     }
 
     init();
-  }, [token]);
+  }, [token, linkKey]);
 
   const fetchSlots = async () => {
     const { data } = await supabase
@@ -184,10 +198,12 @@ const SelectSlot = () => {
       if (token) {
         payload.token = token;
       } else {
+        payload.linkKey = linkKey;
         payload.name = name.trim();
         payload.email = email.trim();
         payload.phone = phone.trim();
         payload.notes = notes.trim();
+        payload.website = website; // honeypot
       }
 
       const { data: result, error: fnError } = await supabase.functions.invoke("book-slot", {
@@ -514,6 +530,11 @@ const SelectSlot = () => {
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
               <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Anything we should know? (optional)" />
+            </div>
+            {/* Honeypot — hidden from real users */}
+            <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
+              <label htmlFor="website">Website</label>
+              <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
             </div>
           </div>
         )}
