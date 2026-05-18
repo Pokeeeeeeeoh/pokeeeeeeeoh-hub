@@ -17,6 +17,7 @@ import {
   ChevronUp,
   ChevronDown,
   Type,
+  Link as LinkIcon,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
