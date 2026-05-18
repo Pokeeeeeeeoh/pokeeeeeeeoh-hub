@@ -652,11 +652,21 @@ const AdminCalendar = () => {
         return;
       }
 
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from("availability_slots")
-        .insert(slotsToCreate);
+        .insert(slotsToCreate)
+        .select("id");
 
       if (error) throw error;
+
+      const ids = (inserted || []).map((r) => r.id as string);
+      if (ids.length > 0) {
+        pushUndo({
+          type: "insert",
+          ids,
+          label: `${ids.length} slot${ids.length > 1 ? "s" : ""} added`,
+        });
+      }
 
       toast.success(`${slotsToCreate.length} slot${slotsToCreate.length > 1 ? "s" : ""} added`);
       setShowDayDialog(false);
@@ -739,11 +749,21 @@ const AdminCalendar = () => {
         return;
       }
 
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from("availability_slots")
-        .insert(slotsToCreate);
+        .insert(slotsToCreate)
+        .select("id");
 
       if (error) throw error;
+
+      const ids = (inserted || []).map((r) => r.id as string);
+      if (ids.length > 0) {
+        pushUndo({
+          type: "insert",
+          ids,
+          label: `${ids.length} repeated slot${ids.length > 1 ? "s" : ""}`,
+        });
+      }
 
       toast.success(`${slotsToCreate.length} slot${slotsToCreate.length > 1 ? "s" : ""} added`);
       setShowSlotDialog(false);
