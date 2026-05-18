@@ -10,7 +10,14 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { token, slotId, name, email, phone, notes } = body ?? {};
+    const { token, linkKey, slotId, name, email, phone, notes, website } = body ?? {};
+
+    // Honeypot — bots fill hidden field; real users don't.
+    if (typeof website === "string" && website.trim() !== "") {
+      return new Response(JSON.stringify({ error: "Invalid submission" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!slotId) {
       return new Response(JSON.stringify({ error: "Missing slotId" }), {
@@ -25,8 +32,16 @@ Deno.serve(async (req) => {
     const projectUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Resolve client + booking request — either via token (legacy approval link)
-    // or by email (open booking link).
+    // Hash client IP for rate limiting (don't store raw IP).
+    const rawIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || req.headers.get("cf-connecting-ip")
+      || "unknown";
+    const ipBytes = new TextEncoder().encode(rawIp + "|pokeeeeeeeoh");
+    const hashBuf = await crypto.subtle.digest("SHA-256", ipBytes);
+    const ipHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, "0")).join("");
+
+    // Resolve client + booking request — either via token (approval link)
+    // or open-link mode (requires valid linkKey).
     let request: { id: string; client_id: string; status: string; clients: { name: string; email: string } | null } | null = null;
 
     if (token) {
