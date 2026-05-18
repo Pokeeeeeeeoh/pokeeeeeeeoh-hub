@@ -293,7 +293,94 @@ const AdminCalendar = () => {
 
   useEffect(() => {
     setEditingBooking(false);
+    setRebookSlotId("");
+    if (selectedSlot?.is_booked) {
+      fetchAvailableSlotsForRebook();
+    }
   }, [selectedSlot?.id]);
+
+  const fetchAvailableSlotsForRebook = async () => {
+    setLoadingAvailable(true);
+    const { data } = await supabase
+      .from("availability_slots")
+      .select("id, start_time, end_time")
+      .eq("is_booked", false)
+      .eq("is_blocked", false)
+      .gte("start_time", new Date().toISOString())
+      .order("start_time", { ascending: true })
+      .limit(200);
+    setAvailableSlots(data || []);
+    setLoadingAvailable(false);
+  };
+
+  const handleCancelBooking = async () => {
+    const appt = selectedSlot?.appointments?.[0];
+    if (!selectedSlot || !appt) return;
+    if (!confirm("Cancel this booking? The slot will become available again.")) return;
+    setCancellingBooking(true);
+    try {
+      const { error: aErr } = await supabase.from("appointments").delete().eq("id", appt.id);
+      if (aErr) throw aErr;
+      await supabase
+        .from("availability_slots")
+        .update({ is_booked: false })
+        .eq("id", selectedSlot.id);
+      if (appt.booking_request_id) {
+        await supabase
+          .from("booking_requests")
+          .update({ status: "approved" })
+          .eq("id", appt.booking_request_id);
+      }
+      toast.success("Booking cancelled");
+      setShowSlotDialog(false);
+      fetchSlots();
+    } catch (err) {
+      console.error("Cancel booking failed", err);
+      toast.error("Could not cancel booking");
+    } finally {
+      setCancellingBooking(false);
+    }
+  };
+
+  const handleRebookBooking = async () => {
+    const appt = selectedSlot?.appointments?.[0];
+    if (!selectedSlot || !appt || !rebookSlotId) return;
+    const target = availableSlots.find((s) => s.id === rebookSlotId);
+    if (!target) return;
+    setRebooking(true);
+    try {
+      const { error: uErr } = await supabase
+        .from("appointments")
+        .update({
+          slot_id: target.id,
+          start_time: target.start_time,
+          end_time: target.end_time,
+        })
+        .eq("id", appt.id);
+      if (uErr) throw uErr;
+      await supabase
+        .from("availability_slots")
+        .update({ is_booked: true })
+        .eq("id", target.id);
+      await supabase
+        .from("availability_slots")
+        .update({ is_booked: false })
+        .eq("id", selectedSlot.id);
+
+      supabase.functions
+        .invoke("sync-gcal-event", { body: { appointmentId: appt.id } })
+        .catch((e) => console.warn("gcal resync failed", e));
+
+      toast.success("Booking moved");
+      setShowSlotDialog(false);
+      fetchSlots();
+    } catch (err) {
+      console.error("Rebook failed", err);
+      toast.error("Could not move booking");
+    } finally {
+      setRebooking(false);
+    }
+  };
 
   const fetchSlots = async () => {
     let startDate: Date;
