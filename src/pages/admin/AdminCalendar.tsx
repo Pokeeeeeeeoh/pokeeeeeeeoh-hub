@@ -37,6 +37,7 @@ import {
   Phone,
   Copy,
   Pencil,
+  Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -188,6 +189,28 @@ const AdminCalendar = () => {
   const [editResponses, setEditResponses] = useState<Record<string, string>>({});
   const [editAdminNotes, setEditAdminNotes] = useState("");
   const [savingBooking, setSavingBooking] = useState(false);
+
+  // Undo history for schedule edits
+  type UndoAction =
+    | { type: "insert"; ids: string[]; label: string }
+    | {
+        type: "updateTime";
+        slotId: string;
+        prevStart: string;
+        prevEnd: string;
+        wasBooked: boolean;
+        label: string;
+      }
+    | {
+        type: "delete";
+        row: { id: string; start_time: string; end_time: string; is_blocked: boolean; is_booked: boolean; notes: string | null };
+        label: string;
+      }
+    | { type: "block"; slotId: string; prevBlocked: boolean; label: string };
+  const [undoStack, setUndoStack] = useState<UndoAction[]>([]);
+  const [undoing, setUndoing] = useState(false);
+  const pushUndo = (action: UndoAction) =>
+    setUndoStack((prev) => [...prev.slice(-19), action]);
 
   const startEditBooking = () => {
     const appt = selectedSlot?.appointments?.[0];
