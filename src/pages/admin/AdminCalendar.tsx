@@ -119,7 +119,7 @@ interface SlotPattern {
 const DEFAULT_PATTERNS: SlotPattern[] = [
   { startTime: "10:00", endTime: "12:00" },
   { startTime: "13:00", endTime: "15:00" },
-  { startTime: "16:00", endTime: "18:00" },
+  { startTime: "15:00", endTime: "17:00" },
 ];
 
 const WEEKDAYS = [
