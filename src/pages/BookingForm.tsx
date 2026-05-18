@@ -72,12 +72,12 @@ const BookingForm = () => {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const validFiles = files.filter(file => {
-      const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
+      const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'image/gif'];
       return validTypes.includes(file.type) && file.size <= 10 * 1024 * 1024;
     });
 
     if (validFiles.length !== files.length) {
-      toast.error("Some files were skipped. Only JPG, PNG, WEBP, HEIC, PDF under 10MB allowed.");
+      toast.error("Some files were skipped. Only JPG, PNG, WEBP, HEIC, HEIF, GIF under 10MB allowed.");
     }
 
     setImages(prev => [...prev, ...validFiles]);
@@ -141,17 +141,18 @@ const BookingForm = () => {
         imageUrls.push(fileName);
       }
 
-      // Create booking request
-      const { data: newRequest, error: requestError } = await supabase
+      const bookingRequestId = crypto.randomUUID();
+
+      // Create booking request without reading it back (public users cannot SELECT this table)
+      const { error: requestError } = await supabase
         .from("booking_requests")
         .insert({
+          id: bookingRequestId,
           client_id: clientId,
           form_responses: formData,
           images: imageUrls,
           status: "new",
-        })
-        .select("id")
-        .single();
+        });
 
       if (requestError) throw requestError;
 
@@ -161,7 +162,7 @@ const BookingForm = () => {
           to: clientInfo.email,
           name: clientInfo.name,
           adminEmail: "jakehaynes@gmail.com",
-          bookingRequestId: newRequest?.id,
+          bookingRequestId,
         },
       }).catch((e) => console.error("Email send failed:", e));
 
@@ -379,7 +380,7 @@ const BookingForm = () => {
                   <span className="text-xs text-muted-foreground">Add Image</span>
                   <input
                     type="file"
-                    accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/gif"
                     multiple
                     onChange={handleImageUpload}
                     className="hidden"
