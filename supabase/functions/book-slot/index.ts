@@ -229,9 +229,7 @@ Deno.serve(async (req) => {
       }).catch((e) => console.warn("gcal sync invoke failed", e));
     }
 
-    // Mark slot booked
-    await supabase.from("availability_slots").update({ is_booked: true }).eq("id", slotId);
-    // Update request status
+    // Slot already locked above. Just update request status.
     await supabase.from("booking_requests").update({ status: "booked" }).eq("id", request.id);
 
     const clientEmail = request.clients?.email;
