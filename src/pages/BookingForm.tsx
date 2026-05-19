@@ -119,8 +119,12 @@ const BookingForm = () => {
       // keyed by email so paths are stable before we have a client id.
       const tempKey = `pending/${clientInfo.email.toLowerCase().replace(/[^a-z0-9]/g, "_")}-${Date.now()}`;
       const imageUrls: string[] = [];
-      for (const image of images) {
-        const fileName = `${tempKey}/${image.name}`;
+      for (const [idx, image] of images.entries()) {
+        // Sanitise the client-supplied filename to prevent path traversal /
+        // weird characters from polluting storage paths.
+        const rawName = (image.name || "upload").split(/[\\/]/).pop() || "upload";
+        const safeName = rawName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80);
+        const fileName = `${tempKey}/${Date.now()}_${idx}_${safeName}`;
         const { error: uploadError } = await supabase.storage
           .from("booking-images")
           .upload(fileName, image);
