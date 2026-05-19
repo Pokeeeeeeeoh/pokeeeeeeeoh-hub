@@ -11,6 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUiText } from "@/hooks/useUiText";
 import GdprNotice from "@/components/GdprNotice";
+import tellMeEverythingImg from "@/assets/tell-me-everything.jpeg";
+import submitImg from "@/assets/submit.jpeg";
 
 interface FormField {
   id: string;
@@ -205,12 +207,13 @@ const BookingForm = () => {
             <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase mb-2">
               {t("form_step", "Step 2 of 2")}
             </p>
-            <h1 className="text-3xl font-bold tracking-tight mb-2">
-              {t("form_title", "Tell Us About Your Idea")}
+            <h1 className="mb-2">
+              <img
+                src={tellMeEverythingImg}
+                alt={t("form_title", "Tell me everything")}
+                className="w-full max-w-lg h-auto"
+              />
             </h1>
-            <p className="text-muted-foreground">
-              {t("form_subtitle", "Fill out the form below with details about your tattoo concept.")}
-            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
@@ -387,21 +390,24 @@ const BookingForm = () => {
 
             {/* Submit */}
             <div className="pt-4">
-              <Button 
-                type="submit" 
-                size="lg" 
-                className="w-full"
+              <button
+                type="submit"
                 disabled={submitting}
+                className="w-full flex items-center justify-center py-4 hover:opacity-70 transition-opacity disabled:opacity-40"
               >
                 {submitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Submitting...
                   </>
                 ) : (
-                  t("form_submit", "Submit Booking Request")
+                  <img
+                    src={submitImg}
+                    alt={t("form_submit", "Submit")}
+                    className="h-16 sm:h-20 w-auto"
+                  />
                 )}
-              </Button>
+              </button>
               <p className="text-xs text-center text-muted-foreground mt-4">
                 {t("form_submit_disclaimer", "By submitting, you agree to our booking policies. Your request will be reviewed within 24-48 hours.")}
               </p>
