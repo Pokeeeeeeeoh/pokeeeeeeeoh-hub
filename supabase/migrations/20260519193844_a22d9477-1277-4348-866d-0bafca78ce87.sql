@@ -1,0 +1,1 @@
+UPDATE public.ui_text SET value = 'Reference Images' WHERE key = 'form_images_heading';
