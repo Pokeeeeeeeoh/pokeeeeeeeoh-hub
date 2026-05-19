@@ -1220,9 +1220,9 @@ const AdminCalendar = () => {
             Loading calendar...
           </div>
         ) : viewMode === "week" ? (
-          /* Week View */
-          <div className="overflow-x-auto -mx-4 px-4 pb-4">
-            <div className="grid grid-cols-7 gap-1.5 min-w-[700px]">
+          <>
+            {/* Week View — Mobile: stacked day list */}
+            <div className="md:hidden space-y-2">
               {weekDays.map((day, i) => {
                 const daySlots = getSlotsForDay(day);
                 const isToday = isSameDay(day, new Date());
@@ -1232,7 +1232,7 @@ const AdminCalendar = () => {
                   <div
                     key={i}
                     className={cn(
-                      "min-h-[280px] rounded-lg border flex flex-col",
+                      "rounded-lg border",
                       isToday ? "border-primary" : "border-border",
                       isPast && "opacity-50"
                     )}
@@ -1241,141 +1241,228 @@ const AdminCalendar = () => {
                       onClick={() => !isPast && openDayDialog(day)}
                       disabled={isPast}
                       className={cn(
-                        "p-2 border-b border-border text-center shrink-0 hover:bg-accent/50 transition-colors",
+                        "w-full flex items-center justify-between px-3 py-2 border-b border-border",
                         isToday && "bg-primary/10",
-                        !isPast && "cursor-pointer"
+                        !isPast && "hover:bg-accent/50 active:bg-accent/70 transition-colors"
                       )}
                     >
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                        {format(day, "EEEE", { locale: enGB })}
-                      </p>
-                      <p
-                        className={cn(
-                          "text-lg font-semibold",
-                          isToday && "text-primary"
-                        )}
-                      >
-                        {format(day, "d")}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {format(day, "MMM", { locale: enGB })}
-                      </p>
+                      <div className="flex items-baseline gap-2">
+                        <span className={cn("text-base font-semibold", isToday && "text-primary")}>
+                          {format(day, "EEE d MMM", { locale: enGB })}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {daySlots.length} slot{daySlots.length === 1 ? "" : "s"}
+                        </span>
+                      </div>
+                      {!isPast && (
+                        <span className="text-muted-foreground text-xs flex items-center gap-1">
+                          <Plus className="h-3.5 w-3.5" /> Add
+                        </span>
+                      )}
                     </button>
 
-                    <div className="flex-1 p-1.5 space-y-1 overflow-y-auto">
-                      {daySlots.map((slot) => (
-                        <SlotCard key={slot.id} slot={slot} />
-                      ))}
-                    </div>
+                    {daySlots.length > 0 && (
+                      <div className="p-2 space-y-1.5">
+                        {daySlots.map((slot) => (
+                          <SlotCard key={slot.id} slot={slot} />
+                        ))}
+                      </div>
+                    )}
 
-                    {!isPast && (
-                      <div className="p-1.5 pt-0 shrink-0 flex gap-1">
+                    {!isPast && daySlots.length > 0 && (
+                      <div className="px-2 pb-2">
                         <button
-                          onClick={() => openDayDialog(day)}
-                          className="flex-1 p-1.5 rounded border border-dashed border-border hover:border-primary/50 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1"
+                          onClick={() => openRepeatDayDialog(day)}
+                          className="w-full text-[11px] py-1.5 rounded border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-primary/50 flex items-center justify-center gap-1.5"
                         >
-                          <Plus className="h-3 w-3" />
-                          <span className="text-[10px]">Add</span>
+                          <Copy className="h-3 w-3" /> Repeat this day
                         </button>
-                        {daySlots.length > 0 && (
-                          <button
-                            onClick={() => openRepeatDayDialog(day)}
-                            className="p-1.5 rounded border border-dashed border-border hover:border-primary/50 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center"
-                            title="Repeat entire day"
-                          >
-                            <Copy className="h-3 w-3" />
-                          </button>
-                        )}
                       </div>
                     )}
                   </div>
                 );
               })}
             </div>
-          </div>
-        ) : (
-          /* Month View */
-          <div className="overflow-x-auto -mx-4 px-4 pb-4">
-            <div className="min-w-[700px]">
-              {/* Weekday Headers */}
-              <div className="grid grid-cols-7 gap-1 mb-1">
-                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-                  <div
-                    key={d}
-                    className="text-center text-[10px] uppercase tracking-wider text-muted-foreground py-2"
-                  >
-                    {d}
-                  </div>
-                ))}
-              </div>
 
-              {/* Days Grid */}
-              <div className="grid grid-cols-7 gap-1">
-                {monthDays.map((day, i) => {
+            {/* Week View — Desktop: 7-column grid */}
+            <div className="hidden md:block">
+              <div className="grid grid-cols-7 gap-1.5">
+                {weekDays.map((day, i) => {
                   const daySlots = getSlotsForDay(day);
                   const isToday = isSameDay(day, new Date());
-                  const isCurrentMonth = isSameMonth(day, currentDate);
                   const isPast = day < new Date() && !isToday;
 
                   return (
                     <div
                       key={i}
                       className={cn(
-                        "min-h-[100px] rounded border p-1.5 flex flex-col",
+                        "min-h-[280px] rounded-lg border flex flex-col",
                         isToday ? "border-primary" : "border-border",
-                        !isCurrentMonth && "bg-muted/30",
                         isPast && "opacity-50"
                       )}
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <button
-                          onClick={() => !isPast && isCurrentMonth && openDayDialog(day)}
-                          disabled={isPast || !isCurrentMonth}
+                      <button
+                        onClick={() => !isPast && openDayDialog(day)}
+                        disabled={isPast}
+                        className={cn(
+                          "p-2 border-b border-border text-center shrink-0 hover:bg-accent/50 transition-colors",
+                          isToday && "bg-primary/10",
+                          !isPast && "cursor-pointer"
+                        )}
+                      >
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                          {format(day, "EEEE", { locale: enGB })}
+                        </p>
+                        <p
                           className={cn(
-                            "text-xs font-medium hover:text-primary transition-colors",
-                            isToday && "text-primary",
-                            !isCurrentMonth && "text-muted-foreground"
+                            "text-lg font-semibold",
+                            isToday && "text-primary"
                           )}
                         >
                           {format(day, "d")}
-                        </button>
-                        {!isPast && isCurrentMonth && (
-                          <button
-                            onClick={() => openDayDialog(day)}
-                            className="p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </button>
-                        )}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {format(day, "MMM", { locale: enGB })}
+                        </p>
+                      </button>
+
+                      <div className="flex-1 p-1.5 space-y-1 overflow-y-auto">
+                        {daySlots.map((slot) => (
+                          <SlotCard key={slot.id} slot={slot} />
+                        ))}
                       </div>
 
-                      <div className="flex-1 space-y-0.5 overflow-y-auto">
-                        {daySlots.slice(0, 3).map((slot) => (
+                      {!isPast && (
+                        <div className="p-1.5 pt-0 shrink-0 flex gap-1">
                           <button
-                            key={slot.id}
-                            onClick={() => openSlotDialog(slot)}
-                            className={cn(
-                              "w-full text-left text-[10px] px-1 py-0.5 rounded truncate",
-                              slot.is_booked
-                                ? "bg-green-500/20 text-green-700 dark:text-green-400 hover:bg-green-500/30"
-                                : slot.is_blocked
-                                ? "bg-muted text-muted-foreground line-through"
-                                : "bg-primary/10 text-primary hover:bg-primary/20"
-                            )}
+                            onClick={() => openDayDialog(day)}
+                            className="flex-1 p-1.5 rounded border border-dashed border-border hover:border-primary/50 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-1"
                           >
-                            {format(parseISO(slot.start_time), "HH:mm")}
+                            <Plus className="h-3 w-3" />
+                            <span className="text-[10px]">Add</span>
                           </button>
-                        ))}
-                        {daySlots.length > 3 && (
-                          <div className="text-[10px] text-muted-foreground px-1">
-                            +{daySlots.length - 3} more
-                          </div>
-                        )}
-                      </div>
+                          {daySlots.length > 0 && (
+                            <button
+                              onClick={() => openRepeatDayDialog(day)}
+                              className="p-1.5 rounded border border-dashed border-border hover:border-primary/50 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center"
+                              title="Repeat entire day"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
+            </div>
+          </>
+        ) : (
+          /* Month View — fits any width */
+          <div className="w-full">
+            {/* Weekday Headers */}
+            <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-1">
+              {["M", "T", "W", "T", "F", "S", "S"].map((d, idx) => (
+                <div
+                  key={idx}
+                  className="text-center text-[10px] uppercase tracking-wider text-muted-foreground py-1.5 sm:py-2"
+                >
+                  <span className="sm:hidden">{d}</span>
+                  <span className="hidden sm:inline">{["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][idx]}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Days Grid */}
+            <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
+              {monthDays.map((day, i) => {
+                const daySlots = getSlotsForDay(day);
+                const isToday = isSameDay(day, new Date());
+                const isCurrentMonth = isSameMonth(day, currentDate);
+                const isPast = day < new Date() && !isToday;
+
+                return (
+                  <div
+                    key={i}
+                    className={cn(
+                      "min-h-[68px] sm:min-h-[100px] rounded border p-1 sm:p-1.5 flex flex-col overflow-hidden",
+                      isToday ? "border-primary" : "border-border",
+                      !isCurrentMonth && "bg-muted/30",
+                      isPast && "opacity-50"
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-0.5 sm:mb-1">
+                      <button
+                        onClick={() => !isPast && isCurrentMonth && openDayDialog(day)}
+                        disabled={isPast || !isCurrentMonth}
+                        className={cn(
+                          "text-[11px] sm:text-xs font-medium hover:text-primary transition-colors",
+                          isToday && "text-primary",
+                          !isCurrentMonth && "text-muted-foreground"
+                        )}
+                      >
+                        {format(day, "d")}
+                      </button>
+                      {!isPast && isCurrentMonth && (
+                        <button
+                          onClick={() => openDayDialog(day)}
+                          className="hidden sm:block p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Mobile: dot indicators */}
+                    <div className="sm:hidden flex-1 flex flex-wrap gap-0.5 content-start">
+                      {daySlots.slice(0, 4).map((slot) => (
+                        <button
+                          key={slot.id}
+                          onClick={() => openSlotDialog(slot)}
+                          className={cn(
+                            "h-1.5 w-1.5 rounded-full",
+                            slot.is_booked
+                              ? "bg-green-500"
+                              : slot.is_blocked
+                              ? "bg-muted-foreground/50"
+                              : "bg-primary"
+                          )}
+                          aria-label={`${format(parseISO(slot.start_time), "HH:mm")} slot`}
+                        />
+                      ))}
+                      {daySlots.length > 4 && (
+                        <span className="text-[8px] text-muted-foreground leading-none">+{daySlots.length - 4}</span>
+                      )}
+                    </div>
+
+                    {/* Desktop: time labels */}
+                    <div className="hidden sm:block flex-1 space-y-0.5 overflow-y-auto">
+                      {daySlots.slice(0, 3).map((slot) => (
+                        <button
+                          key={slot.id}
+                          onClick={() => openSlotDialog(slot)}
+                          className={cn(
+                            "w-full text-left text-[10px] px-1 py-0.5 rounded truncate",
+                            slot.is_booked
+                              ? "bg-green-500/20 text-green-700 dark:text-green-400 hover:bg-green-500/30"
+                              : slot.is_blocked
+                              ? "bg-muted text-muted-foreground line-through"
+                              : "bg-primary/10 text-primary hover:bg-primary/20"
+                          )}
+                        >
+                          {format(parseISO(slot.start_time), "HH:mm")}
+                        </button>
+                      ))}
+                      {daySlots.length > 3 && (
+                        <div className="text-[10px] text-muted-foreground px-1">
+                          +{daySlots.length - 3} more
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
