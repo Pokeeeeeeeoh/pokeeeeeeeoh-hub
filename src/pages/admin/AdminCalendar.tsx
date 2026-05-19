@@ -1413,7 +1413,7 @@ const AdminCalendar = () => {
                   >
                     <div className="flex items-center justify-between mb-0.5 sm:mb-1">
                       <button
-                        onClick={() => !isPast && isCurrentMonth && openDayDialog(day)}
+                        onClick={() => !isPast && isCurrentMonth && handleDayClick(day)}
                         disabled={isPast || !isCurrentMonth}
                         className={cn(
                           "text-[11px] sm:text-xs font-medium hover:text-primary transition-colors",
@@ -1427,52 +1427,88 @@ const AdminCalendar = () => {
                         <button
                           onClick={() => openDayDialog(day)}
                           className="hidden sm:block p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
+                          title="Add slot"
                         >
                           <Plus className="h-3 w-3" />
                         </button>
                       )}
                     </div>
 
-                    {/* Mobile: dot indicators */}
-                    <div className="sm:hidden flex-1 flex flex-wrap gap-0.5 content-start">
-                      {daySlots.slice(0, 4).map((slot) => (
-                        <button
-                          key={slot.id}
-                          onClick={() => openSlotDialog(slot)}
-                          className={cn(
-                            "h-1.5 w-1.5 rounded-full",
-                            slot.is_booked
-                              ? "bg-green-500"
-                              : slot.is_blocked
-                              ? "bg-muted-foreground/50"
-                              : "bg-primary"
-                          )}
-                          aria-label={`${format(parseISO(slot.start_time), "HH:mm")} slot`}
-                        />
-                      ))}
-                      {daySlots.length > 4 && (
-                        <span className="text-[8px] text-muted-foreground leading-none">+{daySlots.length - 4}</span>
-                      )}
+                    {/* Mobile: client name if booked, else dot indicators */}
+                    <div className="sm:hidden flex-1 flex flex-col gap-0.5 overflow-hidden">
+                      {(() => {
+                        const bookedSlots = daySlots.filter(
+                          (s) => s.is_booked && s.appointments && s.appointments.length > 0,
+                        );
+                        if (bookedSlots.length > 0) {
+                          return (
+                            <button
+                              onClick={() => isCurrentMonth && openDayBookings(day)}
+                              disabled={!isCurrentMonth}
+                              className="text-left text-[9px] leading-tight text-green-700 dark:text-green-400 font-medium truncate"
+                            >
+                              {bookedSlots[0].appointments![0].clients?.name?.split(" ")[0] ?? "Booked"}
+                              {bookedSlots.length > 1 && (
+                                <span className="text-muted-foreground"> +{bookedSlots.length - 1}</span>
+                              )}
+                            </button>
+                          );
+                        }
+                        return (
+                          <div className="flex flex-wrap gap-0.5 content-start">
+                            {daySlots.slice(0, 4).map((slot) => (
+                              <button
+                                key={slot.id}
+                                onClick={() => openSlotDialog(slot)}
+                                className={cn(
+                                  "h-1.5 w-1.5 rounded-full",
+                                  slot.is_blocked
+                                    ? "bg-muted-foreground/50"
+                                    : "bg-primary",
+                                )}
+                                aria-label={`${format(parseISO(slot.start_time), "HH:mm")} slot`}
+                              />
+                            ))}
+                            {daySlots.length > 4 && (
+                              <span className="text-[8px] text-muted-foreground leading-none">
+                                +{daySlots.length - 4}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
 
-                    {/* Desktop: time labels */}
+                    {/* Desktop: time + client name */}
                     <div className="hidden sm:block flex-1 space-y-0.5 overflow-y-auto">
-                      {daySlots.slice(0, 3).map((slot) => (
-                        <button
-                          key={slot.id}
-                          onClick={() => openSlotDialog(slot)}
-                          className={cn(
-                            "w-full text-left text-[10px] px-1 py-0.5 rounded truncate",
-                            slot.is_booked
-                              ? "bg-green-500/20 text-green-700 dark:text-green-400 hover:bg-green-500/30"
-                              : slot.is_blocked
-                              ? "bg-muted text-muted-foreground line-through"
-                              : "bg-primary/10 text-primary hover:bg-primary/20"
-                          )}
-                        >
-                          {format(parseISO(slot.start_time), "HH:mm")}
-                        </button>
-                      ))}
+                      {daySlots.slice(0, 3).map((slot) => {
+                        const clientName =
+                          slot.is_booked && slot.appointments?.[0]?.clients?.name
+                            ? slot.appointments[0].clients.name
+                            : null;
+                        return (
+                          <button
+                            key={slot.id}
+                            onClick={() => openSlotDialog(slot)}
+                            className={cn(
+                              "w-full text-left text-[10px] px-1 py-0.5 rounded truncate",
+                              slot.is_booked
+                                ? "bg-green-500/20 text-green-700 dark:text-green-400 hover:bg-green-500/30"
+                                : slot.is_blocked
+                                ? "bg-muted text-muted-foreground line-through"
+                                : "bg-primary/10 text-primary hover:bg-primary/20",
+                            )}
+                            title={clientName ?? undefined}
+                          >
+                            {format(parseISO(slot.start_time), "HH:mm")}
+                            {clientName && (
+                              <span className="ml-1 font-medium">
+                                {clientName.split(" ")[0]}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                       {daySlots.length > 3 && (
                         <div className="text-[10px] text-muted-foreground px-1">
                           +{daySlots.length - 3} more
@@ -1485,6 +1521,7 @@ const AdminCalendar = () => {
             </div>
           </div>
         )}
+
 
         {/* Add Slot Dialog (Day Click) */}
         <Dialog open={showDayDialog} onOpenChange={setShowDayDialog}>
