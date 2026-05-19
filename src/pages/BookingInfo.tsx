@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import { useUiText } from "@/hooks/useUiText";
 import bookingInformationImg from "@/assets/booking-information.jpeg";
+import checkmarkImg from "@/assets/checkmark.jpeg";
 
 const BookingInfo = () => {
   const t = useUiText();
@@ -156,13 +157,13 @@ const BookingInfo = () => {
               onClick={() => setAcknowledged(!acknowledged)}
               disabled={!hasScrolledToBottom}
               aria-label="Acknowledge"
-              className={`mt-0.5 h-6 w-6 shrink-0 rounded-md border-2 flex items-center justify-center transition-all ${
-                acknowledged 
-                  ? "bg-foreground border-foreground" 
-                  : "border-foreground/40 hover:border-foreground"
-              }`}
+              className="mt-0.5 h-10 w-10 shrink-0 flex items-center justify-center transition-all"
             >
-              {acknowledged && <Check className="h-4 w-4 text-background" strokeWidth={3} />}
+              {acknowledged ? (
+                <img src={checkmarkImg} alt="Checked" className="h-12 w-12 object-contain" />
+              ) : (
+                <span className="block h-8 w-8 border-2 border-foreground rounded-sm" />
+              )}
             </button>
             <label 
               className="text-sm text-muted-foreground cursor-pointer"
