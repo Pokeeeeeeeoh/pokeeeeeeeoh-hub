@@ -81,7 +81,8 @@ const AdminLayout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="admin-scope min-h-screen bg-background">
+
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 border-b border-border bg-background h-14 flex items-center px-4">
         <Button
