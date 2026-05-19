@@ -35,8 +35,18 @@ interface BookingRequest {
   clients: Client;
 }
 
+interface Appointment {
+  id: string;
+  booking_request_id: string;
+  start_time: string;
+  end_time: string;
+  slot_id: string | null;
+  created_at: string;
+}
+
 const AdminDashboard = () => {
   const [requests, setRequests] = useState<BookingRequest[]>([]);
+  const [appointments, setAppointments] = useState<Record<string, Appointment>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
