@@ -35,8 +35,18 @@ interface BookingRequest {
   clients: Client;
 }
 
+interface Appointment {
+  id: string;
+  booking_request_id: string;
+  start_time: string;
+  end_time: string;
+  slot_id: string | null;
+  created_at: string;
+}
+
 const AdminDashboard = () => {
   const [requests, setRequests] = useState<BookingRequest[]>([]);
+  const [appointments, setAppointments] = useState<Record<string, Appointment>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -71,6 +81,21 @@ const AdminDashboard = () => {
       toast.error("Failed to load requests");
     } else {
       setRequests(data as unknown as BookingRequest[]);
+      // Fetch appointments for these requests
+      const ids = (data || []).map((r: any) => r.id);
+      if (ids.length) {
+        const { data: appts } = await supabase
+          .from("appointments")
+          .select("id, booking_request_id, start_time, end_time, slot_id, created_at")
+          .in("booking_request_id", ids)
+          .order("created_at", { ascending: false });
+        const map: Record<string, Appointment> = {};
+        (appts || []).forEach((a: any) => {
+          // keep the most recent appointment per request (first due to ordering)
+          if (!map[a.booking_request_id]) map[a.booking_request_id] = a;
+        });
+        setAppointments(map);
+      }
     }
     setLoading(false);
   };
@@ -376,8 +401,14 @@ const AdminDashboard = () => {
                       {request.clients?.email}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1 font-mono">
-                      {format(parseISO(request.created_at), "MMM d, yyyy 'at' h:mm a")}
+                      {format(parseISO(request.created_at), "MMM d, yyyy 'at' HH:mm")}
                     </p>
+                    {appointments[request.id] && (
+                      <p className="text-xs mt-1 font-mono text-foreground">
+                        <Clock className="h-3 w-3 inline mr-1" />
+                        Booked: {format(parseISO(appointments[request.id].start_time), "EEE MMM d, yyyy 'at' HH:mm")}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     {request.status === "new" && (
@@ -563,6 +594,30 @@ const AdminDashboard = () => {
                     <p className="text-xs text-muted-foreground mt-1">
                       Share this link with the client to let them select an appointment slot.
                     </p>
+                  </div>
+                )}
+
+                {/* Appointment Details */}
+                {appointments[selectedRequest.id] && (
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                      Appointment
+                    </h3>
+                    <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-2 text-sm">
+                      <p>
+                        <span className="text-muted-foreground">Date:</span>{" "}
+                        {format(parseISO(appointments[selectedRequest.id].start_time), "EEEE, MMMM d, yyyy")}
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">Time:</span>{" "}
+                        {format(parseISO(appointments[selectedRequest.id].start_time), "HH:mm")}
+                        {" – "}
+                        {format(parseISO(appointments[selectedRequest.id].end_time), "HH:mm")}
+                      </p>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        Booked {format(parseISO(appointments[selectedRequest.id].created_at), "MMM d, yyyy 'at' HH:mm")}
+                      </p>
+                    </div>
                   </div>
                 )}
 
