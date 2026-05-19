@@ -597,6 +597,30 @@ const AdminDashboard = () => {
                   </div>
                 )}
 
+                {/* Appointment Details */}
+                {appointments[selectedRequest.id] && (
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                      Appointment
+                    </h3>
+                    <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-2 text-sm">
+                      <p>
+                        <span className="text-muted-foreground">Date:</span>{" "}
+                        {format(parseISO(appointments[selectedRequest.id].start_time), "EEEE, MMMM d, yyyy")}
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">Time:</span>{" "}
+                        {format(parseISO(appointments[selectedRequest.id].start_time), "HH:mm")}
+                        {" – "}
+                        {format(parseISO(appointments[selectedRequest.id].end_time), "HH:mm")}
+                      </p>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        Booked {format(parseISO(appointments[selectedRequest.id].created_at), "MMM d, yyyy 'at' HH:mm")}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Actions */}
                 {selectedRequest.status === "new" && (
                   <div className="flex gap-3 pt-4 border-t border-border">
