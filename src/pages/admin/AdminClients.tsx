@@ -101,7 +101,7 @@ const AdminClients = () => {
   );
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 lg:p-8">
       <PullToRefreshPortal onRefresh={fetchClients} disabled={!!selectedClient} />
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
