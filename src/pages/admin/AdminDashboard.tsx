@@ -344,7 +344,7 @@ const AdminDashboard = () => {
               className="pl-10"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {["all", "new", "approved", "booked"].map((status) => (
               <Button
                 key={status}
