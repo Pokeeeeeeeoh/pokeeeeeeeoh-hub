@@ -232,9 +232,9 @@ const AdminEmails = () => {
                 <div className="p-6 text-center text-sm text-muted-foreground">No emails sent yet</div>
               )}
               {log.map((e) => (
-                <div key={e.id} className="p-3 flex items-center gap-3 hover:bg-secondary/40">
+                <div key={e.id} className="p-3 flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 hover:bg-secondary/40">
                   <Badge variant={e.status === "sent" ? "default" : "destructive"}>{e.status}</Badge>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 w-full sm:w-auto order-last sm:order-none">
                     <div className="text-sm truncate">{e.subject || "(no subject)"}</div>
                     <div className="text-xs text-muted-foreground truncate">
                       {e.recipient} · {e.template_key || "custom"} ·{" "}
