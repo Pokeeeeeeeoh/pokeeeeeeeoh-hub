@@ -483,7 +483,7 @@ const AdminDashboard = () => {
         <Dialog open={!!selectedRequest && !showDeclineDialog} onOpenChange={() => setSelectedRequest(null)}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="flex items-center justify-between gap-4">
+              <DialogTitle className="flex items-center gap-3 pr-10">
                 <span>Request Details</span>
                 {selectedRequest && !editing && (
                   <Button size="sm" variant="outline" onClick={() => startEdit(selectedRequest)}>
