@@ -72,6 +72,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { BookingImage } from "@/components/BookingImage";
+import { PullToRefreshPortal } from "@/components/PullToRefreshPortal";
 
 interface BookingRequestLite {
   id: string;
