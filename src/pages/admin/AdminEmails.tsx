@@ -259,10 +259,14 @@ const AdminEmails = () => {
             <DialogHeader>
               <DialogTitle>Preview: {active?.subject}</DialogTitle>
             </DialogHeader>
-            <div
-              className="border border-border rounded-md overflow-auto max-h-[60vh] bg-white"
-              dangerouslySetInnerHTML={{ __html: active?.body_html || "" }}
+            {/* Render in a sandboxed iframe so admin-authored HTML can't execute scripts in the app */}
+            <iframe
+              title="Email preview"
+              srcDoc={active?.body_html || ""}
+              sandbox=""
+              className="border border-border rounded-md w-full h-[60vh] bg-white"
             />
+
           </DialogContent>
         </Dialog>
 
