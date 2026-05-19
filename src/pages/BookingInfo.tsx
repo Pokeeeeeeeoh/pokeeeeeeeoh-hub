@@ -180,14 +180,14 @@ const BookingInfo = () => {
       {/* Fixed Footer */}
       <footer className="fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 backdrop-blur-sm p-4">
         <div className="container mx-auto max-w-2xl flex justify-end">
-          <Button 
+          <button
             onClick={handleContinue}
             disabled={!acknowledged}
-            className="group"
+            className="hover:opacity-70 transition-opacity disabled:opacity-30"
+            aria-label={t("booking_info_continue", "Continue")}
           >
-            {t("booking_info_continue", "Continue to Form")}
-            <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" strokeWidth={ICON_STROKE} />
-          </Button>
+            <img src={continueImg} alt="Continue" className="h-16 sm:h-20 w-auto" />
+          </button>
         </div>
       </footer>
     </div>
