@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Mail, Clock, ArrowRight } from "lucide-react";
+import { Mail, Clock, ArrowRight } from "lucide-react";
 import { useUiText } from "@/hooks/useUiText";
+import gotItImg from "@/assets/got-it.jpeg";
 
 const BookingConfirmation = () => {
   const t = useUiText();
@@ -9,9 +10,8 @@ const BookingConfirmation = () => {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
         <div className="mb-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-success/10 ring-8 ring-success/5 mb-6">
-            <CheckCircle2 className="h-12 w-12 text-success" strokeWidth={1.5} />
-          </div>
+          <img src={gotItImg} alt="Got it!" className="mx-auto h-32 sm:h-40 w-auto mb-6" />
+
           <h1 className="text-3xl font-bold tracking-tight mb-4">
             {t("confirmation_title", "Request Submitted!")}
           </h1>
