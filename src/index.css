@@ -218,3 +218,97 @@
   .stagger-4 { animation-delay: 0.4s; }
   .stagger-5 { animation-delay: 0.5s; }
 }
+
+/* ============================================ */
+/* Admin scope — more rounded, contemporary look */
+/* ============================================ */
+@layer components {
+  .admin-scope {
+    --radius: 0.875rem;
+    background:
+      radial-gradient(1200px 600px at 100% -10%, hsl(0 0% 94%) 0%, transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, hsl(0 0% 95%) 0%, transparent 55%),
+      hsl(0 0% 99%);
+  }
+
+  /* Rounder corners across common UI primitives */
+  .admin-scope .rounded-md { border-radius: 0.75rem; }
+  .admin-scope .rounded-lg { border-radius: 1rem; }
+  .admin-scope .rounded-xl { border-radius: 1.25rem; }
+  .admin-scope .rounded-sm { border-radius: 0.5rem; }
+  .admin-scope .rounded { border-radius: 0.625rem; }
+
+  /* Cards: softer surface, gentle shadow, hairline border */
+  .admin-scope [class*="border"][class*="rounded"],
+  .admin-scope .card,
+  .admin-scope [data-card] {
+    border-radius: 1rem;
+  }
+
+  /* Generic card-like containers (border + bg-card) */
+  .admin-scope .bg-card {
+    background: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(0 0% 99%) 100%);
+    border-radius: 1rem;
+    box-shadow: 0 1px 2px hsl(0 0% 0% / 0.04), 0 8px 24px -12px hsl(0 0% 0% / 0.08);
+  }
+
+  /* Buttons */
+  .admin-scope button,
+  .admin-scope .btn,
+  .admin-scope [role="button"] {
+    border-radius: 0.75rem;
+  }
+  .admin-scope button[class*="rounded-full"] { border-radius: 9999px; }
+
+  /* Inputs / textareas / selects */
+  .admin-scope input,
+  .admin-scope textarea,
+  .admin-scope select,
+  .admin-scope [role="combobox"] {
+    border-radius: 0.75rem;
+  }
+
+  /* Sidebar polish */
+  .admin-scope aside {
+    background: linear-gradient(180deg, hsl(0 0% 99%) 0%, hsl(0 0% 97%) 100%);
+    border-right-color: hsl(0 0% 92%);
+  }
+  .admin-scope aside nav a {
+    border-radius: 0.875rem;
+    transition: background-color .2s ease, transform .2s ease;
+  }
+  .admin-scope aside nav a:hover { transform: translateX(2px); }
+
+  /* Icons: subtle rounded chip background on hover for icon buttons */
+  .admin-scope button[class*="size-icon"],
+  .admin-scope button.size-icon {
+    border-radius: 0.875rem;
+  }
+
+  /* Lucide icons: slight rounding via stroke-linejoin already round; bump size consistency */
+  .admin-scope svg { stroke-linecap: round; stroke-linejoin: round; }
+
+  /* Dialogs / popovers / dropdowns */
+  .admin-scope [role="dialog"],
+  .admin-scope [data-radix-popper-content-wrapper] > * {
+    border-radius: 1.25rem !important;
+    box-shadow: 0 24px 60px -24px hsl(0 0% 0% / 0.25), 0 2px 8px hsl(0 0% 0% / 0.06);
+  }
+
+  /* Badges */
+  .admin-scope [class*="rounded-md"][class*="px-"],
+  .admin-scope .badge { border-radius: 9999px; }
+
+  /* Tables: round outer container if wrapped */
+  .admin-scope table { border-collapse: separate; border-spacing: 0; }
+  .admin-scope table thead th:first-child { border-top-left-radius: 0.75rem; }
+  .admin-scope table thead th:last-child { border-top-right-radius: 0.75rem; }
+
+  /* Subtle focus ring upgrade */
+  .admin-scope *:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px hsl(0 0% 100%), 0 0 0 4px hsl(0 0% 20% / 0.35);
+    border-radius: 0.75rem;
+  }
+}
+
