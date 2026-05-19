@@ -322,7 +322,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 lg:p-8">
       <PullToRefreshPortal onRefresh={fetchRequests} />
       <div className="max-w-6xl mx-auto">
 
@@ -344,7 +344,7 @@ const AdminDashboard = () => {
               className="pl-10"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {["all", "new", "approved", "booked"].map((status) => (
               <Button
                 key={status}

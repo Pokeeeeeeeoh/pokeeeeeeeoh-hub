@@ -142,14 +142,14 @@ const AdminEmails = () => {
   };
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 lg:p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8 flex items-start justify-between gap-4">
+        <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Emails</h1>
             <p className="text-muted-foreground">Edit templates, send custom emails, and view delivery log</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={sendTestReminders} disabled={sendingTest}>
               <Bell className={`h-4 w-4 mr-2 ${sendingTest ? "animate-pulse" : ""}`} />
               {sendingTest ? "Sending…" : "Send test reminders"}
@@ -232,9 +232,9 @@ const AdminEmails = () => {
                 <div className="p-6 text-center text-sm text-muted-foreground">No emails sent yet</div>
               )}
               {log.map((e) => (
-                <div key={e.id} className="p-3 flex items-center gap-3 hover:bg-secondary/40">
+                <div key={e.id} className="p-3 flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 hover:bg-secondary/40">
                   <Badge variant={e.status === "sent" ? "default" : "destructive"}>{e.status}</Badge>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 w-full sm:w-auto order-last sm:order-none">
                     <div className="text-sm truncate">{e.subject || "(no subject)"}</div>
                     <div className="text-xs text-muted-foreground truncate">
                       {e.recipient} · {e.template_key || "custom"} ·{" "}

@@ -266,6 +266,47 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Fire-and-forget admin notification email
+    try {
+      const { data: site } = await supabase
+        .from("site_settings")
+        .select("email")
+        .single();
+      const adminEmail = site?.email;
+      if (adminEmail) {
+        const apptTimeAdmin = new Date(slot.start_time).toLocaleString("en-GB", {
+          weekday: "long", day: "numeric", month: "long", year: "numeric",
+          hour: "2-digit", minute: "2-digit", hour12: false,
+          timeZone: "Europe/Stockholm",
+        }).replace(",", " at");
+        const safeName = (clientName || "").replace(/[<>&]/g, "");
+        const safeEmail = (clientEmail || "").replace(/[<>&]/g, "");
+        const html = `
+          <h2>New slot booked</h2>
+          <p><strong>Client:</strong> ${safeName}</p>
+          <p><strong>Email:</strong> ${safeEmail}</p>
+          <p><strong>When:</strong> ${apptTimeAdmin}</p>
+          <p style="margin-top:24px;"><a href="https://pokeeeeeeeoh.com/admin/calendar">Open calendar →</a></p>
+        `;
+        fetch(`${projectUrl}/functions/v1/send-template-email`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: anonKey,
+            Authorization: `Bearer ${anonKey}`,
+          },
+          body: JSON.stringify({
+            to: adminEmail,
+            subjectOverride: `New booking: ${safeName} · ${apptTimeAdmin}`,
+            htmlOverride: html,
+            bookingRequestId: request.id,
+          }),
+        }).catch((e) => console.warn("admin notify failed", e));
+      }
+    } catch (e) {
+      console.warn("admin notify error", e);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
