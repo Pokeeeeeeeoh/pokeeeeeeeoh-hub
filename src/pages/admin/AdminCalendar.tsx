@@ -188,6 +188,10 @@ const AdminCalendar = () => {
   const [repeatingDay, setRepeatingDay] = useState(false);
   const [lightbox, setLightbox] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
 
+  // Manual "Add Booking" dialog
+  const [showAddBookingDialog, setShowAddBookingDialog] = useState(false);
+  const [addBookingDate, setAddBookingDate] = useState<Date | null>(null);
+
   // Booking edit state
   const [editingBooking, setEditingBooking] = useState(false);
   const [editClient, setEditClient] = useState({ name: "", email: "", phone: "" });
