@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Instagram } from "lucide-react";
+import { Instagram } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import pokeeeeeeeohImg from "@/assets/pokeeeeeeeoh.jpeg";
 import bookATattooImg from "@/assets/book-a-tattoo.jpeg";
@@ -64,40 +64,45 @@ const Index = () => {
               className="mx-auto w-full max-w-xl h-auto"
             />
           </h1>
-          <p className="mb-8 text-lg text-muted-foreground max-w-md mx-auto animate-fade-in stagger-1">
-            {settings.tagline}
-          </p>
-          <div className="animate-fade-in stagger-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link to="/book" aria-label="Book a Tattoo">
+          <div className="animate-fade-in stagger-2 flex items-center justify-center">
+            <Link
+              to="/book"
+              aria-label="Book a Tattoo"
+              className="inline-block border-2 border-foreground rounded-lg p-4 sm:p-6 hover:bg-foreground/5 transition-colors"
+            >
               <img
                 src={bookATattooImg}
                 alt="Book a Tattoo"
-                className="h-20 sm:h-24 w-auto hover:opacity-80 transition-opacity"
+                className="h-20 sm:h-24 w-auto"
               />
             </Link>
-            <a
-              href="https://instagram.com/Pokeeeeeeeoh"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button size="lg" variant="outline" className="group">
-                <Instagram className="mr-2 h-4 w-4" strokeWidth={1.5} />
-                @Pokeeeeeeeoh
-              </Button>
-            </a>
           </div>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="border-t border-border py-8 px-4">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <p className="font-mono text-xs tracking-widest break-all">
-            {settings.email}
-          </p>
-          <p className="text-xs text-center sm:text-right">
-            {settings.address}
-          </p>
+        <div className="max-w-5xl mx-auto flex flex-col items-center gap-6 text-sm text-muted-foreground">
+          <a
+            href="https://instagram.com/Pokeeeeeeeoh"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-foreground hover:opacity-70 transition-opacity"
+          >
+            <Instagram className="h-5 w-5" strokeWidth={1.5} />
+            <span className="font-mono text-sm tracking-widest">@Pokeeeeeeeoh</span>
+          </a>
+          <Link to="/" aria-label={settings.site_name}>
+            <img src={pokeeeeeeeohImg} alt={settings.site_name} className="h-10 w-auto" />
+          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 w-full">
+            <p className="font-mono text-xs tracking-widest break-all">
+              {settings.email}
+            </p>
+            <p className="text-xs text-center sm:text-right">
+              {settings.address}
+            </p>
+          </div>
         </div>
       </footer>
     </div>
