@@ -404,7 +404,7 @@ const BookingForm = () => {
                   <img
                     src={submitImg}
                     alt={t("form_submit", "Submit")}
-                    className="h-16 sm:h-20 w-auto"
+                    className="h-40 sm:h-56 w-auto"
                   />
                 )}
               </button>

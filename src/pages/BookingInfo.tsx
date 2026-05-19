@@ -8,6 +8,8 @@ import ReactMarkdown from "react-markdown";
 import { useUiText } from "@/hooks/useUiText";
 import bookingInformationImg from "@/assets/booking-information.jpeg";
 import checkmarkImg from "@/assets/checkmark.jpeg";
+import emptyBoxImg from "@/assets/empty-box.jpeg";
+import continueImg from "@/assets/continue.jpeg";
 
 const BookingInfo = () => {
   const t = useUiText();
@@ -157,13 +159,13 @@ const BookingInfo = () => {
               onClick={() => setAcknowledged(!acknowledged)}
               disabled={!hasScrolledToBottom}
               aria-label="Acknowledge"
-              className="mt-0.5 h-10 w-10 shrink-0 flex items-center justify-center transition-all"
+              className="shrink-0 flex items-center justify-center transition-all"
             >
-              {acknowledged ? (
-                <img src={checkmarkImg} alt="Checked" className="h-12 w-12 object-contain" />
-              ) : (
-                <span className="block h-8 w-8 border-2 border-foreground rounded-sm" />
-              )}
+              <img
+                src={acknowledged ? checkmarkImg : emptyBoxImg}
+                alt={acknowledged ? "Checked" : "Unchecked"}
+                className="h-20 w-20 object-contain"
+              />
             </button>
             <label 
               className="text-sm text-muted-foreground cursor-pointer"
