@@ -164,7 +164,7 @@ const BookingInfo = () => {
               <img
                 src={acknowledged ? checkmarkImg : emptyBoxImg}
                 alt={acknowledged ? "Checked" : "Unchecked"}
-                className="h-20 w-20 object-contain"
+                className="h-32 w-32 sm:h-40 sm:w-40 object-contain"
               />
             </button>
             <label 
