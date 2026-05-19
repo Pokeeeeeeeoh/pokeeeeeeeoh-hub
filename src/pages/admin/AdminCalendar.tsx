@@ -456,6 +456,23 @@ const AdminCalendar = () => {
     setShowDayDialog(true);
   };
 
+  const openDayBookings = (day: Date) => {
+    setDayBookingsDate(day);
+    setShowDayBookingsDialog(true);
+  };
+
+  // Smart day click: bookings list if there are any, else add-slot
+  const handleDayClick = (day: Date) => {
+    const slots = getSlotsForDay(day);
+    const hasBooked = slots.some((s) => s.is_booked && s.appointments && s.appointments.length > 0);
+    if (hasBooked) {
+      openDayBookings(day);
+    } else {
+      openDayDialog(day);
+    }
+  };
+
+
   // Open slot dialog when clicking on a slot
   const openSlotDialog = (slot: AvailabilitySlot) => {
     setSelectedSlot(slot);
