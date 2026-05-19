@@ -6,6 +6,7 @@ const ICON_STROKE = 1.5;
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import { useUiText } from "@/hooks/useUiText";
+import bookingInformationImg from "@/assets/booking-information.jpeg";
 
 const BookingInfo = () => {
   const t = useUiText();
@@ -88,8 +89,12 @@ const BookingInfo = () => {
             <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase mb-2">
               {t("booking_info_step", "Step 1 of 2")}
             </p>
-            <h1 className="text-3xl font-bold tracking-tight mb-2">
-              {t("booking_info_title", "Before You Book")}
+            <h1 className="mb-4">
+              <img
+                src={bookingInformationImg}
+                alt={t("booking_info_title", "Booking Information")}
+                className="w-full max-w-lg h-auto"
+              />
             </h1>
             <p className="text-muted-foreground">
               {t("booking_info_subtitle", "Please read through the following information carefully before submitting your request.")}

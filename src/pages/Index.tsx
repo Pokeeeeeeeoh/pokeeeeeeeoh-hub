@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Instagram } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import pokeeeeeeeohImg from "@/assets/pokeeeeeeeoh.jpeg";
+import bookATattooImg from "@/assets/book-a-tattoo.jpeg";
 
 interface SiteSettings {
   site_name: string;
@@ -55,18 +57,23 @@ const Index = () => {
       {/* Hero Section */}
       <section className="relative flex min-h-screen items-center justify-center px-4 pt-16">
         <div className="relative z-10 max-w-2xl text-center">
-          <h1 className="mb-8 text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl animate-fade-in break-words">
-            {settings.site_name}
+          <h1 className="mb-8 animate-fade-in">
+            <img
+              src={pokeeeeeeeohImg}
+              alt={settings.site_name}
+              className="mx-auto w-full max-w-xl h-auto"
+            />
           </h1>
           <p className="mb-8 text-lg text-muted-foreground max-w-md mx-auto animate-fade-in stagger-1">
             {settings.tagline}
           </p>
           <div className="animate-fade-in stagger-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link to="/book">
-              <Button size="lg" className="group">
-                Book a Tattoo
-                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" strokeWidth={1.5} />
-              </Button>
+            <Link to="/book" aria-label="Book a Tattoo">
+              <img
+                src={bookATattooImg}
+                alt="Book a Tattoo"
+                className="h-20 sm:h-24 w-auto hover:opacity-80 transition-opacity"
+              />
             </Link>
             <a
               href="https://instagram.com/Pokeeeeeeeoh"
