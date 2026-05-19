@@ -146,6 +146,8 @@ const AdminCalendar = () => {
   // Day action dialog (when clicking on a day)
   const [showDayDialog, setShowDayDialog] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [showDayBookingsDialog, setShowDayBookingsDialog] = useState(false);
+  const [dayBookingsDate, setDayBookingsDate] = useState<Date | null>(null);
   const [patterns, setPatterns] = useState<SlotPattern[]>(DEFAULT_PATTERNS);
   const [repeatMode, setRepeatMode] = useState<RepeatMode>("none");
   const [repeatWeekdays, setRepeatWeekdays] = useState<number[]>([]);
