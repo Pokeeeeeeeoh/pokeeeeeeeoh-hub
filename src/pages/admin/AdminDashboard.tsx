@@ -15,6 +15,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { BookingImage } from "@/components/BookingImage";
+import { usePullToRefresh, PullToRefreshIndicator } from "@/hooks/usePullToRefresh";
 
 interface Client {
   name: string;
