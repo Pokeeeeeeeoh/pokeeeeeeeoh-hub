@@ -92,9 +92,6 @@ const Index = () => {
             <Instagram className="h-5 w-5" strokeWidth={1.5} />
             <span className="font-mono text-sm tracking-widest">@Pokeeeeeeeoh</span>
           </a>
-          <Link to="/" aria-label={settings.site_name}>
-            <img src={pokeeeeeeeohImg} alt={settings.site_name} className="h-10 w-auto" />
-          </Link>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 w-full">
             <p className="font-mono text-xs tracking-widest break-all">
               {settings.email}

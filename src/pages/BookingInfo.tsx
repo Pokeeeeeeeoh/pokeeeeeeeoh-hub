@@ -75,9 +75,7 @@ const BookingInfo = () => {
             <ArrowLeft className="h-4 w-4" strokeWidth={ICON_STROKE} />
             Back
           </Link>
-          <span className="mx-auto font-mono text-sm tracking-widest uppercase">
-            Booking Information
-          </span>
+          <span className="mx-auto" />
           <div className="w-16" />
         </div>
       </header>
