@@ -327,11 +327,17 @@ const AdminDashboard = () => {
       <PullToRefreshPortal onRefresh={fetchRequests} disabled={!!selectedRequest || showDeclineDialog} />
       <div className="max-w-6xl mx-auto">
 
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight">Booking Requests</h1>
-          <p className="text-muted-foreground">
-            Manage incoming tattoo requests
-          </p>
+        <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Booking Requests</h1>
+            <p className="text-muted-foreground">
+              Manage incoming tattoo requests
+            </p>
+          </div>
+          <Button onClick={() => setShowAddBooking(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Add Booking
+          </Button>
         </div>
 
         {/* Filters */}
