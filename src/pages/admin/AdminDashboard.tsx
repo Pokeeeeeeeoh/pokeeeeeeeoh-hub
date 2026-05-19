@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, differenceInDays } from "date-fns";
-import { Search, Eye, Check, X, ChevronDown, Pencil, Clock } from "lucide-react";
+import { Search, Eye, Check, X, ChevronDown, Pencil, Clock, Plus } from "lucide-react";
+import { ManualBookingDialog } from "@/components/admin/ManualBookingDialog";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -59,6 +60,7 @@ const AdminDashboard = () => {
   const [editClient, setEditClient] = useState<Client>({ name: "", email: "", phone: null });
   const [editResponses, setEditResponses] = useState<Record<string, unknown>>({});
   const [lightbox, setLightbox] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
+  const [showAddBooking, setShowAddBooking] = useState(false);
 
   useEffect(() => {
     fetchRequests();
@@ -325,11 +327,17 @@ const AdminDashboard = () => {
       <PullToRefreshPortal onRefresh={fetchRequests} disabled={!!selectedRequest || showDeclineDialog} />
       <div className="max-w-6xl mx-auto">
 
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight">Booking Requests</h1>
-          <p className="text-muted-foreground">
-            Manage incoming tattoo requests
-          </p>
+        <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Booking Requests</h1>
+            <p className="text-muted-foreground">
+              Manage incoming tattoo requests
+            </p>
+          </div>
+          <Button onClick={() => setShowAddBooking(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Add Booking
+          </Button>
         </div>
 
         {/* Filters */}
@@ -737,6 +745,12 @@ const AdminDashboard = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        <ManualBookingDialog
+          open={showAddBooking}
+          onOpenChange={setShowAddBooking}
+          onBooked={fetchRequests}
+        />
       </div>
     </div>
   );

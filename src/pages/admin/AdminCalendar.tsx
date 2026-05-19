@@ -73,6 +73,7 @@ import { cn } from "@/lib/utils";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { BookingImage } from "@/components/BookingImage";
 import { PullToRefreshPortal } from "@/components/PullToRefreshPortal";
+import { ManualBookingDialog } from "@/components/admin/ManualBookingDialog";
 
 interface BookingRequestLite {
   id: string;
@@ -186,6 +187,10 @@ const AdminCalendar = () => {
   const [dayRepeatDays, setDayRepeatDays] = useState<number[]>([]);
   const [repeatingDay, setRepeatingDay] = useState(false);
   const [lightbox, setLightbox] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
+
+  // Manual "Add Booking" dialog
+  const [showAddBookingDialog, setShowAddBookingDialog] = useState(false);
+  const [addBookingDate, setAddBookingDate] = useState<Date | null>(null);
 
   // Booking edit state
   const [editingBooking, setEditingBooking] = useState(false);
@@ -1581,7 +1586,19 @@ const AdminCalendar = () => {
                     </div>
                   )}
 
-                  <div className="pt-2 border-t border-border">
+                  <div className="pt-2 border-t border-border space-y-2">
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setAddBookingDate(dayBookingsDate);
+                        setShowDayBookingsDialog(false);
+                        setShowAddBookingDialog(true);
+                      }}
+                    >
+                      <UserPlus className="h-4 w-4 mr-1.5" />
+                      Add Booking
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -2520,6 +2537,16 @@ const AdminCalendar = () => {
           startIndex={lightbox.index}
           open={lightbox.open}
           onOpenChange={(o) => setLightbox((p) => ({ ...p, open: o }))}
+        />
+
+        <ManualBookingDialog
+          open={showAddBookingDialog}
+          onOpenChange={setShowAddBookingDialog}
+          initialDate={addBookingDate}
+          onBooked={() => {
+            fetchSlots();
+            fetchClients();
+          }}
         />
       </div>
     </div>
