@@ -2538,6 +2538,16 @@ const AdminCalendar = () => {
           open={lightbox.open}
           onOpenChange={(o) => setLightbox((p) => ({ ...p, open: o }))}
         />
+
+        <ManualBookingDialog
+          open={showAddBookingDialog}
+          onOpenChange={setShowAddBookingDialog}
+          initialDate={addBookingDate}
+          onBooked={() => {
+            fetchSlots();
+            fetchClients();
+          }}
+        />
       </div>
     </div>
   );
