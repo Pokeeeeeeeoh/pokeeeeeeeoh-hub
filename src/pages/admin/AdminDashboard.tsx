@@ -81,6 +81,21 @@ const AdminDashboard = () => {
       toast.error("Failed to load requests");
     } else {
       setRequests(data as unknown as BookingRequest[]);
+      // Fetch appointments for these requests
+      const ids = (data || []).map((r: any) => r.id);
+      if (ids.length) {
+        const { data: appts } = await supabase
+          .from("appointments")
+          .select("id, booking_request_id, start_time, end_time, slot_id, created_at")
+          .in("booking_request_id", ids)
+          .order("created_at", { ascending: false });
+        const map: Record<string, Appointment> = {};
+        (appts || []).forEach((a: any) => {
+          // keep the most recent appointment per request (first due to ordering)
+          if (!map[a.booking_request_id]) map[a.booking_request_id] = a;
+        });
+        setAppointments(map);
+      }
     }
     setLoading(false);
   };
