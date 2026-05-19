@@ -10,7 +10,7 @@ const BookingConfirmation = () => {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
         <div className="mb-8 animate-fade-in">
-          <img src={gotItImg} alt="Got it!" className="mx-auto h-32 sm:h-40 w-auto mb-6" />
+          <img src={gotItImg} alt="Got it!" className="mx-auto h-32 sm:h-40 w-auto mb-6 mt-16 sm:mt-24" />
 
           <h1 className="text-3xl font-bold tracking-tight mb-4">
             {t("confirmation_title", "Request Submitted!")}
