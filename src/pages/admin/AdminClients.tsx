@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { PullToRefreshPortal } from "@/components/PullToRefreshPortal";
 
 interface Client {
   id: string;
@@ -101,6 +102,7 @@ const AdminClients = () => {
 
   return (
     <div className="p-6 lg:p-8">
+      <PullToRefreshPortal onRefresh={fetchClients} disabled={!!selectedClient} />
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight">Clients</h1>

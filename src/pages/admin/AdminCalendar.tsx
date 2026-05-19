@@ -72,6 +72,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { BookingImage } from "@/components/BookingImage";
+import { PullToRefreshPortal } from "@/components/PullToRefreshPortal";
 
 interface BookingRequestLite {
   id: string;
@@ -567,17 +568,37 @@ const AdminCalendar = () => {
     setBookingInProgress(true);
 
     try {
+      // ATOMIC slot lock first — prevents double-booking with concurrent public bookings.
+      const { data: lockedSlots, error: lockErr } = await supabase
+        .from("availability_slots")
+        .update({ is_booked: true })
+        .eq("id", selectedSlot.id)
+        .eq("is_booked", false)
+        .eq("is_blocked", false)
+        .select("id");
+
+      if (lockErr) throw lockErr;
+      if (!lockedSlots || lockedSlots.length === 0) {
+        toast.error("Slot is no longer available");
+        setBookingInProgress(false);
+        return;
+      }
+
       const { data: bookingRequest, error: brError } = await supabase
         .from("booking_requests")
         .insert({
           client_id: clientId,
-          status: "approved",
+          status: "booked",
           form_responses: { manual_booking: true },
         })
         .select()
         .single();
 
-      if (brError) throw brError;
+      if (brError) {
+        // Roll back the slot lock
+        await supabase.from("availability_slots").update({ is_booked: false }).eq("id", selectedSlot.id);
+        throw brError;
+      }
 
       const { data: apptRow, error: apptError } = await supabase.from("appointments").insert({
         client_id: clientId,
@@ -587,19 +608,15 @@ const AdminCalendar = () => {
         end_time: selectedSlot.end_time,
       }).select("id").single();
 
-      if (apptError) throw apptError;
+      if (apptError) {
+        await supabase.from("availability_slots").update({ is_booked: false }).eq("id", selectedSlot.id);
+        throw apptError;
+      }
 
       if (apptRow?.id) {
         supabase.functions.invoke("sync-gcal-event", { body: { appointmentId: apptRow.id } })
           .catch((e) => console.warn("gcal sync failed", e));
       }
-
-      const { error: slotError } = await supabase
-        .from("availability_slots")
-        .update({ is_booked: true })
-        .eq("id", selectedSlot.id);
-
-      if (slotError) throw slotError;
 
       toast.success("Booking completed");
       setShowBookingDialog(false);
@@ -612,6 +629,7 @@ const AdminCalendar = () => {
       setBookingInProgress(false);
     }
   };
+
 
   const handleBookWithNewClient = async () => {
     // At least one field should have some info
@@ -1120,6 +1138,10 @@ const AdminCalendar = () => {
 
   return (
     <div className="p-4 lg:p-8">
+      <PullToRefreshPortal
+        onRefresh={async () => { await Promise.all([fetchSlots(), fetchClients()]); }}
+        disabled={showSlotDialog || showBookingDialog || showDayDialog || showRepeatDayDialog}
+      />
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight">Calendar</h1>

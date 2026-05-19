@@ -15,6 +15,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { BookingImage } from "@/components/BookingImage";
+import { PullToRefreshPortal } from "@/components/PullToRefreshPortal";
 
 interface Client {
   name: string;
@@ -322,7 +323,9 @@ const AdminDashboard = () => {
 
   return (
     <div className="p-6 lg:p-8">
+      <PullToRefreshPortal onRefresh={fetchRequests} />
       <div className="max-w-6xl mx-auto">
+
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight">Booking Requests</h1>
           <p className="text-muted-foreground">
