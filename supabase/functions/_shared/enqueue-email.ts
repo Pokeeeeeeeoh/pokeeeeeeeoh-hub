@@ -2,7 +2,7 @@
 // admin-editable `email_templates` table. Routes through Lovable Email queue.
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 
-export const SITE_NAME = "Pokeeeeeeeoh Hub";
+export const SITE_NAME = "pokeeeeeeeoh";
 export const SENDER_DOMAIN = "notify.pokeeeeeeeoh.com";
 export const FROM_DOMAIN = "notify.pokeeeeeeeoh.com";
 
