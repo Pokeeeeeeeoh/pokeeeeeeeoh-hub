@@ -39,13 +39,13 @@ const App = () => (
           
           
           {/* Admin Routes */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminLogin />} />
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="clients" element={<AdminClients />} />
-            <Route path="calendar" element={<AdminCalendar />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="emails" element={<AdminEmails />} />
+          <Route path="/admin" element={<AdminLogin />} />
+          <Route element={<AdminLayout />}>
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/clients" element={<AdminClients />} />
+            <Route path="/admin/calendar" element={<AdminCalendar />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
+            <Route path="/admin/emails" element={<AdminEmails />} />
           </Route>
           
           {/* Catch-all */}
