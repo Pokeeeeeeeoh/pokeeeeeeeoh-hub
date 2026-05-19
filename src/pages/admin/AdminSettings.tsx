@@ -304,7 +304,7 @@ const AdminSettings = () => {
 
   if (loading) {
     return (
-      <div className="p-6 lg:p-8">
+      <div className="p-4 lg:p-8">
         <div className="max-w-4xl mx-auto">
           <div className="animate-pulse text-muted-foreground">
             Loading settings...
@@ -315,7 +315,7 @@ const AdminSettings = () => {
   }
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 lg:p-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
