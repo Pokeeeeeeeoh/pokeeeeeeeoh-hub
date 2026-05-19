@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { Instagram } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import pokeeeeeeeohImg from "@/assets/pokeeeeeeeoh.jpeg";
