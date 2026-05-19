@@ -40,8 +40,8 @@ const Index = () => {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-sm">
         <div className="max-w-5xl mx-auto flex h-16 items-center justify-between px-4">
-          <Link to="/" className="font-mono text-sm tracking-widest uppercase truncate">
-            {settings.site_name}
+          <Link to="/" aria-label={settings.site_name} className="flex items-center">
+            <img src={pokeeeeeeeohImg} alt={settings.site_name} className="h-8 w-auto" />
           </Link>
           <nav className="flex items-center gap-2 sm:gap-3">
             <Link to="/admin">
