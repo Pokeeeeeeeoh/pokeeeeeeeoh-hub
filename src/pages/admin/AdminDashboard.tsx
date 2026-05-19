@@ -323,7 +323,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="p-4 lg:p-8">
-      <PullToRefreshPortal onRefresh={fetchRequests} />
+      <PullToRefreshPortal onRefresh={fetchRequests} disabled={!!selectedRequest || showDeclineDialog} />
       <div className="max-w-6xl mx-auto">
 
         <div className="mb-8">
