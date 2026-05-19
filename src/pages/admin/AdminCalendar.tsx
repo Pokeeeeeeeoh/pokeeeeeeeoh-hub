@@ -73,6 +73,7 @@ import { cn } from "@/lib/utils";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { BookingImage } from "@/components/BookingImage";
 import { PullToRefreshPortal } from "@/components/PullToRefreshPortal";
+import { ManualBookingDialog } from "@/components/admin/ManualBookingDialog";
 
 interface BookingRequestLite {
   id: string;
