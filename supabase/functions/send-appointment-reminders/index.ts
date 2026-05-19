@@ -51,6 +51,7 @@ Deno.serve(async (req) => {
       const apptDate = new Date(appt.start_time).toLocaleString("en-GB", {
         weekday: "long", day: "numeric", month: "long", year: "numeric",
         hour: "2-digit", minute: "2-digit", hour12: false,
+        timeZone: "Europe/Stockholm",
       });
 
       const { error: invokeErr } = await sb.functions.invoke("send-template-email", {
