@@ -5,6 +5,7 @@ import { Instagram } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import pokeeeeeeeohImg from "@/assets/pokeeeeeeeoh.jpeg";
 import bookATattooImg from "@/assets/book-a-tattoo.jpeg";
+import allAboutMeImg from "@/assets/all-about-me.jpeg";
 
 interface SiteSettings {
   site_name: string;
@@ -47,9 +48,6 @@ const Index = () => {
             <Link to="/admin">
               <Button variant="ghost" size="sm">Admin</Button>
             </Link>
-            <Link to="/book">
-              <Button variant="outline" size="sm">Book</Button>
-            </Link>
           </nav>
         </div>
       </header>
@@ -64,7 +62,7 @@ const Index = () => {
               className="mx-auto w-full max-w-xl h-auto"
             />
           </h1>
-          <div className="animate-fade-in stagger-2 flex flex-col items-center justify-center gap-4">
+          <div className="animate-fade-in stagger-2 flex items-center justify-center">
             <Link
               to="/book"
               aria-label="Book a Tattoo"
@@ -76,12 +74,6 @@ const Index = () => {
                 className="h-20 sm:h-24 w-auto"
               />
             </Link>
-            <Link
-              to="/about"
-              className="text-sm font-mono tracking-widest uppercase underline underline-offset-4 hover:opacity-70 transition-opacity"
-            >
-              About me
-            </Link>
           </div>
         </div>
       </section>
@@ -89,6 +81,9 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border py-8 px-4">
         <div className="max-w-5xl mx-auto flex flex-col items-center gap-6 text-sm text-muted-foreground">
+          <Link to="/about" aria-label="All about me" className="block hover:opacity-70 transition-opacity">
+            <img src={allAboutMeImg} alt="All about me" className="h-12 sm:h-16 w-auto" />
+          </Link>
           <a
             href="https://instagram.com/Pokeeeeeeeoh"
             target="_blank"
