@@ -1159,7 +1159,7 @@ const AdminCalendar = () => {
     <div className="p-4 lg:p-8">
       <PullToRefreshPortal
         onRefresh={async () => { await Promise.all([fetchSlots(), fetchClients()]); }}
-        disabled={showSlotDialog || showBookingDialog || showDayDialog || showRepeatDayDialog}
+        disabled={showSlotDialog || showBookingDialog || showDayDialog || showRepeatDayDialog || showDayBookingsDialog}
       />
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
