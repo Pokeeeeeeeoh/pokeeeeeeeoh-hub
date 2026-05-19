@@ -80,7 +80,7 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="border-t border-border py-8 px-4">
-        <div className="max-w-5xl mx-auto flex flex-col items-center gap-6 text-sm text-muted-foreground">
+        <div className="max-w-5xl mx-auto flex flex-col items-center gap-2 text-sm text-muted-foreground">
           <Link to="/about" aria-label="All about me" className="block hover:opacity-70 transition-opacity">
             <img src={allAboutMeImg} alt="All about me" className="h-12 sm:h-16 w-auto" />
           </Link>
