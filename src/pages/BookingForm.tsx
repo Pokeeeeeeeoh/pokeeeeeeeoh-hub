@@ -155,12 +155,12 @@ const BookingForm = () => {
 
       const bookingRequestId = (result as any).bookingRequestId as string;
 
-      // Send confirmation email to client + notification to admin (fire and forget)
+      // Send confirmation email to the client (admin notification is handled
+      // separately by submit-booking-request, which emails site_settings.email).
       supabase.functions.invoke("send-booking-confirmation", {
         body: {
           to: clientInfo.email,
           name: clientInfo.name,
-          adminEmail: "jakehaynes@gmail.com",
           bookingRequestId,
         },
       }).catch((e) => console.error("Email send failed:", e));
