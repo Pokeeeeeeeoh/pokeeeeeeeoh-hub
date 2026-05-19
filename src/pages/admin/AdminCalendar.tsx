@@ -461,15 +461,9 @@ const AdminCalendar = () => {
     setShowDayBookingsDialog(true);
   };
 
-  // Smart day click: bookings list if there are any, else add-slot
+  // Day click: always open the day view (shows bookings + open slots + add slot)
   const handleDayClick = (day: Date) => {
-    const slots = getSlotsForDay(day);
-    const hasBooked = slots.some((s) => s.is_booked && s.appointments && s.appointments.length > 0);
-    if (hasBooked) {
-      openDayBookings(day);
-    } else {
-      openDayDialog(day);
-    }
+    openDayBookings(day);
   };
 
 
