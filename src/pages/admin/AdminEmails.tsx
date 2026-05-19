@@ -142,14 +142,14 @@ const AdminEmails = () => {
   };
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 lg:p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8 flex items-start justify-between gap-4">
+        <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Emails</h1>
             <p className="text-muted-foreground">Edit templates, send custom emails, and view delivery log</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={sendTestReminders} disabled={sendingTest}>
               <Bell className={`h-4 w-4 mr-2 ${sendingTest ? "animate-pulse" : ""}`} />
               {sendingTest ? "Sending…" : "Send test reminders"}
