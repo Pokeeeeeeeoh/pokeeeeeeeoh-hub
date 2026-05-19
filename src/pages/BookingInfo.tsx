@@ -155,13 +155,14 @@ const BookingInfo = () => {
             <button
               onClick={() => setAcknowledged(!acknowledged)}
               disabled={!hasScrolledToBottom}
-              className={`mt-0.5 h-5 w-5 rounded border flex items-center justify-center transition-all ${
+              aria-label="Acknowledge"
+              className={`mt-0.5 h-6 w-6 shrink-0 rounded-md border-2 flex items-center justify-center transition-all ${
                 acknowledged 
-                  ? "bg-primary border-primary" 
-                  : "border-border hover:border-primary/50"
+                  ? "bg-foreground border-foreground" 
+                  : "border-foreground/40 hover:border-foreground"
               }`}
             >
-              {acknowledged && <Check className="h-3 w-3 text-primary-foreground" strokeWidth={2.5} />}
+              {acknowledged && <Check className="h-4 w-4 text-background" strokeWidth={3} />}
             </button>
             <label 
               className="text-sm text-muted-foreground cursor-pointer"
