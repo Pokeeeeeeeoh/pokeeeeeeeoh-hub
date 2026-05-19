@@ -142,7 +142,6 @@ const AdminDashboard = () => {
         body: {
           to: request.clients.email,
           name: request.clients.name,
-          adminEmail: "jakehaynes@gmail.com",
           bookingRequestId: request.id,
         },
       });
