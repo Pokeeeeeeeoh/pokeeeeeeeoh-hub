@@ -401,8 +401,14 @@ const AdminDashboard = () => {
                       {request.clients?.email}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1 font-mono">
-                      {format(parseISO(request.created_at), "MMM d, yyyy 'at' h:mm a")}
+                      {format(parseISO(request.created_at), "MMM d, yyyy 'at' HH:mm")}
                     </p>
+                    {appointments[request.id] && (
+                      <p className="text-xs mt-1 font-mono text-foreground">
+                        <Clock className="h-3 w-3 inline mr-1" />
+                        Booked: {format(parseISO(appointments[request.id].start_time), "EEE MMM d, yyyy 'at' HH:mm")}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     {request.status === "new" && (
