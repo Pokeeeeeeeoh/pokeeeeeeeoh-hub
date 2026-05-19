@@ -64,7 +64,7 @@ const Index = () => {
               className="mx-auto w-full max-w-xl h-auto"
             />
           </h1>
-          <div className="animate-fade-in stagger-2 flex items-center justify-center">
+          <div className="animate-fade-in stagger-2 flex flex-col items-center justify-center gap-4">
             <Link
               to="/book"
               aria-label="Book a Tattoo"
@@ -75,6 +75,12 @@ const Index = () => {
                 alt="Book a Tattoo"
                 className="h-20 sm:h-24 w-auto"
               />
+            </Link>
+            <Link
+              to="/about"
+              className="text-sm font-mono tracking-widest uppercase underline underline-offset-4 hover:opacity-70 transition-opacity"
+            >
+              About me
             </Link>
           </div>
         </div>

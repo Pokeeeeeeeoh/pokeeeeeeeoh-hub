@@ -18,6 +18,7 @@ import AdminEmails from "./pages/admin/AdminEmails";
 import NotFound from "./pages/NotFound";
 import Unsubscribe from "./pages/Unsubscribe";
 import Privacy from "./pages/Privacy";
+import About from "./pages/About";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/select-slot" element={<SelectSlot />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/about" element={<About />} />
           
           
           {/* Admin Routes */}
