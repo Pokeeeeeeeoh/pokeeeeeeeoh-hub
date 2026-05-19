@@ -193,9 +193,7 @@ const BookingForm = () => {
             <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
             Back
           </Link>
-          <span className="mx-auto font-mono text-sm tracking-widest uppercase">
-            Booking Request
-          </span>
+          <span className="mx-auto" />
           <div className="w-16" />
         </div>
       </header>
