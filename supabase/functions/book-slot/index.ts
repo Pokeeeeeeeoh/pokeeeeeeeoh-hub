@@ -156,30 +156,43 @@ Deno.serve(async (req) => {
 
     if (!request) throw new Error("Could not resolve booking request");
 
-    // Verify slot is available
-    const { data: slot, error: slotErr } = await supabase
-      .from("availability_slots")
-      .select("id, start_time, end_time, is_booked, is_blocked")
-      .eq("id", slotId)
-      .single();
-    if (slotErr || !slot) throw new Error("Slot not found");
-    if (slot.is_booked || slot.is_blocked) throw new Error("Slot no longer available");
-
+    // Check for existing appointment for this request (idempotent retries)
     const { data: existingAppointment } = await supabase
       .from("appointments")
-      .select("id")
+      .select("id, slot_id, start_time, end_time")
       .eq("booking_request_id", request.id)
-      .eq("slot_id", slot.id)
       .maybeSingle();
 
     if (existingAppointment) {
       return new Response(
-        JSON.stringify({ success: true, alreadyBooked: true, slot_id: slot.id, start_time: slot.start_time, end_time: slot.end_time }),
+        JSON.stringify({
+          success: true,
+          alreadyBooked: true,
+          slot_id: existingAppointment.slot_id,
+          start_time: existingAppointment.start_time,
+          end_time: existingAppointment.end_time,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Create appointment
+    // ATOMIC slot lock: only one caller will successfully flip is_booked false->true.
+    // This prevents double-booking races (two clients clicking simultaneously).
+    const { data: lockedSlots, error: lockErr } = await supabase
+      .from("availability_slots")
+      .update({ is_booked: true })
+      .eq("id", slotId)
+      .eq("is_booked", false)
+      .eq("is_blocked", false)
+      .select("id, start_time, end_time");
+
+    if (lockErr) throw lockErr;
+    if (!lockedSlots || lockedSlots.length === 0) {
+      throw new Error("Slot no longer available");
+    }
+    const slot = lockedSlots[0];
+
+    // Create appointment (slot is now locked)
     const { data: apptRow, error: apptErr } = await supabase.from("appointments").insert({
       booking_request_id: request.id,
       client_id: request.client_id,
@@ -187,7 +200,11 @@ Deno.serve(async (req) => {
       start_time: slot.start_time,
       end_time: slot.end_time,
     }).select("id").single();
-    if (apptErr) throw apptErr;
+    if (apptErr) {
+      // Roll back the slot lock if appointment insert fails
+      await supabase.from("availability_slots").update({ is_booked: false }).eq("id", slot.id);
+      throw apptErr;
+    }
 
     // Record successful attempt for rate limiting (open-link mode only)
     if (!token) {
