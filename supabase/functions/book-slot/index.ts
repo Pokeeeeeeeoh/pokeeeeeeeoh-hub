@@ -228,7 +228,7 @@ Deno.serve(async (req) => {
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
-        timeZone: "UTC",
+        timeZone: "Europe/Stockholm",
       }).replace(",", " at");
 
       const emailResp = await fetch(`${projectUrl}/functions/v1/send-template-email`, {
