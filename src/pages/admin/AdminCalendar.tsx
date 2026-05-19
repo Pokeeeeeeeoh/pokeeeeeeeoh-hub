@@ -1586,7 +1586,19 @@ const AdminCalendar = () => {
                     </div>
                   )}
 
-                  <div className="pt-2 border-t border-border">
+                  <div className="pt-2 border-t border-border space-y-2">
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setAddBookingDate(dayBookingsDate);
+                        setShowDayBookingsDialog(false);
+                        setShowAddBookingDialog(true);
+                      }}
+                    >
+                      <UserPlus className="h-4 w-4 mr-1.5" />
+                      Add Booking
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
