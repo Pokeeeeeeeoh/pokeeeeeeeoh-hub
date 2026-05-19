@@ -8,6 +8,8 @@ import ReactMarkdown from "react-markdown";
 import { useUiText } from "@/hooks/useUiText";
 import bookingInformationImg from "@/assets/booking-information.jpeg";
 import checkmarkImg from "@/assets/checkmark.jpeg";
+import emptyBoxImg from "@/assets/empty-box.jpeg";
+import continueImg from "@/assets/continue.jpeg";
 
 const BookingInfo = () => {
   const t = useUiText();
@@ -157,13 +159,13 @@ const BookingInfo = () => {
               onClick={() => setAcknowledged(!acknowledged)}
               disabled={!hasScrolledToBottom}
               aria-label="Acknowledge"
-              className="mt-0.5 h-10 w-10 shrink-0 flex items-center justify-center transition-all"
+              className="shrink-0 flex items-center justify-center transition-all"
             >
-              {acknowledged ? (
-                <img src={checkmarkImg} alt="Checked" className="h-12 w-12 object-contain" />
-              ) : (
-                <span className="block h-8 w-8 border-2 border-foreground rounded-sm" />
-              )}
+              <img
+                src={acknowledged ? checkmarkImg : emptyBoxImg}
+                alt={acknowledged ? "Checked" : "Unchecked"}
+                className="h-20 w-20 object-contain"
+              />
             </button>
             <label 
               className="text-sm text-muted-foreground cursor-pointer"
@@ -178,14 +180,14 @@ const BookingInfo = () => {
       {/* Fixed Footer */}
       <footer className="fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 backdrop-blur-sm p-4">
         <div className="container mx-auto max-w-2xl flex justify-end">
-          <Button 
+          <button
             onClick={handleContinue}
             disabled={!acknowledged}
-            className="group"
+            className="hover:opacity-70 transition-opacity disabled:opacity-30"
+            aria-label={t("booking_info_continue", "Continue")}
           >
-            {t("booking_info_continue", "Continue to Form")}
-            <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" strokeWidth={ICON_STROKE} />
-          </Button>
+            <img src={continueImg} alt="Continue" className="h-16 sm:h-20 w-auto" />
+          </button>
         </div>
       </footer>
     </div>
