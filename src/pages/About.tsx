@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import allAboutMeImg from "@/assets/all-about-me.jpeg";
+import bookATattooImg from "@/assets/book-a-tattoo.jpeg";
 
 const About = () => {
   return (
@@ -36,8 +36,12 @@ const About = () => {
             </p>
           </div>
           <div className="mt-12 flex justify-center">
-            <Link to="/book">
-              <Button variant="outline">Book a tattoo</Button>
+            <Link
+              to="/book"
+              aria-label="Book a Tattoo"
+              className="inline-block border-2 border-foreground rounded-lg p-4 sm:p-6 hover:bg-foreground/5 transition-colors"
+            >
+              <img src={bookATattooImg} alt="Book a Tattoo" className="h-20 sm:h-24 w-auto" />
             </Link>
           </div>
         </div>
