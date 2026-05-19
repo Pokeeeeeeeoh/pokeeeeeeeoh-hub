@@ -117,9 +117,9 @@ const BookingForm = () => {
     setSubmitting(true);
 
     try {
-      // Upload images first to the private bucket (anon allowed). Use a temp folder
-      // keyed by email so paths are stable before we have a client id.
-      const tempKey = `pending/${clientInfo.email.toLowerCase().replace(/[^a-z0-9]/g, "_")}-${Date.now()}`;
+      // Upload images first to the private bucket (anon allowed). Storage RLS
+      // requires a top-level UUID folder, so generate one per submission.
+      const tempKey = crypto.randomUUID();
       const imageUrls: string[] = [];
       for (const [idx, image] of images.entries()) {
         // Sanitise the client-supplied filename to prevent path traversal /
