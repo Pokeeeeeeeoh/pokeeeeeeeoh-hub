@@ -1523,6 +1523,104 @@ const AdminCalendar = () => {
         )}
 
 
+        {/* Day Bookings Dialog */}
+        <Dialog open={showDayBookingsDialog} onOpenChange={setShowDayBookingsDialog}>
+          <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {dayBookingsDate
+                  ? format(dayBookingsDate, "EEEE d MMMM yyyy", { locale: enGB })
+                  : "Bookings"}
+              </DialogTitle>
+            </DialogHeader>
+            {dayBookingsDate && (() => {
+              const slots = getSlotsForDay(dayBookingsDate);
+              const bookedSlots = slots.filter(
+                (s) => s.is_booked && s.appointments && s.appointments.length > 0,
+              );
+              const openSlots = slots.filter((s) => !s.is_booked && !s.is_blocked);
+              return (
+                <div className="space-y-3">
+                  {bookedSlots.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No bookings this day.</p>
+                  )}
+                  {bookedSlots.map((slot) => {
+                    const appt = slot.appointments![0];
+                    const client = appt.clients;
+                    return (
+                      <button
+                        key={slot.id}
+                        onClick={() => {
+                          setShowDayBookingsDialog(false);
+                          openSlotDialog(slot);
+                        }}
+                        className="w-full text-left p-3 rounded-lg border border-border hover:border-primary/50 hover:bg-accent/40 transition-colors"
+                      >
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="font-medium text-sm">
+                            {client?.name ?? "Unknown client"}
+                          </span>
+                          <span className="font-mono text-xs text-muted-foreground shrink-0">
+                            {format(parseISO(slot.start_time), "HH:mm")}–
+                            {format(parseISO(slot.end_time), "HH:mm")}
+                          </span>
+                        </div>
+                        {client?.email && (
+                          <div className="text-xs text-muted-foreground truncate mt-0.5">
+                            {client.email}
+                          </div>
+                        )}
+                        {client?.phone && (
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {client.phone}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+
+                  {openSlots.length > 0 && (
+                    <div className="pt-2 border-t border-border">
+                      <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+                        Open slots
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {openSlots.map((slot) => (
+                          <button
+                            key={slot.id}
+                            onClick={() => {
+                              setShowDayBookingsDialog(false);
+                              openSlotDialog(slot);
+                            }}
+                            className="text-xs px-2 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20"
+                          >
+                            {format(parseISO(slot.start_time), "HH:mm")}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-2 border-t border-border">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setShowDayBookingsDialog(false);
+                        openDayDialog(dayBookingsDate);
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-1.5" />
+                      Add slot to this day
+                    </Button>
+                  </div>
+                </div>
+              );
+            })()}
+          </DialogContent>
+        </Dialog>
+
         {/* Add Slot Dialog (Day Click) */}
         <Dialog open={showDayDialog} onOpenChange={setShowDayDialog}>
           <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
