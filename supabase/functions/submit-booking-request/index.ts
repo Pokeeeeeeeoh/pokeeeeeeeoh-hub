@@ -112,6 +112,52 @@ Deno.serve(async (req) => {
       success: true,
     });
 
+    // Fire-and-forget admin notification email
+    try {
+      const { data: site } = await supabase
+        .from("site_settings")
+        .select("email, site_name")
+        .single();
+      const adminEmail = site?.email;
+      if (adminEmail) {
+        const projectUrl = Deno.env.get("SUPABASE_URL")!;
+        const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+        const safeName = cleanName.replace(/[<>&]/g, "");
+        const safeEmail = cleanEmail.replace(/[<>&]/g, "");
+        const safePhone = (cleanPhone ?? "").replace(/[<>&]/g, "");
+        const notes = typeof formResponses === "object" && formResponses
+          ? Object.entries(formResponses).map(([k, v]) =>
+              `<p><strong>${String(k).replace(/[<>&]/g, "")}:</strong> ${String(v ?? "").replace(/[<>&]/g, "").slice(0, 500)}</p>`
+            ).join("")
+          : "";
+        const html = `
+          <h2>New booking request</h2>
+          <p><strong>Name:</strong> ${safeName}</p>
+          <p><strong>Email:</strong> ${safeEmail}</p>
+          ${safePhone ? `<p><strong>Phone:</strong> ${safePhone}</p>` : ""}
+          ${notes}
+          <p style="margin-top:24px;"><a href="https://pokeeeeeeeoh.com/admin/dashboard">Review in admin →</a></p>
+        `;
+        fetch(`${projectUrl}/functions/v1/send-template-email`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: anonKey,
+            Authorization: `Bearer ${anonKey}`,
+          },
+          body: JSON.stringify({
+            to: adminEmail,
+            subjectOverride: `New booking request from ${cleanName}`,
+            htmlOverride: html,
+            bookingRequestId,
+          }),
+        }).catch((e) => console.warn("admin notify failed", e));
+      }
+    } catch (e) {
+      console.warn("admin notify error", e);
+    }
+
+
     return new Response(JSON.stringify({ success: true, bookingRequestId, clientId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
