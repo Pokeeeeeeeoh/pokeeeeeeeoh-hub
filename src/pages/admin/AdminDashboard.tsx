@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, differenceInDays } from "date-fns";
-import { Search, Eye, Check, X, ChevronDown, Pencil, Clock } from "lucide-react";
+import { Search, Eye, Check, X, ChevronDown, Pencil, Clock, Plus } from "lucide-react";
+import { ManualBookingDialog } from "@/components/admin/ManualBookingDialog";
 import { toast } from "sonner";
 import {
   Dialog,
