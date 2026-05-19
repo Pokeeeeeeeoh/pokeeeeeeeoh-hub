@@ -745,6 +745,12 @@ const AdminDashboard = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        <ManualBookingDialog
+          open={showAddBooking}
+          onOpenChange={setShowAddBooking}
+          onBooked={fetchRequests}
+        />
       </div>
     </div>
   );
