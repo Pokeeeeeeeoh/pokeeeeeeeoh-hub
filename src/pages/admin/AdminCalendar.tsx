@@ -1544,7 +1544,7 @@ const AdminCalendar = () => {
 
         {/* Day Bookings Dialog */}
         <Dialog open={showDayBookingsDialog} onOpenChange={setShowDayBookingsDialog}>
-          <DialogContent className="max-w-[92vw] sm:max-w-md max-h-[85vh] overflow-y-auto p-4 sm:p-6">
+          <DialogContent style={{ width: "calc(100vw - 24px)", maxWidth: "28rem" }} className="max-h-[85vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>
                 {dayBookingsDate
@@ -1654,7 +1654,7 @@ const AdminCalendar = () => {
 
         {/* Add Slot Dialog (Day Click) */}
         <Dialog open={showDayDialog} onOpenChange={setShowDayDialog}>
-          <DialogContent className="max-w-[92vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+          <DialogContent style={{ width: "calc(100vw - 24px)", maxWidth: "28rem" }} className="max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>Add Slot</DialogTitle>
             </DialogHeader>
@@ -1875,7 +1875,7 @@ const AdminCalendar = () => {
 
         {/* Slot Dialog (Slot Click) */}
         <Dialog open={showSlotDialog} onOpenChange={setShowSlotDialog}>
-          <DialogContent className="max-w-[92vw] sm:max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden overscroll-contain p-4 sm:p-6">
+          <DialogContent style={{ width: "calc(100vw - 24px)", maxWidth: "28rem" }} className="max-h-[90vh] overflow-y-auto overflow-x-hidden overscroll-contain p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>
                 {selectedSlot?.is_booked ? "Booked Slot" : "Manage Slot"}
@@ -2026,10 +2026,10 @@ const AdminCalendar = () => {
                                     navigator.clipboard.writeText(client.email || "");
                                     toast.success("Email copied");
                                   }}
-                                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full"
+                                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full min-w-0"
                                 >
-                                  <Mail className="h-3.5 w-3.5" />
-                                  <span className="truncate">{client.email}</span>
+                                  <Mail className="h-3.5 w-3.5 shrink-0" />
+                                  <span className="truncate min-w-0 flex-1 text-left">{client.email}</span>
                                   <Copy className="h-3 w-3 ml-auto opacity-50 shrink-0" />
                                 </button>
                               )}
@@ -2317,7 +2317,7 @@ const AdminCalendar = () => {
 
         {/* Manual Booking Dialog */}
         <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
-          <DialogContent className="max-w-[92vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+          <DialogContent style={{ width: "calc(100vw - 24px)", maxWidth: "28rem" }} className="max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>Book Client</DialogTitle>
             </DialogHeader>
@@ -2467,7 +2467,7 @@ const AdminCalendar = () => {
 
         {/* Repeat Day Dialog */}
         <Dialog open={showRepeatDayDialog} onOpenChange={setShowRepeatDayDialog}>
-          <DialogContent className="max-w-[92vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+          <DialogContent style={{ width: "calc(100vw - 24px)", maxWidth: "28rem" }} className="max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>Repeat Entire Day</DialogTitle>
             </DialogHeader>
