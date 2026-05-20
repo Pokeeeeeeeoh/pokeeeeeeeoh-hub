@@ -265,7 +265,7 @@ export const ManualBookingDialog = ({ open, onOpenChange, initialDate, onBooked 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[92vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Add Booking</DialogTitle>
         </DialogHeader>
