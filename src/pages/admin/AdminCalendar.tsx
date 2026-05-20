@@ -1875,7 +1875,7 @@ const AdminCalendar = () => {
 
         {/* Slot Dialog (Slot Click) */}
         <Dialog open={showSlotDialog} onOpenChange={setShowSlotDialog}>
-          <DialogContent className="max-w-[92vw] sm:max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden overscroll-contain p-4 sm:p-6">
+          <DialogContent style={{ width: "calc(100vw - 24px)", maxWidth: "28rem" }} className="max-h-[90vh] overflow-y-auto overflow-x-hidden overscroll-contain p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>
                 {selectedSlot?.is_booked ? "Booked Slot" : "Manage Slot"}
