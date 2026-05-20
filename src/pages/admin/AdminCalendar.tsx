@@ -1544,7 +1544,7 @@ const AdminCalendar = () => {
 
         {/* Day Bookings Dialog */}
         <Dialog open={showDayBookingsDialog} onOpenChange={setShowDayBookingsDialog}>
-          <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogContent className="max-w-[92vw] sm:max-w-md max-h-[85vh] overflow-y-auto p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>
                 {dayBookingsDate
