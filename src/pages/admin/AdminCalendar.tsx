@@ -1654,7 +1654,7 @@ const AdminCalendar = () => {
 
         {/* Add Slot Dialog (Day Click) */}
         <Dialog open={showDayDialog} onOpenChange={setShowDayDialog}>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-[92vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>Add Slot</DialogTitle>
             </DialogHeader>
@@ -1875,7 +1875,7 @@ const AdminCalendar = () => {
 
         {/* Slot Dialog (Slot Click) */}
         <Dialog open={showSlotDialog} onOpenChange={setShowSlotDialog}>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden overscroll-contain">
+          <DialogContent className="max-w-[92vw] sm:max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden overscroll-contain p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>
                 {selectedSlot?.is_booked ? "Booked Slot" : "Manage Slot"}
