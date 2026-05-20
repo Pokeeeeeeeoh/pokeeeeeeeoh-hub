@@ -1553,13 +1553,16 @@ const AdminCalendar = () => {
 
         {/* Day Bookings Dialog */}
         <Dialog open={showDayBookingsDialog} onOpenChange={setShowDayBookingsDialog}>
-          <DialogContent style={{ width: "calc(100vw - 24px)", maxWidth: "28rem" }} className="max-h-[85vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+          <DialogContent style={{ width: "min(calc(100vw - 24px), 28rem)", maxWidth: "calc(100vw - 24px)" }} className="left-1/2 grid max-h-[85vh] w-[calc(100vw-24px)] max-w-[calc(100vw-24px)] min-w-0 translate-x-[-50%] overflow-y-auto overflow-x-hidden p-4 sm:w-full sm:max-w-md sm:p-6">
             <DialogHeader>
               <DialogTitle>
                 {dayBookingsDate
                   ? format(dayBookingsDate, "EEEE d MMMM yyyy", { locale: enGB })
                   : "Bookings"}
               </DialogTitle>
+              <DialogDescription className="sr-only">
+                View booked and open slots for the selected day.
+              </DialogDescription>
             </DialogHeader>
             {dayBookingsDate && (() => {
               const slots = getSlotsForDay(dayBookingsDate);
@@ -1582,10 +1585,10 @@ const AdminCalendar = () => {
                           setShowDayBookingsDialog(false);
                           openSlotDialog(slot);
                         }}
-                        className="w-full text-left p-3 rounded-lg border border-border hover:border-primary/50 hover:bg-accent/40 transition-colors"
+                        className="w-full min-w-0 overflow-hidden text-left p-3 rounded-lg border border-border hover:border-primary/50 hover:bg-accent/40 transition-colors"
                       >
-                        <div className="flex items-baseline justify-between gap-2">
-                          <span className="font-medium text-sm">
+                        <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-2">
+                          <span className="min-w-0 truncate font-medium text-sm">
                             {client?.name ?? "Unknown client"}
                           </span>
                           <span className="font-mono text-xs text-muted-foreground shrink-0">
@@ -1594,12 +1597,12 @@ const AdminCalendar = () => {
                           </span>
                         </div>
                         {client?.email && (
-                          <div className="text-xs text-muted-foreground truncate mt-0.5">
+                          <div className="mt-0.5 truncate text-xs text-muted-foreground">
                             {client.email}
                           </div>
                         )}
                         {client?.phone && (
-                          <div className="text-xs text-muted-foreground mt-0.5">
+                          <div className="mt-0.5 truncate text-xs text-muted-foreground">
                             {client.phone}
                           </div>
                         )}
