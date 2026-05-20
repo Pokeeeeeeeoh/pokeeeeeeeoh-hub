@@ -2118,11 +2118,11 @@ const AdminCalendar = () => {
                           {showReschedule && (
                             <>
                               {RescheduleBlock}
-                              <div className="space-y-1.5">
-                                <Label className="text-xs">Or move to an existing free slot</Label>
-                                <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
-                                  <Select value={rebookSlotId} onValueChange={setRebookSlotId}>
-                                    <SelectTrigger className="flex-1">
+                                <div className="min-w-0 space-y-1.5">
+                                  <Label className="text-xs">Or move to an existing free slot</Label>
+                                  <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
+                                    <Select value={rebookSlotId} onValueChange={setRebookSlotId}>
+                                      <SelectTrigger className="min-w-0 w-full sm:flex-1">
                                       <SelectValue
                                         placeholder={
                                           loadingAvailable
@@ -2141,11 +2141,12 @@ const AdminCalendar = () => {
                                       ))}
                                     </SelectContent>
                                   </Select>
-                                  <Button
-                                    size="sm"
-                                    onClick={handleRebookBooking}
-                                    disabled={!rebookSlotId || rebooking}
-                                  >
+                                    <Button
+                                      size="sm"
+                                      className="w-full sm:w-auto"
+                                      onClick={handleRebookBooking}
+                                      disabled={!rebookSlotId || rebooking}
+                                    >
                                     {rebooking ? "Moving…" : "Move"}
                                   </Button>
                                 </div>
