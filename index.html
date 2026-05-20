@@ -32,6 +32,32 @@
 
   <body>
     <div id="root"></div>
+    <script>
+      // iOS standalone (home-screen) cold-launch fix:
+      // Safari sometimes pauses the WebView before the JS bundle finishes,
+      // leaving a blank white screen until the user backgrounds the app.
+      // Force a single soft reload if the page is still empty after launch.
+      (function () {
+        var isStandalone =
+          window.navigator.standalone === true ||
+          window.matchMedia('(display-mode: standalone)').matches;
+        if (!isStandalone) return;
+        if (sessionStorage.getItem('__ios_pwa_booted')) return;
+        sessionStorage.setItem('__ios_pwa_booted', '1');
+        var t = setTimeout(function () {
+          var root = document.getElementById('root');
+          if (!root || root.childElementCount === 0) {
+            window.location.reload();
+          }
+        }, 2500);
+        window.addEventListener('load', function () {
+          setTimeout(function () {
+            var root = document.getElementById('root');
+            if (root && root.childElementCount > 0) clearTimeout(t);
+          }, 100);
+        });
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
