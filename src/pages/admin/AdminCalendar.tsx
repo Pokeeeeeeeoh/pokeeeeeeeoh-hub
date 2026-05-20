@@ -1159,10 +1159,10 @@ const AdminCalendar = () => {
         className={cn(
           "w-full text-left group px-2 py-1.5 rounded text-xs border transition-colors",
           slot.is_booked
-            ? "bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400 hover:bg-green-500/20"
+            ? "bg-pink-500/10 border-pink-500/40 text-pink-700 dark:text-pink-400 hover:bg-pink-500/20"
             : slot.is_blocked
             ? "bg-muted border-muted text-muted-foreground line-through hover:bg-muted/80"
-            : "bg-card border-border hover:border-primary/50 hover:bg-accent/50"
+            : "bg-green-500/10 border-green-500/40 text-green-700 dark:text-green-400 hover:bg-green-500/20"
         )}
       >
         <div className="flex items-center gap-1.5">
