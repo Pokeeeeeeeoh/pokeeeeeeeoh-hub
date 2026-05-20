@@ -485,6 +485,7 @@ const AdminCalendar = () => {
     setSlotRepeatUntilDate(undefined);
     setEditStartTime(format(slotDate, "HH:mm"));
     setEditEndTime(format(slotEnd, "HH:mm"));
+    setEditDate(format(slotDate, "yyyy-MM-dd"));
     setShowSlotDialog(true);
   };
 
