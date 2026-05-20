@@ -138,7 +138,7 @@ const WEEKDAYS = [
 const AdminCalendar = () => {
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<ViewMode>("week");
+  const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentWeekStart, setCurrentWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 })
@@ -329,6 +329,14 @@ const AdminCalendar = () => {
     if (!confirm("Cancel this booking? The slot will become available again.")) return;
     setCancellingBooking(true);
     try {
+      // Look up the google_event_id before deleting the appointment row
+      const { data: apptRow } = await supabase
+        .from("appointments")
+        .select("google_event_id")
+        .eq("id", appt.id)
+        .maybeSingle();
+      const googleEventId = apptRow?.google_event_id ?? null;
+
       const { error: aErr } = await supabase.from("appointments").delete().eq("id", appt.id);
       if (aErr) throw aErr;
       await supabase
@@ -341,6 +349,16 @@ const AdminCalendar = () => {
           .update({ status: "approved" })
           .eq("id", appt.booking_request_id);
       }
+
+      // Remove from Google Calendar so it reflects actual bookings
+      if (googleEventId) {
+        supabase.functions
+          .invoke("sync-gcal-event", {
+            body: { action: "delete", googleEventId },
+          })
+          .catch((e) => console.warn("gcal delete failed", e));
+      }
+
       toast.success("Booking cancelled");
       setShowSlotDialog(false);
       fetchSlots();
@@ -1141,10 +1159,10 @@ const AdminCalendar = () => {
         className={cn(
           "w-full text-left group px-2 py-1.5 rounded text-xs border transition-colors",
           slot.is_booked
-            ? "bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400 hover:bg-green-500/20"
+            ? "bg-pink-500/10 border-pink-500/40 text-pink-700 dark:text-pink-400 hover:bg-pink-500/20"
             : slot.is_blocked
             ? "bg-muted border-muted text-muted-foreground line-through hover:bg-muted/80"
-            : "bg-card border-border hover:border-primary/50 hover:bg-accent/50"
+            : "bg-green-500/10 border-green-500/40 text-green-700 dark:text-green-400 hover:bg-green-500/20"
         )}
       >
         <div className="flex items-center gap-1.5">
@@ -1441,7 +1459,7 @@ const AdminCalendar = () => {
                       )}
                     </div>
 
-                    {/* Mobile: compact slot times */}
+                    {/* Mobile: compact slot pills (name for booked, time for open) */}
                     <div className="sm:hidden flex-1 flex flex-col gap-0.5 overflow-hidden">
                       {daySlots.slice(0, 3).map((slot) => {
                         const clientName =
@@ -1452,16 +1470,17 @@ const AdminCalendar = () => {
                           <div
                             key={slot.id}
                             className={cn(
-                              "text-[9px] leading-tight px-1 py-0.5 rounded truncate",
+                              "text-[9px] leading-tight px-1 py-0.5 rounded truncate font-medium",
                               slot.is_booked
-                                ? "bg-green-500/20 text-green-700 dark:text-green-400"
+                                ? "bg-pink-500/20 text-pink-700 dark:text-pink-400"
                                 : slot.is_blocked
                                 ? "bg-muted text-muted-foreground line-through"
-                                : "bg-primary/10 text-primary",
+                                : "bg-green-500/20 text-green-700 dark:text-green-400",
                             )}
                           >
-                            {format(parseISO(slot.start_time), "HH:mm")}
-                            {clientName && <span className="ml-1 font-medium">{clientName}</span>}
+                            {slot.is_booked
+                              ? (clientName ?? format(parseISO(slot.start_time), "HH:mm"))
+                              : format(parseISO(slot.start_time), "HH:mm")}
                           </div>
                         );
                       })}
@@ -1472,7 +1491,7 @@ const AdminCalendar = () => {
                       )}
                     </div>
 
-                    {/* Desktop: time + client name */}
+                    {/* Desktop: name (for booked) or time + name */}
                     <div className="hidden sm:block flex-1 space-y-0.5 overflow-y-auto">
                       {daySlots.slice(0, 3).map((slot) => {
                         const clientName =
@@ -1486,18 +1505,23 @@ const AdminCalendar = () => {
                             className={cn(
                               "w-full text-left text-[10px] px-1 py-0.5 rounded truncate",
                               slot.is_booked
-                                ? "bg-green-500/20 text-green-700 dark:text-green-400 hover:bg-green-500/30"
+                                ? "bg-pink-500/20 text-pink-700 dark:text-pink-400 hover:bg-pink-500/30"
                                 : slot.is_blocked
                                 ? "bg-muted text-muted-foreground line-through"
-                                : "bg-primary/10 text-primary hover:bg-primary/20",
+                                : "bg-green-500/20 text-green-700 dark:text-green-400 hover:bg-green-500/30",
                             )}
                             title={clientName ?? undefined}
                           >
-                            {format(parseISO(slot.start_time), "HH:mm")}
-                            {clientName && (
-                              <span className="ml-1 font-medium">
-                                {clientName.split(" ")[0]}
+                            {slot.is_booked ? (
+                              <span className="font-medium">
+                                {clientName ?? format(parseISO(slot.start_time), "HH:mm")}
                               </span>
+                            ) : (
+                              <>
+                                <span className="font-mono">
+                                  {format(parseISO(slot.start_time), "HH:mm")}
+                                </span>
+                              </>
                             )}
                           </button>
                         );
