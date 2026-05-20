@@ -168,6 +168,7 @@ const AdminCalendar = () => {
   const [repeatingSlot, setRepeatingSlot] = useState(false);
   const [editStartTime, setEditStartTime] = useState("10:00");
   const [editEndTime, setEditEndTime] = useState("12:00");
+  const [editDate, setEditDate] = useState<string>("");
   const [savingEdit, setSavingEdit] = useState(false);
 
   // Manual booking state
