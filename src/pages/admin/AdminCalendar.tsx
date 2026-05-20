@@ -170,6 +170,7 @@ const AdminCalendar = () => {
   const [editEndTime, setEditEndTime] = useState("12:00");
   const [editDate, setEditDate] = useState<string>("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [showReschedule, setShowReschedule] = useState(false);
 
   // Manual booking state
   const [showBookingDialog, setShowBookingDialog] = useState(false);
