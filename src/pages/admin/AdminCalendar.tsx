@@ -916,7 +916,13 @@ const AdminCalendar = () => {
     try {
       const [sh, sm] = editStartTime.split(":").map(Number);
       const [eh, em] = editEndTime.split(":").map(Number);
-      const baseDate = parseISO(selectedSlot.start_time);
+      if (!editDate || !/^\d{4}-\d{2}-\d{2}$/.test(editDate)) {
+        toast.error("Pick a valid date");
+        setSavingEdit(false);
+        return;
+      }
+      const [yy, mo, dd] = editDate.split("-").map(Number);
+      const baseDate = new Date(yy, mo - 1, dd);
       const newStart = setMinutes(setHours(baseDate, sh), sm);
       const newEnd = setMinutes(setHours(baseDate, eh), em);
       if (newEnd <= newStart) {
