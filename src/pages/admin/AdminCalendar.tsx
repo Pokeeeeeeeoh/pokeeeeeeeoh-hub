@@ -1459,7 +1459,7 @@ const AdminCalendar = () => {
                       )}
                     </div>
 
-                    {/* Mobile: compact slot times */}
+                    {/* Mobile: compact slot pills (name for booked, time for open) */}
                     <div className="sm:hidden flex-1 flex flex-col gap-0.5 overflow-hidden">
                       {daySlots.slice(0, 3).map((slot) => {
                         const clientName =
@@ -1470,16 +1470,17 @@ const AdminCalendar = () => {
                           <div
                             key={slot.id}
                             className={cn(
-                              "text-[9px] leading-tight px-1 py-0.5 rounded truncate",
+                              "text-[9px] leading-tight px-1 py-0.5 rounded truncate font-medium",
                               slot.is_booked
-                                ? "bg-green-500/20 text-green-700 dark:text-green-400"
+                                ? "bg-pink-500/20 text-pink-700 dark:text-pink-400"
                                 : slot.is_blocked
                                 ? "bg-muted text-muted-foreground line-through"
-                                : "bg-primary/10 text-primary",
+                                : "bg-green-500/20 text-green-700 dark:text-green-400",
                             )}
                           >
-                            {format(parseISO(slot.start_time), "HH:mm")}
-                            {clientName && <span className="ml-1 font-medium">{clientName}</span>}
+                            {slot.is_booked
+                              ? (clientName ?? format(parseISO(slot.start_time), "HH:mm"))
+                              : format(parseISO(slot.start_time), "HH:mm")}
                           </div>
                         );
                       })}
@@ -1490,7 +1491,7 @@ const AdminCalendar = () => {
                       )}
                     </div>
 
-                    {/* Desktop: time + client name */}
+                    {/* Desktop: name (for booked) or time + name */}
                     <div className="hidden sm:block flex-1 space-y-0.5 overflow-y-auto">
                       {daySlots.slice(0, 3).map((slot) => {
                         const clientName =
@@ -1504,18 +1505,23 @@ const AdminCalendar = () => {
                             className={cn(
                               "w-full text-left text-[10px] px-1 py-0.5 rounded truncate",
                               slot.is_booked
-                                ? "bg-green-500/20 text-green-700 dark:text-green-400 hover:bg-green-500/30"
+                                ? "bg-pink-500/20 text-pink-700 dark:text-pink-400 hover:bg-pink-500/30"
                                 : slot.is_blocked
                                 ? "bg-muted text-muted-foreground line-through"
-                                : "bg-primary/10 text-primary hover:bg-primary/20",
+                                : "bg-green-500/20 text-green-700 dark:text-green-400 hover:bg-green-500/30",
                             )}
                             title={clientName ?? undefined}
                           >
-                            {format(parseISO(slot.start_time), "HH:mm")}
-                            {clientName && (
-                              <span className="ml-1 font-medium">
-                                {clientName.split(" ")[0]}
+                            {slot.is_booked ? (
+                              <span className="font-medium">
+                                {clientName ?? format(parseISO(slot.start_time), "HH:mm")}
                               </span>
+                            ) : (
+                              <>
+                                <span className="font-mono">
+                                  {format(parseISO(slot.start_time), "HH:mm")}
+                                </span>
+                              </>
                             )}
                           </button>
                         );
