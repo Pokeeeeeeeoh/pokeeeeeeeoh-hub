@@ -1881,22 +1881,17 @@ const AdminCalendar = () => {
                 {selectedSlot?.is_booked ? "Booked Slot" : "Manage Slot"}
               </DialogTitle>
             </DialogHeader>
-            {selectedSlot && (
-              <div className="space-y-4 break-words">
-                <div className="p-3 bg-muted/50 rounded-lg">
-                  <p className="text-sm font-medium">
-                    {format(parseISO(selectedSlot.start_time), "EEEE d MMMM yyyy", { locale: enGB })}
-                  </p>
-                  <p className="text-lg font-mono">
-                    {format(parseISO(selectedSlot.start_time), "HH:mm")} – {format(parseISO(selectedSlot.end_time), "HH:mm")}
-                  </p>
-                </div>
+            {selectedSlot && (() => {
+              const isBooked = selectedSlot.is_booked;
+              const appt = selectedSlot.appointments?.[0];
+              const client = appt?.clients;
+              const br = appt?.booking_requests;
+              const responses = (br?.form_responses as Record<string, unknown>) || {};
+              const images = br?.images || [];
+              const responseEntries = Object.entries(responses).filter(([k]) => k !== "manual_booking");
 
-                {/* Edit date & times */}
-                <div className="space-y-3 p-3 border border-border rounded-lg">
-                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Reschedule
-                  </Label>
+              const RescheduleBlock = (
+                <div className="space-y-3 p-3 border border-border rounded-lg bg-card">
                   <div className="space-y-2">
                     <Label htmlFor="slot-edit-date" className="text-xs">Date</Label>
                     <Input
@@ -1937,25 +1932,31 @@ const AdminCalendar = () => {
                         editEndTime === format(parseISO(selectedSlot.end_time), "HH:mm"))
                     }
                   >
-                    {savingEdit ? "Saving…" : "Save changes"}
+                    {savingEdit ? "Saving…" : "Save new time"}
                   </Button>
-                  {selectedSlot.is_booked && (
+                  {isBooked && (
                     <p className="text-[11px] text-muted-foreground">
-                      The client's appointment will be updated too. They won't be notified automatically.
+                      The client's appointment will be updated. They won't be notified automatically.
                     </p>
                   )}
                 </div>
+              );
 
-                {selectedSlot.is_booked && selectedSlot.appointments?.[0] && (() => {
-                  const appt = selectedSlot.appointments![0];
-                  const client = appt.clients;
-                  const br = appt.booking_requests;
-                  const responses = (br?.form_responses as Record<string, unknown>) || {};
-                  const images = br?.images || [];
-                  const responseEntries = Object.entries(responses).filter(([k]) => k !== "manual_booking");
+              return (
+                <div className="space-y-4 break-words">
+                  {/* TOP: date/time summary */}
+                  <div className="p-3 bg-muted/50 rounded-lg">
+                    <p className="text-sm font-medium">
+                      {format(parseISO(selectedSlot.start_time), "EEEE d MMMM yyyy", { locale: enGB })}
+                    </p>
+                    <p className="text-lg font-mono">
+                      {format(parseISO(selectedSlot.start_time), "HH:mm")} – {format(parseISO(selectedSlot.end_time), "HH:mm")}
+                    </p>
+                  </div>
 
-                  if (editingBooking) {
-                    return (
+                  {/* BOOKED: client + tattoo first; reschedule lives at bottom */}
+                  {isBooked && appt && (
+                    editingBooking ? (
                       <div className="space-y-4 p-4 border border-primary/30 bg-primary/5 rounded-lg">
                         <div className="flex items-center justify-between">
                           <h3 className="font-medium">Edit booking</h3>
@@ -1963,7 +1964,6 @@ const AdminCalendar = () => {
                             Cancel
                           </Button>
                         </div>
-
                         <div className="space-y-2">
                           <Label className="text-xs">Name</Label>
                           <Input value={editClient.name} onChange={(e) => setEditClient({ ...editClient, name: e.target.value })} />
@@ -1976,7 +1976,6 @@ const AdminCalendar = () => {
                           <Label className="text-xs">Phone</Label>
                           <Input value={editClient.phone} onChange={(e) => setEditClient({ ...editClient, phone: e.target.value })} />
                         </div>
-
                         {br && (
                           <>
                             <div className="space-y-3 pt-2 border-t border-border">
@@ -1992,7 +1991,6 @@ const AdminCalendar = () => {
                                 </div>
                               ))}
                             </div>
-
                             <div className="space-y-2">
                               <Label className="text-xs">Admin notes</Label>
                               <Textarea
@@ -2004,145 +2002,173 @@ const AdminCalendar = () => {
                             </div>
                           </>
                         )}
-
                         <Button onClick={saveBookingEdit} disabled={savingBooking} className="w-full">
                           {savingBooking ? "Saving…" : "Save changes"}
                         </Button>
                       </div>
-                    );
-                  }
-
-                  return (
-                    <>
-                      {client && (
-                        <div className="space-y-3 p-4 border border-green-500/30 bg-green-500/5 rounded-lg">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 text-green-700 dark:text-green-400 min-w-0">
-                              <User className="h-4 w-4 shrink-0" />
-                              <span className="font-medium truncate">{client.name}</span>
-                            </div>
-                            <Button size="sm" variant="outline" onClick={startEditBooking} className="h-7 px-2 text-xs">
-                              <Pencil className="h-3 w-3 mr-1" /> Edit
-                            </Button>
-                          </div>
-                          <div className="space-y-2 text-sm">
-                            <button
-                              onClick={() => {
-                                navigator.clipboard.writeText(client.email || "");
-                                toast.success("Email copied");
-                              }}
-                              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full"
-                            >
-                              <Mail className="h-3.5 w-3.5" />
-                              <span className="truncate">{client.email}</span>
-                              <Copy className="h-3 w-3 ml-auto opacity-50 shrink-0" />
-                            </button>
-                            {client.phone && (
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(client.phone || "");
-                                  toast.success("Phone copied");
-                                }}
-                                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full"
-                              >
-                                <Phone className="h-3.5 w-3.5" />
-                                <span>{client.phone}</span>
-                                <Copy className="h-3 w-3 ml-auto opacity-50 shrink-0" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {responseEntries.length > 0 && (
-                        <div>
-                          <h3 className="text-sm font-medium text-muted-foreground mb-2">Tattoo Details</h3>
-                          <div className="p-3 rounded-lg border border-border bg-secondary/30 space-y-2 text-sm">
-                            {responseEntries.map(([key, value]) => (
-                              <div key={key}>
-                                <p className="text-xs text-muted-foreground capitalize">{key.replace(/_/g, " ")}</p>
-                                <p className="whitespace-pre-wrap">{String(value)}</p>
+                    ) : (
+                      <>
+                        {client && (
+                          <div className="space-y-3 p-4 border border-pink-500/30 bg-pink-500/5 rounded-lg">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 text-pink-700 dark:text-pink-400 min-w-0">
+                                <User className="h-4 w-4 shrink-0" />
+                                <span className="font-medium truncate">{client.name}</span>
                               </div>
-                            ))}
+                              <Button size="sm" variant="outline" onClick={startEditBooking} className="h-7 px-2 text-xs">
+                                <Pencil className="h-3 w-3 mr-1" /> Edit
+                              </Button>
+                            </div>
+                            <div className="space-y-2 text-sm">
+                              {client.email && (
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(client.email || "");
+                                    toast.success("Email copied");
+                                  }}
+                                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full"
+                                >
+                                  <Mail className="h-3.5 w-3.5" />
+                                  <span className="truncate">{client.email}</span>
+                                  <Copy className="h-3 w-3 ml-auto opacity-50 shrink-0" />
+                                </button>
+                              )}
+                              {client.phone && (
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(client.phone || "");
+                                    toast.success("Phone copied");
+                                  }}
+                                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full"
+                                >
+                                  <Phone className="h-3.5 w-3.5" />
+                                  <span>{client.phone}</span>
+                                  <Copy className="h-3 w-3 ml-auto opacity-50 shrink-0" />
+                                </button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      {br?.admin_notes && (
-                        <div>
-                          <h3 className="text-sm font-medium text-muted-foreground mb-2">Admin Notes</h3>
-                          <p className="text-sm whitespace-pre-wrap p-3 rounded-lg border border-border bg-secondary/30">{br.admin_notes}</p>
-                        </div>
-                      )}
-                      {images.length > 0 && (
-                        <div>
-                          <h3 className="text-sm font-medium text-muted-foreground mb-2">Reference Images</h3>
-                          <div className="grid grid-cols-3 gap-2">
-                            {images.map((img, i) => (
-                              <button
-                                key={i}
-                                type="button"
-                                onClick={() => setLightbox({ open: true, index: i })}
-                                className="aspect-square rounded-lg border border-border overflow-hidden hover:border-primary/50 transition-colors"
-                              >
-                                <BookingImage src={img} alt={`Reference ${i + 1}`} className="w-full h-full object-cover" />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
+                        )}
 
-                {selectedSlot.is_booked && (
-                  <div className="space-y-3 pt-4 border-t border-border">
-                    <h3 className="text-sm font-medium">Manage booking</h3>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Move to another available slot</Label>
-                      <div className="flex gap-2">
-                        <Select value={rebookSlotId} onValueChange={setRebookSlotId}>
-                          <SelectTrigger className="flex-1">
-                            <SelectValue
-                              placeholder={
-                                loadingAvailable
-                                  ? "Loading…"
-                                  : availableSlots.length === 0
-                                  ? "No upcoming free slots"
-                                  : "Select a slot"
-                              }
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableSlots.map((s) => (
-                              <SelectItem key={s.id} value={s.id}>
-                                {format(parseISO(s.start_time), "EEE d MMM, HH:mm", { locale: enGB })}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          size="sm"
-                          onClick={handleRebookBooking}
-                          disabled={!rebookSlotId || rebooking}
-                        >
-                          {rebooking ? "Moving…" : "Move"}
-                        </Button>
+                        {responseEntries.length > 0 && (
+                          <div>
+                            <h3 className="text-sm font-medium text-muted-foreground mb-2">Tattoo Details</h3>
+                            <div className="p-3 rounded-lg border border-border bg-secondary/30 space-y-2 text-sm">
+                              {responseEntries.map(([key, value]) => (
+                                <div key={key}>
+                                  <p className="text-xs text-muted-foreground capitalize">{key.replace(/_/g, " ")}</p>
+                                  <p className="whitespace-pre-wrap">{String(value)}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {br?.admin_notes && (
+                          <div>
+                            <h3 className="text-sm font-medium text-muted-foreground mb-2">Admin Notes</h3>
+                            <p className="text-sm whitespace-pre-wrap p-3 rounded-lg border border-border bg-secondary/30">{br.admin_notes}</p>
+                          </div>
+                        )}
+                        {images.length > 0 && (
+                          <div>
+                            <h3 className="text-sm font-medium text-muted-foreground mb-2">Reference Images</h3>
+                            <div className="grid grid-cols-3 gap-2">
+                              {images.map((img, i) => (
+                                <button
+                                  key={i}
+                                  type="button"
+                                  onClick={() => setLightbox({ open: true, index: i })}
+                                  className="aspect-square rounded-lg border border-border overflow-hidden hover:border-primary/50 transition-colors"
+                                >
+                                  <BookingImage src={img} alt={`Reference ${i + 1}`} className="w-full h-full object-cover" />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* BOTTOM: reschedule + manage */}
+                        <div className="space-y-3 pt-4 border-t border-border">
+                          <Button
+                            variant="outline"
+                            className="w-full justify-between"
+                            onClick={() => setShowReschedule((v) => !v)}
+                          >
+                            <span className="flex items-center gap-2">
+                              <Clock className="h-4 w-4" />
+                              Reschedule
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {showReschedule ? "Hide" : "Change date or time"}
+                            </span>
+                          </Button>
+
+                          {showReschedule && (
+                            <>
+                              {RescheduleBlock}
+                              <div className="space-y-1.5">
+                                <Label className="text-xs">Or move to an existing free slot</Label>
+                                <div className="flex gap-2">
+                                  <Select value={rebookSlotId} onValueChange={setRebookSlotId}>
+                                    <SelectTrigger className="flex-1">
+                                      <SelectValue
+                                        placeholder={
+                                          loadingAvailable
+                                            ? "Loading…"
+                                            : availableSlots.length === 0
+                                            ? "No upcoming free slots"
+                                            : "Select a slot"
+                                        }
+                                      />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {availableSlots.map((s) => (
+                                        <SelectItem key={s.id} value={s.id}>
+                                          {format(parseISO(s.start_time), "EEE d MMM, HH:mm", { locale: enGB })}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <Button
+                                    size="sm"
+                                    onClick={handleRebookBooking}
+                                    disabled={!rebookSlotId || rebooking}
+                                  >
+                                    {rebooking ? "Moving…" : "Move"}
+                                  </Button>
+                                </div>
+                              </div>
+                            </>
+                          )}
+
+                          <Button
+                            variant="destructive"
+                            className="w-full"
+                            onClick={handleCancelBooking}
+                            disabled={cancellingBooking}
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            {cancellingBooking ? "Cancelling…" : "Cancel booking"}
+                          </Button>
+                        </div>
+                      </>
+                    )
+                  )}
+
+                  {/* NOT BOOKED: keep edit times inline at top (useful for empty slot tweaks) */}
+                  {!isBooked && (
+                    <>
+                      <div className="space-y-2">
+                        <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                          Edit slot time
+                        </Label>
+                        {RescheduleBlock}
                       </div>
-                      <p className="text-[11px] text-muted-foreground">
-                        The client won't be notified automatically.
-                      </p>
-                    </div>
-                    <Button
-                      variant="destructive"
-                      className="w-full"
-                      onClick={handleCancelBooking}
-                      disabled={cancellingBooking}
-                    >
-                      <X className="h-4 w-4 mr-2" />
-                      {cancellingBooking ? "Cancelling…" : "Cancel booking"}
-                    </Button>
-                  </div>
-                )}
+                    </>
+                  )}
+                </div>
+              );
+            })()}
 
                 {!selectedSlot.is_booked && (
                   <div className="space-y-4">
