@@ -2026,10 +2026,10 @@ const AdminCalendar = () => {
                                     navigator.clipboard.writeText(client.email || "");
                                     toast.success("Email copied");
                                   }}
-                                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full"
+                                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full min-w-0"
                                 >
-                                  <Mail className="h-3.5 w-3.5" />
-                                  <span className="truncate">{client.email}</span>
+                                  <Mail className="h-3.5 w-3.5 shrink-0" />
+                                  <span className="truncate min-w-0 flex-1 text-left">{client.email}</span>
                                   <Copy className="h-3 w-3 ml-auto opacity-50 shrink-0" />
                                 </button>
                               )}
