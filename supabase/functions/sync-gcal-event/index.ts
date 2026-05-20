@@ -63,10 +63,44 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { appointmentId } = await req.json();
-    if (!appointmentId) throw new Error("appointmentId required");
+    const body = await req.json().catch(() => ({}));
+    const { appointmentId, action, googleEventId } = body as {
+      appointmentId?: string;
+      action?: "delete" | "upsert";
+      googleEventId?: string;
+    };
 
     const supabase = createClient(supabaseUrl, serviceRole);
+
+    // ----- DELETE branch -----
+    if (action === "delete") {
+      const { data: settings } = await supabase
+        .from("admin_settings")
+        .select("google_calendar_id")
+        .limit(1)
+        .maybeSingle();
+      const calendarId = settings?.google_calendar_id as string | null;
+      if (!calendarId || !googleEventId) {
+        return new Response(JSON.stringify({ success: true, skipped: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      try {
+        await gcalFetch(
+          `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(googleEventId)}`,
+          { method: "DELETE" },
+        );
+      } catch (e) {
+        // 404/410 means already gone — treat as success
+        const msg = (e as Error).message;
+        if (!/\b(404|410)\b/.test(msg)) throw e;
+      }
+      return new Response(JSON.stringify({ success: true, deleted: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!appointmentId) throw new Error("appointmentId required");
 
     // Load appointment with client + booking_request
     const { data: appt, error: apptErr } = await supabase
