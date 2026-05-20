@@ -2317,7 +2317,7 @@ const AdminCalendar = () => {
 
         {/* Manual Booking Dialog */}
         <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
-          <DialogContent className="max-w-[92vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+          <DialogContent style={{ width: "calc(100vw - 24px)", maxWidth: "28rem" }} className="max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>Book Client</DialogTitle>
             </DialogHeader>
