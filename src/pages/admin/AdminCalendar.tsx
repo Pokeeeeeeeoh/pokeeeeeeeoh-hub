@@ -2155,7 +2155,7 @@ const AdminCalendar = () => {
                     )
                   )}
 
-                  {/* NOT BOOKED: keep edit times inline at top (useful for empty slot tweaks) */}
+                  {/* NOT BOOKED: edit time + quick actions + repeat + delete */}
                   {!isBooked && (
                     <>
                       <div className="space-y-2">
@@ -2164,164 +2164,154 @@ const AdminCalendar = () => {
                         </Label>
                         {RescheduleBlock}
                       </div>
+
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedClientId("");
+                              setNewClient({ name: "", email: "", phone: "", tattooDescription: "" });
+                              setShowBookingDialog(true);
+                            }}
+                          >
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            Book Client
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => handleBlockSlot(selectedSlot.id, !selectedSlot.is_blocked)}
+                          >
+                            <Clock className="h-4 w-4 mr-2" />
+                            {selectedSlot.is_blocked ? "Unblock" : "Block"}
+                          </Button>
+                        </div>
+
+                        <div className="space-y-3 pt-4 border-t border-border">
+                          <div className="flex items-center gap-2">
+                            <Repeat className="h-4 w-4 text-muted-foreground" />
+                            <Label className="text-sm font-medium">Repeat this slot</Label>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                id="slot-repeat-weeks"
+                                checked={slotRepeatMode === "weeks"}
+                                onCheckedChange={(checked) => setSlotRepeatMode(checked ? "weeks" : "none")}
+                              />
+                              <Label htmlFor="slot-repeat-weeks" className="text-sm cursor-pointer">
+                                Number of weeks forward
+                              </Label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                id="slot-repeat-until"
+                                checked={slotRepeatMode === "until"}
+                                onCheckedChange={(checked) => setSlotRepeatMode(checked ? "until" : "none")}
+                              />
+                              <Label htmlFor="slot-repeat-until" className="text-sm cursor-pointer">
+                                Until date
+                              </Label>
+                            </div>
+                          </div>
+
+                          {slotRepeatMode !== "none" && (
+                            <div className="space-y-3 pl-6">
+                              <div className="space-y-1.5">
+                                <Label className="text-xs">Which days</Label>
+                                <div className="flex flex-wrap gap-1">
+                                  {WEEKDAYS.map((day) => (
+                                    <button
+                                      key={day.value}
+                                      onClick={() => toggleRepeatDay(day.value)}
+                                      className={cn(
+                                        "px-2.5 py-1 text-xs rounded-full border transition-colors",
+                                        slotRepeatDays.includes(day.value)
+                                          ? "bg-primary text-primary-foreground border-primary"
+                                          : "bg-background border-border hover:border-primary/50"
+                                      )}
+                                    >
+                                      {day.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {slotRepeatMode === "weeks" && (
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs">Number of weeks</Label>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    max={52}
+                                    value={slotRepeatWeeks}
+                                    onChange={(e) => setSlotRepeatWeeks(parseInt(e.target.value) || 1)}
+                                  />
+                                </div>
+                              )}
+
+                              {slotRepeatMode === "until" && (
+                                <div className="space-y-1.5">
+                                  <Label className="text-xs">Until date</Label>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        className={cn(
+                                          "w-full justify-start text-left font-normal",
+                                          !slotRepeatUntilDate && "text-muted-foreground"
+                                        )}
+                                      >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {slotRepeatUntilDate
+                                          ? format(slotRepeatUntilDate, "d MMMM yyyy", { locale: enGB })
+                                          : "Select date"}
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                      <Calendar
+                                        mode="single"
+                                        selected={slotRepeatUntilDate}
+                                        onSelect={setSlotRepeatUntilDate}
+                                        disabled={(date) => date <= parseISO(selectedSlot.start_time)}
+                                        weekStartsOn={1}
+                                        locale={enGB}
+                                        initialFocus
+                                        className="p-3 pointer-events-auto"
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
+                                </div>
+                              )}
+
+                              <Button
+                                className="w-full"
+                                onClick={handleRepeatSlot}
+                                disabled={repeatingSlot || slotRepeatDays.length === 0}
+                              >
+                                {repeatingSlot ? "Creating slots..." : "Create repeated slots"}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pt-4 border-t border-border">
+                          <Button
+                            variant="destructive"
+                            className="w-full"
+                            onClick={() => handleDeleteSlot(selectedSlot.id)}
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Remove Slot
+                          </Button>
+                        </div>
+                      </div>
                     </>
                   )}
                 </div>
               );
             })()}
-
-                {!selectedSlot.is_booked && (
-                  <div className="space-y-4">
-                    {/* Quick Actions */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedClientId("");
-                          setNewClient({ name: "", email: "", phone: "", tattooDescription: "" });
-                          setShowBookingDialog(true);
-                        }}
-                      >
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Book Client
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => handleBlockSlot(selectedSlot.id, !selectedSlot.is_blocked)}
-                      >
-                        <Clock className="h-4 w-4 mr-2" />
-                        {selectedSlot.is_blocked ? "Unblock" : "Block"}
-                      </Button>
-                    </div>
-
-                    {/* Repeat Options */}
-                    <div className="space-y-3 pt-4 border-t border-border">
-                      <div className="flex items-center gap-2">
-                        <Repeat className="h-4 w-4 text-muted-foreground" />
-                        <Label className="text-sm font-medium">Repeat this slot</Label>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            id="slot-repeat-weeks"
-                            checked={slotRepeatMode === "weeks"}
-                            onCheckedChange={(checked) => setSlotRepeatMode(checked ? "weeks" : "none")}
-                          />
-                          <Label htmlFor="slot-repeat-weeks" className="text-sm cursor-pointer">
-                            Number of weeks forward
-                          </Label>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            id="slot-repeat-until"
-                            checked={slotRepeatMode === "until"}
-                            onCheckedChange={(checked) => setSlotRepeatMode(checked ? "until" : "none")}
-                          />
-                          <Label htmlFor="slot-repeat-until" className="text-sm cursor-pointer">
-                            Until date
-                          </Label>
-                        </div>
-                      </div>
-
-                      {slotRepeatMode !== "none" && (
-                        <div className="space-y-3 pl-6">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs">Which days</Label>
-                            <div className="flex flex-wrap gap-1">
-                              {WEEKDAYS.map((day) => (
-                                <button
-                                  key={day.value}
-                                  onClick={() => toggleRepeatDay(day.value)}
-                                  className={cn(
-                                    "px-2.5 py-1 text-xs rounded-full border transition-colors",
-                                    slotRepeatDays.includes(day.value)
-                                      ? "bg-primary text-primary-foreground border-primary"
-                                      : "bg-background border-border hover:border-primary/50"
-                                  )}
-                                >
-                                  {day.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {slotRepeatMode === "weeks" && (
-                            <div className="space-y-1.5">
-                              <Label className="text-xs">Number of weeks</Label>
-                              <Input
-                                type="number"
-                                min={1}
-                                max={52}
-                                value={slotRepeatWeeks}
-                                onChange={(e) =>
-                                  setSlotRepeatWeeks(parseInt(e.target.value) || 1)
-                                }
-                              />
-                            </div>
-                          )}
-
-                          {slotRepeatMode === "until" && (
-                            <div className="space-y-1.5">
-                              <Label className="text-xs">Until date</Label>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    className={cn(
-                                      "w-full justify-start text-left font-normal",
-                                      !slotRepeatUntilDate && "text-muted-foreground"
-                                    )}
-                                  >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {slotRepeatUntilDate
-                                      ? format(slotRepeatUntilDate, "d MMMM yyyy", { locale: enGB })
-                                      : "Select date"}
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                  <Calendar
-                                    mode="single"
-                                    selected={slotRepeatUntilDate}
-                                    onSelect={setSlotRepeatUntilDate}
-                                    disabled={(date) => date <= parseISO(selectedSlot.start_time)}
-                                    weekStartsOn={1}
-                                    locale={enGB}
-                                    initialFocus
-                                    className="p-3 pointer-events-auto"
-                                  />
-                                </PopoverContent>
-                              </Popover>
-                            </div>
-                          )}
-
-                          <Button
-                            className="w-full"
-                            onClick={handleRepeatSlot}
-                            disabled={repeatingSlot || slotRepeatDays.length === 0}
-                          >
-                            {repeatingSlot ? "Creating slots..." : "Create repeated slots"}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Delete */}
-                    <div className="pt-4 border-t border-border">
-                      <Button
-                        variant="destructive"
-                        className="w-full"
-                        onClick={() => handleDeleteSlot(selectedSlot.id)}
-                      >
-                        <X className="h-4 w-4 mr-2" />
-                        Remove Slot
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </DialogContent>
         </Dialog>
 
