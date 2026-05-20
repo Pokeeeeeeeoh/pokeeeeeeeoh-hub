@@ -1849,14 +1849,14 @@ const AdminCalendar = () => {
 
         {/* Slot Dialog (Slot Click) */}
         <Dialog open={showSlotDialog} onOpenChange={setShowSlotDialog}>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden overscroll-contain">
             <DialogHeader>
               <DialogTitle>
                 {selectedSlot?.is_booked ? "Booked Slot" : "Manage Slot"}
               </DialogTitle>
             </DialogHeader>
             {selectedSlot && (
-              <div className="space-y-4">
+              <div className="space-y-4 break-words">
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <p className="text-sm font-medium">
                     {format(parseISO(selectedSlot.start_time), "EEEE d MMMM yyyy", { locale: enGB })}
@@ -1866,35 +1866,53 @@ const AdminCalendar = () => {
                   </p>
                 </div>
 
-                {/* Edit times */}
-                <div className="space-y-2">
-                  <Label className="text-xs">Edit times</Label>
-                  <div className="flex items-center gap-2">
-                    <Select value={editStartTime} onValueChange={setEditStartTime}>
-                      <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {timeOptions.map((t) => (<SelectItem key={t} value={t}>{t}</SelectItem>))}
-                      </SelectContent>
-                    </Select>
-                    <span className="text-xs text-muted-foreground">–</span>
-                    <Select value={editEndTime} onValueChange={setEditEndTime}>
-                      <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {timeOptions.map((t) => (<SelectItem key={t} value={t}>{t}</SelectItem>))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      size="sm"
-                      onClick={handleSaveSlotTime}
-                      disabled={
-                        savingEdit ||
-                        (editStartTime === format(parseISO(selectedSlot.start_time), "HH:mm") &&
-                          editEndTime === format(parseISO(selectedSlot.end_time), "HH:mm"))
-                      }
-                    >
-                      {savingEdit ? "Saving" : "Save"}
-                    </Button>
+                {/* Edit date & times */}
+                <div className="space-y-3 p-3 border border-border rounded-lg">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Reschedule
+                  </Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="slot-edit-date" className="text-xs">Date</Label>
+                    <Input
+                      id="slot-edit-date"
+                      type="date"
+                      value={editDate}
+                      onChange={(e) => setEditDate(e.target.value)}
+                      className="w-full"
+                    />
                   </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-2 min-w-0">
+                      <Label className="text-xs">Start</Label>
+                      <Select value={editStartTime} onValueChange={setEditStartTime}>
+                        <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {timeOptions.map((t) => (<SelectItem key={t} value={t}>{t}</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2 min-w-0">
+                      <Label className="text-xs">End</Label>
+                      <Select value={editEndTime} onValueChange={setEditEndTime}>
+                        <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {timeOptions.map((t) => (<SelectItem key={t} value={t}>{t}</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full"
+                    onClick={handleSaveSlotTime}
+                    disabled={
+                      savingEdit ||
+                      (editDate === format(parseISO(selectedSlot.start_time), "yyyy-MM-dd") &&
+                        editStartTime === format(parseISO(selectedSlot.start_time), "HH:mm") &&
+                        editEndTime === format(parseISO(selectedSlot.end_time), "HH:mm"))
+                    }
+                  >
+                    {savingEdit ? "Saving…" : "Save changes"}
+                  </Button>
                   {selectedSlot.is_booked && (
                     <p className="text-[11px] text-muted-foreground">
                       The client's appointment will be updated too. They won't be notified automatically.
