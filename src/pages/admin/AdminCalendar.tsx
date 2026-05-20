@@ -329,6 +329,14 @@ const AdminCalendar = () => {
     if (!confirm("Cancel this booking? The slot will become available again.")) return;
     setCancellingBooking(true);
     try {
+      // Look up the google_event_id before deleting the appointment row
+      const { data: apptRow } = await supabase
+        .from("appointments")
+        .select("google_event_id")
+        .eq("id", appt.id)
+        .maybeSingle();
+      const googleEventId = apptRow?.google_event_id ?? null;
+
       const { error: aErr } = await supabase.from("appointments").delete().eq("id", appt.id);
       if (aErr) throw aErr;
       await supabase
@@ -341,6 +349,16 @@ const AdminCalendar = () => {
           .update({ status: "approved" })
           .eq("id", appt.booking_request_id);
       }
+
+      // Remove from Google Calendar so it reflects actual bookings
+      if (googleEventId) {
+        supabase.functions
+          .invoke("sync-gcal-event", {
+            body: { action: "delete", googleEventId },
+          })
+          .catch((e) => console.warn("gcal delete failed", e));
+      }
+
       toast.success("Booking cancelled");
       setShowSlotDialog(false);
       fetchSlots();
