@@ -43,6 +43,7 @@ import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -1469,21 +1470,29 @@ const AdminCalendar = () => {
                             ? slot.appointments[0].clients.name.split(" ")[0]
                             : null;
                         return (
-                          <div
+                          <button
                             key={slot.id}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openSlotDialog(slot);
+                            }}
                             className={cn(
-                              "text-[9px] leading-tight px-1 py-0.5 rounded truncate font-medium",
+                              "block w-full max-w-full overflow-hidden text-left text-[9px] leading-tight px-1 py-0.5 rounded font-medium",
                               slot.is_booked
                                 ? "bg-pink-500/20 text-pink-700 dark:text-pink-400"
                                 : slot.is_blocked
                                 ? "bg-muted text-muted-foreground line-through"
                                 : "bg-green-500/20 text-green-700 dark:text-green-400",
                             )}
+                            title={slot.is_booked ? clientName ?? undefined : format(parseISO(slot.start_time), "HH:mm")}
                           >
-                            {slot.is_booked
-                              ? (clientName ?? format(parseISO(slot.start_time), "HH:mm"))
-                              : format(parseISO(slot.start_time), "HH:mm")}
-                          </div>
+                            <span className="block w-full truncate">
+                              {slot.is_booked
+                                ? (clientName ?? format(parseISO(slot.start_time), "HH:mm"))
+                                : format(parseISO(slot.start_time), "HH:mm")}
+                            </span>
+                          </button>
                         );
                       })}
                       {daySlots.length > 3 && (
@@ -1875,11 +1884,14 @@ const AdminCalendar = () => {
 
         {/* Slot Dialog (Slot Click) */}
         <Dialog open={showSlotDialog} onOpenChange={setShowSlotDialog}>
-          <DialogContent style={{ width: "calc(100vw - 24px)", maxWidth: "28rem" }} className="max-h-[90vh] overflow-y-auto overflow-x-hidden overscroll-contain p-4 sm:p-6">
+          <DialogContent style={{ width: "min(calc(100vw - 24px), 28rem)", maxWidth: "calc(100vw - 24px)" }} className="left-1/2 grid max-h-[90vh] w-[calc(100vw-24px)] max-w-[calc(100vw-24px)] min-w-0 translate-x-[-50%] overflow-y-auto overflow-x-hidden overscroll-contain p-4 sm:w-full sm:max-w-md sm:p-6">
             <DialogHeader>
               <DialogTitle>
                 {selectedSlot?.is_booked ? "Booked Slot" : "Manage Slot"}
               </DialogTitle>
+              <DialogDescription className="sr-only">
+                {selectedSlot?.is_booked ? "View booking details and reschedule or cancel the appointment." : "Manage this availability slot."}
+              </DialogDescription>
             </DialogHeader>
             {selectedSlot && (() => {
               const isBooked = selectedSlot.is_booked;
@@ -1943,7 +1955,7 @@ const AdminCalendar = () => {
               );
 
               return (
-                <div className="space-y-4 break-words">
+                <div className="min-w-0 space-y-4 break-words">
                   {/* TOP: date/time summary */}
                   <div className="p-3 bg-muted/50 rounded-lg">
                     <p className="text-sm font-medium">
@@ -2009,7 +2021,7 @@ const AdminCalendar = () => {
                     ) : (
                       <>
                         {client && (
-                          <div className="space-y-3 p-4 border border-pink-500/30 bg-pink-500/5 rounded-lg">
+                          <div className="min-w-0 space-y-3 overflow-hidden p-4 border border-pink-500/30 bg-pink-500/5 rounded-lg">
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2 text-pink-700 dark:text-pink-400 min-w-0">
                                 <User className="h-4 w-4 shrink-0" />
@@ -2019,7 +2031,7 @@ const AdminCalendar = () => {
                                 <Pencil className="h-3 w-3 mr-1" /> Edit
                               </Button>
                             </div>
-                            <div className="space-y-2 text-sm">
+                            <div className="min-w-0 space-y-2 text-sm">
                               {client.email && (
                                 <button
                                   onClick={() => {
@@ -2039,10 +2051,10 @@ const AdminCalendar = () => {
                                     navigator.clipboard.writeText(client.phone || "");
                                     toast.success("Phone copied");
                                   }}
-                                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full"
+                                  className="flex min-w-0 items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full"
                                 >
-                                  <Phone className="h-3.5 w-3.5" />
-                                  <span>{client.phone}</span>
+                                  <Phone className="h-3.5 w-3.5 shrink-0" />
+                                  <span className="min-w-0 flex-1 truncate text-left">{client.phone}</span>
                                   <Copy className="h-3 w-3 ml-auto opacity-50 shrink-0" />
                                 </button>
                               )}
@@ -2108,7 +2120,7 @@ const AdminCalendar = () => {
                               {RescheduleBlock}
                               <div className="space-y-1.5">
                                 <Label className="text-xs">Or move to an existing free slot</Label>
-                                <div className="flex gap-2">
+                                <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
                                   <Select value={rebookSlotId} onValueChange={setRebookSlotId}>
                                     <SelectTrigger className="flex-1">
                                       <SelectValue
