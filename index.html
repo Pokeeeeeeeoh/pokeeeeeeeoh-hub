@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
@@ -33,28 +34,79 @@
   <body>
     <div id="root"></div>
     <script>
-      // iOS standalone (home-screen) cold-launch fix:
-      // Safari sometimes pauses the WebView before the JS bundle finishes,
-      // leaving a blank white screen until the user backgrounds the app.
-      // Force a single soft reload if the page is still empty after launch.
       (function () {
-        var isStandalone =
-          window.navigator.standalone === true ||
-          window.matchMedia('(display-mode: standalone)').matches;
+        var isStandalone = window.navigator.standalone === true;
+        try {
+          isStandalone = isStandalone || window.matchMedia('(display-mode: standalone)').matches;
+        } catch (e) {}
+
         if (!isStandalone) return;
-        if (sessionStorage.getItem('__ios_pwa_booted')) return;
-        sessionStorage.setItem('__ios_pwa_booted', '1');
-        var t = setTimeout(function () {
+
+        var host = window.location.hostname;
+        var isPreviewHost =
+          host.indexOf('id-preview--') !== -1 ||
+          host.indexOf('.lovableproject.com') !== -1;
+
+        if (isPreviewHost) {
+          var targetUrl =
+            'https://pokeeeeeeeoh.com' +
+            window.location.pathname +
+            window.location.search +
+            window.location.hash;
+          window.location.replace(targetUrl);
+          return;
+        }
+
+        var guardKey = '__ios_home_launch_guard_at';
+        var lastAttempt = Number(sessionStorage.getItem(guardKey) || '0');
+        var canReload = Date.now() - lastAttempt > 15000;
+        var timer;
+        var completed = false;
+
+        function hasRendered() {
           var root = document.getElementById('root');
-          if (!root || root.childElementCount === 0) {
-            window.location.reload();
-          }
-        }, 2500);
+          return !!root && root.childElementCount > 0;
+        }
+
+        function disarm() {
+          completed = true;
+          if (timer) window.clearTimeout(timer);
+        }
+
+        function recoverIfBlank() {
+          if (completed || hasRendered() || !canReload) return;
+          sessionStorage.setItem(guardKey, String(Date.now()));
+          window.location.reload();
+        }
+
+        timer = window.setTimeout(recoverIfBlank, 2200);
+
+        window.addEventListener('DOMContentLoaded', function () {
+          if (hasRendered()) disarm();
+        });
+
         window.addEventListener('load', function () {
-          setTimeout(function () {
-            var root = document.getElementById('root');
-            if (root && root.childElementCount > 0) clearTimeout(t);
-          }, 100);
+          window.setTimeout(function () {
+            if (hasRendered()) {
+              disarm();
+              return;
+            }
+            recoverIfBlank();
+          }, 120);
+        });
+
+        window.addEventListener('pageshow', function () {
+          window.setTimeout(function () {
+            if (hasRendered()) {
+              disarm();
+              return;
+            }
+            recoverIfBlank();
+          }, 120);
+        });
+
+        document.addEventListener('visibilitychange', function () {
+          if (!document.hidden && hasRendered()) disarm();
         });
       })();
     </script>
