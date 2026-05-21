@@ -84,7 +84,7 @@ const AdminLayout = () => {
     <div className="admin-scope min-h-screen bg-background">
 
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 border-b border-border bg-background h-14 flex items-center px-4">
+      <header className="ios-safe-header lg:hidden fixed top-0 left-0 right-0 z-50 border-b border-border bg-background flex items-center px-4">
         <Button
           variant="ghost"
           size="icon"
@@ -173,7 +173,7 @@ const AdminLayout = () => {
       )}
 
       {/* Main Content */}
-      <main className="lg:pl-64 pt-14 lg:pt-0 min-h-screen">
+      <main className="ios-safe-main-offset lg:pl-64 lg:pt-0 min-h-screen">
         <Outlet />
       </main>
     </div>
