@@ -2,7 +2,7 @@
   "name": "Pokeeeeeeeoh",
   "short_name": "Pokeeeeeeeoh",
   "description": "Tattoo booking and admin web app for Pokeeeeeeeoh.",
-  "start_url": "/",
+  "start_url": "/admin",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
