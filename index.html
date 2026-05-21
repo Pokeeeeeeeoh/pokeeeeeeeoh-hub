@@ -3,14 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
     <meta name="apple-mobile-web-app-title" content="Pokeeeeeeeoh" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#ffffff" />
     <title>Pokeeeeeeeoh</title>
     <meta name="description" content="Tattoos">
@@ -35,6 +34,18 @@
     <div id="root"></div>
     <script>
       (function () {
+        var host = window.location.hostname;
+        var isPreviewHost =
+          host.indexOf('id-preview--') !== -1 ||
+          host.indexOf('.lovableproject.com') !== -1;
+
+        if (!isPreviewHost) {
+          var manifest = document.createElement('link');
+          manifest.rel = 'manifest';
+          manifest.href = '/manifest.webmanifest';
+          document.head.appendChild(manifest);
+        }
+
         var isStandalone = window.navigator.standalone === true;
         try {
           isStandalone = isStandalone || window.matchMedia('(display-mode: standalone)').matches;
@@ -42,18 +53,23 @@
 
         if (!isStandalone) return;
 
-        var host = window.location.hostname;
-        var isPreviewHost =
-          host.indexOf('id-preview--') !== -1 ||
-          host.indexOf('.lovableproject.com') !== -1;
+        var launchPath =
+          window.location.pathname === '/' || window.location.pathname === '/index.html'
+            ? '/admin'
+            : window.location.pathname;
 
         if (isPreviewHost) {
           var targetUrl =
             'https://pokeeeeeeeoh.com' +
-            window.location.pathname +
+            launchPath +
             window.location.search +
             window.location.hash;
           window.location.replace(targetUrl);
+          return;
+        }
+
+        if (launchPath !== window.location.pathname) {
+          window.location.replace(launchPath + window.location.search + window.location.hash);
           return;
         }
 
