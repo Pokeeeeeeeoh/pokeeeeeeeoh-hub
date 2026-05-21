@@ -104,7 +104,7 @@ const AdminLogin = () => {
     <div className="min-h-screen bg-background flex items-center justify-center px-4 relative">
       <Link
         to="/"
-        className="absolute top-4 left-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        className="ios-safe-top-4 absolute left-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
         Back
