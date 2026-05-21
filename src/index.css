@@ -190,6 +190,19 @@
 }
 
 @layer utilities {
+  .ios-safe-header {
+    padding-top: env(safe-area-inset-top, 0px);
+    min-height: calc(3.5rem + env(safe-area-inset-top, 0px));
+  }
+
+  .ios-safe-main-offset {
+    padding-top: calc(3.5rem + env(safe-area-inset-top, 0px));
+  }
+
+  .ios-safe-top-4 {
+    top: calc(env(safe-area-inset-top, 0px) + 1rem);
+  }
+
   /* Text balance for headings */
   .text-balance {
     text-wrap: balance;
