@@ -47,13 +47,23 @@
           host.indexOf('id-preview--') !== -1 ||
           host.indexOf('.lovableproject.com') !== -1;
 
+        var launchPath =
+          window.location.pathname === '/' || window.location.pathname === '/index.html'
+            ? '/admin'
+            : window.location.pathname;
+
         if (isPreviewHost) {
           var targetUrl =
             'https://pokeeeeeeeoh.com' +
-            window.location.pathname +
+            launchPath +
             window.location.search +
             window.location.hash;
           window.location.replace(targetUrl);
+          return;
+        }
+
+        if (launchPath !== window.location.pathname) {
+          window.location.replace(launchPath + window.location.search + window.location.hash);
           return;
         }
 
