@@ -30,7 +30,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<Navigate to="/admin" replace />} />
+          <Route path="/" element={<Index />} />
           <Route path="/book" element={<BookingInfo />} />
           <Route path="/book/form" element={<BookingForm />} />
           <Route path="/book/confirmation" element={<BookingConfirmation />} />
