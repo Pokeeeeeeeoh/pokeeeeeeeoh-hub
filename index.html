@@ -51,79 +51,15 @@
           isStandalone = isStandalone || window.matchMedia('(display-mode: standalone)').matches;
         } catch (e) {}
 
-        if (!isStandalone) return;
+        if (!isStandalone || !isPreviewHost) return;
 
-        var launchPath =
-          window.location.pathname === '/' || window.location.pathname === '/index.html'
-            ? '/admin'
-            : window.location.pathname;
-
-        if (isPreviewHost) {
-          var targetUrl =
-            'https://pokeeeeeeeoh.com' +
-            launchPath +
-            window.location.search +
-            window.location.hash;
-          window.location.replace(targetUrl);
-          return;
-        }
-
-        if (launchPath !== window.location.pathname) {
-          window.location.replace(launchPath + window.location.search + window.location.hash);
-          return;
-        }
-
-        var guardKey = '__ios_home_launch_guard_at';
-        var lastAttempt = Number(sessionStorage.getItem(guardKey) || '0');
-        var canReload = Date.now() - lastAttempt > 15000;
-        var timer;
-        var completed = false;
-
-        function hasRendered() {
-          var root = document.getElementById('root');
-          return !!root && root.childElementCount > 0;
-        }
-
-        function disarm() {
-          completed = true;
-          if (timer) window.clearTimeout(timer);
-        }
-
-        function recoverIfBlank() {
-          if (completed || hasRendered() || !canReload) return;
-          sessionStorage.setItem(guardKey, String(Date.now()));
-          window.location.reload();
-        }
-
-        timer = window.setTimeout(recoverIfBlank, 2200);
-
-        window.addEventListener('DOMContentLoaded', function () {
-          if (hasRendered()) disarm();
-        });
-
-        window.addEventListener('load', function () {
-          window.setTimeout(function () {
-            if (hasRendered()) {
-              disarm();
-              return;
-            }
-            recoverIfBlank();
-          }, 120);
-        });
-
-        window.addEventListener('pageshow', function () {
-          window.setTimeout(function () {
-            if (hasRendered()) {
-              disarm();
-              return;
-            }
-            recoverIfBlank();
-          }, 120);
-        });
-
-        document.addEventListener('visibilitychange', function () {
-          if (!document.hidden && hasRendered()) disarm();
-        });
+        // Only redirect preview standalone launches to production
+        var targetUrl =
+          'https://pokeeeeeeeoh.com' +
+          window.location.pathname +
+          window.location.search +
+          window.location.hash;
+        window.location.replace(targetUrl);
       })();
     </script>
     <script type="module" src="/src/main.tsx"></script>
