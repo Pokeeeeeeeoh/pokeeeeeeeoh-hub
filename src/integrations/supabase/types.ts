@@ -433,6 +433,7 @@ export type Database = {
       }
       form_config: {
         Row: {
+          aftercare_content: string | null
           contact_fields: Json
           fields: Json
           id: string
@@ -440,6 +441,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aftercare_content?: string | null
           contact_fields?: Json
           fields?: Json
           id?: string
@@ -447,6 +449,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aftercare_content?: string | null
           contact_fields?: Json
           fields?: Json
           id?: string

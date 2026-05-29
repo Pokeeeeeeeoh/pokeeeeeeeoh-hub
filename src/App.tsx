@@ -19,6 +19,7 @@ import NotFound from "./pages/NotFound";
 import Unsubscribe from "./pages/Unsubscribe";
 import Privacy from "./pages/Privacy";
 import About from "./pages/About";
+import Aftercare from "./pages/Aftercare";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/about" element={<About />} />
+          <Route path="/aftercare" element={<Aftercare />} />
           
           
           {/* Admin Routes */}
