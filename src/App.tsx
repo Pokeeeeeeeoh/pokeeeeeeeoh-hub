@@ -39,6 +39,7 @@ const App = () => (
           <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/about" element={<About />} />
+          <Route path="/aftercare" element={<Aftercare />} />
           
           
           {/* Admin Routes */}
