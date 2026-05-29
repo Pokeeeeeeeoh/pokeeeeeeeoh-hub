@@ -19,6 +19,7 @@ import NotFound from "./pages/NotFound";
 import Unsubscribe from "./pages/Unsubscribe";
 import Privacy from "./pages/Privacy";
 import About from "./pages/About";
+import Aftercare from "./pages/Aftercare";
 
 const queryClient = new QueryClient();
 
