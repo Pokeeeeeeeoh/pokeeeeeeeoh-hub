@@ -1,0 +1,1 @@
+GRANT SELECT ON public.email_log TO authenticated; GRANT ALL ON public.email_log TO service_role;
