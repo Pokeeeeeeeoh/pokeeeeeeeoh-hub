@@ -963,13 +963,19 @@ const AdminCalendar = () => {
 
       // Keep linked appointment in sync if booked
       if (selectedSlot.is_booked) {
-        await supabase
+        const { data: updatedAppts } = await supabase
           .from("appointments")
           .update({
             start_time: newStart.toISOString(),
             end_time: newEnd.toISOString(),
           })
-          .eq("slot_id", selectedSlot.id);
+          .eq("slot_id", selectedSlot.id)
+          .select("id");
+        for (const a of updatedAppts ?? []) {
+          supabase.functions
+            .invoke("sync-gcal-event", { body: { appointmentId: a.id } })
+            .catch((e) => console.warn("gcal resync failed", e));
+        }
       }
 
       pushUndo({
