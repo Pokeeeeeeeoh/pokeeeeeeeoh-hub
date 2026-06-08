@@ -117,21 +117,27 @@ const BookingForm = () => {
     setSubmitting(true);
 
     try {
-      // Upload images first to the private bucket (anon allowed). Storage RLS
-      // requires a top-level UUID folder, so generate one per submission.
-      const tempKey = crypto.randomUUID();
+      // Request signed upload URLs from the server (rate-limited, server
+      // generates the storage path so anon cannot inject files into arbitrary
+      // client folders).
       const imageUrls: string[] = [];
-      for (const [idx, image] of images.entries()) {
-        // Sanitise the client-supplied filename to prevent path traversal /
-        // weird characters from polluting storage paths.
-        const rawName = (image.name || "upload").split(/[\\/]/).pop() || "upload";
-        const safeName = rawName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80);
-        const fileName = `${tempKey}/${Date.now()}_${idx}_${safeName}`;
-        const { error: uploadError } = await supabase.storage
-          .from("booking-images")
-          .upload(fileName, image);
-        if (uploadError) throw uploadError;
-        imageUrls.push(fileName);
+      if (images.length > 0) {
+        const { data: urlResult, error: urlErr } = await supabase.functions.invoke(
+          "get-booking-upload-urls",
+          { body: { filenames: images.map((f) => f.name || "upload") } },
+        );
+        if (urlErr || (urlResult as any)?.error) {
+          throw new Error((urlResult as any)?.error || urlErr?.message || "Could not prepare uploads");
+        }
+        const uploads = (urlResult as { uploads: Array<{ path: string; token: string }> }).uploads;
+        for (const [idx, image] of images.entries()) {
+          const u = uploads[idx];
+          const { error: uploadError } = await supabase.storage
+            .from("booking-images")
+            .uploadToSignedUrl(u.path, u.token, image);
+          if (uploadError) throw uploadError;
+          imageUrls.push(u.path);
+        }
       }
 
       // Submit booking request through rate-limited edge function
