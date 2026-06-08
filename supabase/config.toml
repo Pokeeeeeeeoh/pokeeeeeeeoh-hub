@@ -3,6 +3,10 @@ project_id = "wtrmrhfjrxdfkqpxteuq"
 [functions]
   [functions.auth-email-hook]
     verify_jwt = false
+  [functions.get-booking-upload-urls]
+    verify_jwt = false
+  [functions.submit-booking-request]
+    verify_jwt = false
   [functions.book-slot]
     verify_jwt = false
   [functions.process-email-queue]
