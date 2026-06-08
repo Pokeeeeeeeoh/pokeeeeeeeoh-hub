@@ -47,12 +47,19 @@ Deno.serve(async (req) => {
     if (token) {
       const { data, error } = await supabase
         .from("booking_requests")
-        .select("id, client_id, status, clients(name, email)")
+        .select("id, client_id, status, approval_token_expires_at, clients(name, email)")
         .eq("approval_token", token)
         .single();
       if (error || !data) throw new Error("Invalid token");
       if (data.status !== "approved" && data.status !== "booked") {
         throw new Error("Request is not approved");
+      }
+      if (
+        data.status !== "booked" &&
+        data.approval_token_expires_at &&
+        new Date(data.approval_token_expires_at).getTime() < Date.now()
+      ) {
+        throw new Error("This booking link has expired. Please contact us for a new link.");
       }
       request = data as any;
     } else {
