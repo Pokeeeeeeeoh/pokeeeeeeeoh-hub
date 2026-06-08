@@ -1609,14 +1609,32 @@ const AdminCalendar = () => {
                           </span>
                         </div>
                         {client?.email && (
-                          <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                            {client.email}
-                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(client.email || "");
+                              toast.success("Email copied");
+                            }}
+                            className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
+                          >
+                            <Mail className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{client.email}</span>
+                            <Copy className="h-3 w-3 ml-auto opacity-50 shrink-0" />
+                          </button>
                         )}
                         {client?.phone && (
-                          <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                            {client.phone}
-                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(client.phone || "");
+                              toast.success("Phone copied");
+                            }}
+                            className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
+                          >
+                            <Phone className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{client.phone}</span>
+                            <Copy className="h-3 w-3 ml-auto opacity-50 shrink-0" />
+                          </button>
                         )}
                       </button>
                     );
