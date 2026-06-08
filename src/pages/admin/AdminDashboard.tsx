@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, differenceInDays } from "date-fns";
-import { Search, Eye, Check, X, ChevronDown, Pencil, Clock, Plus } from "lucide-react";
+import { Search, Eye, Check, X, ChevronDown, Pencil, Clock, Plus, Copy, Mail, Phone } from "lucide-react";
 import { ManualBookingDialog } from "@/components/admin/ManualBookingDialog";
 import { toast } from "sonner";
 import {
@@ -518,9 +518,37 @@ const AdminDashboard = () => {
                     ) : (
                       <>
                         <p><span className="text-muted-foreground">Name:</span> {selectedRequest.clients?.name}</p>
-                        <p><span className="text-muted-foreground">Email:</span> {selectedRequest.clients?.email}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">Email:</span>
+                          <span>{selectedRequest.clients?.email}</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2"
+                            onClick={() => {
+                              navigator.clipboard.writeText(selectedRequest.clients?.email || "");
+                              toast.success("Email copied");
+                            }}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
                         {selectedRequest.clients?.phone && (
-                          <p><span className="text-muted-foreground">Phone:</span> {selectedRequest.clients?.phone}</p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground">Phone:</span>
+                            <span>{selectedRequest.clients?.phone}</span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2"
+                              onClick={() => {
+                                navigator.clipboard.writeText(selectedRequest.clients?.phone || "");
+                                toast.success("Phone copied");
+                              }}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
                         )}
                       </>
                     )}
