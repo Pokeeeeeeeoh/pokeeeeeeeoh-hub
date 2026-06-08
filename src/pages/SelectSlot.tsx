@@ -100,12 +100,19 @@ const SelectSlot = () => {
             status: string;
             client_name: string | null;
             client_email: string | null;
+            expired?: boolean;
             appointment: { slot_id: string | null; start_time: string; end_time: string } | null;
           }
         | null;
 
       if (requestError || !requestData) {
         setError("Booking request not found or link has expired.");
+        setLoading(false);
+        return;
+      }
+
+      if (requestData.expired) {
+        setError("This booking link has expired. Please contact us for a new link.");
         setLoading(false);
         return;
       }
