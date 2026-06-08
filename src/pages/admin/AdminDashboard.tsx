@@ -106,9 +106,10 @@ const AdminDashboard = () => {
   const handleApprove = async (request: BookingRequest) => {
     setActionLoading(true);
     try {
+      const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
       await supabase
         .from("booking_requests")
-        .update({ status: "approved" })
+        .update({ status: "approved", approval_token_expires_at: expiresAt })
         .eq("id", request.id);
 
       const bookingUrl = `${window.location.origin}/select-slot?token=${request.approval_token}`;
