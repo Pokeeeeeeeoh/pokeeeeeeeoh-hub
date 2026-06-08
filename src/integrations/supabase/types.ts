@@ -208,6 +208,7 @@ export type Database = {
         Row: {
           admin_notes: string | null
           approval_token: string | null
+          approval_token_expires_at: string | null
           client_id: string
           created_at: string
           decline_reason: string | null
@@ -220,6 +221,7 @@ export type Database = {
         Insert: {
           admin_notes?: string | null
           approval_token?: string | null
+          approval_token_expires_at?: string | null
           client_id: string
           created_at?: string
           decline_reason?: string | null
@@ -232,6 +234,7 @@ export type Database = {
         Update: {
           admin_notes?: string | null
           approval_token?: string | null
+          approval_token_expires_at?: string | null
           client_id?: string
           created_at?: string
           decline_reason?: string | null
