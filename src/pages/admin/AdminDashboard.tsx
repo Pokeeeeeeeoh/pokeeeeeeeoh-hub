@@ -18,6 +18,10 @@ import { ImageLightbox } from "@/components/ImageLightbox";
 import { BookingImage } from "@/components/BookingImage";
 import { PullToRefreshPortal } from "@/components/PullToRefreshPortal";
 
+// Always use the live public site for client-facing links — never the
+// preview/lovable.app origin, which is gated by a login wall.
+const PUBLIC_SITE_ORIGIN = "https://pokeeeeeeeoh.com";
+
 interface Client {
   name: string;
   email: string;
@@ -112,7 +116,7 @@ const AdminDashboard = () => {
         .update({ status: "approved", approval_token_expires_at: expiresAt })
         .eq("id", request.id);
 
-      const bookingUrl = `${window.location.origin}/select-slot?token=${request.approval_token}`;
+      const bookingUrl = `${PUBLIC_SITE_ORIGIN}/select-slot?token=${request.approval_token}`;
       const { error: emailError } = await supabase.functions.invoke("send-approval-email", {
         body: {
           to: request.clients.email,
@@ -167,7 +171,7 @@ const AdminDashboard = () => {
         .from("booking_requests")
         .update({ approval_token_expires_at: expiresAt })
         .eq("id", request.id);
-      const bookingUrl = `${window.location.origin}/select-slot?token=${request.approval_token}`;
+      const bookingUrl = `${PUBLIC_SITE_ORIGIN}/select-slot?token=${request.approval_token}`;
       const { error } = await supabase.functions.invoke("send-approval-email", {
         body: {
           to: request.clients.email,
@@ -632,7 +636,7 @@ const AdminDashboard = () => {
                       Booking Link
                     </h3>
                     <Input
-                      value={`${window.location.origin}/select-slot?token=${selectedRequest.approval_token}`}
+                      value={`${PUBLIC_SITE_ORIGIN}/select-slot?token=${selectedRequest.approval_token}`}
                       readOnly
                       className="font-mono text-xs"
                     />

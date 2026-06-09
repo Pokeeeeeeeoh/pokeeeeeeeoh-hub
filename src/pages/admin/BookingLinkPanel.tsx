@@ -46,7 +46,8 @@ export default function BookingLinkPanel() {
     })();
   }, []);
 
-  const fullUrl = key ? `${window.location.origin}/select-slot?key=${key}` : "";
+  const PUBLIC_SITE_ORIGIN = "https://pokeeeeeeeoh.com";
+  const fullUrl = key ? `${PUBLIC_SITE_ORIGIN}/select-slot?key=${key}` : "";
 
   const regenerate = async () => {
     if (!rowId) return;
