@@ -7,10 +7,20 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
-import { Save, Send, Eye, RefreshCw, Bell } from "lucide-react";
+import { Save, Send, Eye, RefreshCw, Bell, Mail } from "lucide-react";
 import { RichEmailEditor } from "@/components/RichEmailEditor";
 
 interface Template {
@@ -28,6 +38,7 @@ interface LogEntry {
   subject: string | null;
   status: string;
   error_message: string | null;
+  metadata: { body_html?: string } | null;
 }
 
 const AdminEmails = () => {
@@ -41,6 +52,11 @@ const AdminEmails = () => {
   const [sendSubject, setSendSubject] = useState("");
   const [sendHtml, setSendHtml] = useState("");
   const [logEntry, setLogEntry] = useState<LogEntry | null>(null);
+
+  // Confirmation dialogs
+  const [confirmResend, setConfirmResend] = useState<LogEntry | null>(null);
+  const [confirmSendCustom, setConfirmSendCustom] = useState(false);
+  const [confirmTestReminders, setConfirmTestReminders] = useState(false);
 
   const loadAll = async () => {
     const [tpls, logs] = await Promise.all([
@@ -98,13 +114,17 @@ const AdminEmails = () => {
   };
 
   const resendFromLog = async (entry: LogEntry) => {
-    const { error } = await supabase.functions.invoke("send-template-email", {
-      body: {
-        to: entry.recipient,
-        templateKey: entry.template_key || "custom",
-        subjectOverride: entry.subject || undefined,
-      },
-    });
+    const body: Record<string, unknown> = {
+      to: entry.recipient,
+      templateKey: entry.template_key || "custom",
+      subjectOverride: entry.subject || undefined,
+    };
+    // If we saved the rendered body, resend with the same body — otherwise the
+    // template will re-render from the latest version which may differ.
+    if (entry.metadata?.body_html) {
+      body.htmlOverride = entry.metadata.body_html;
+    }
+    const { error } = await supabase.functions.invoke("send-template-email", { body });
     if (error) toast.error("Resend failed");
     else {
       toast.success("Resent");
@@ -141,23 +161,15 @@ const AdminEmails = () => {
     loadAll();
   };
 
+  const statusVariant = (s: string): "default" | "destructive" | "secondary" =>
+    s === "sent" ? "default" : s === "suppressed" ? "secondary" : "destructive";
+
   return (
     <div className="p-4 lg:p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Emails</h1>
-            <p className="text-muted-foreground">Edit templates, send custom emails, and view delivery log</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={sendTestReminders} disabled={sendingTest}>
-              <Bell className={`h-4 w-4 mr-2 ${sendingTest ? "animate-pulse" : ""}`} />
-              {sendingTest ? "Sending…" : "Send test reminders"}
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setSendOpen(true)}>
-              <Send className="h-4 w-4 mr-2" /> Send custom
-            </Button>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold tracking-tight">Emails</h1>
+          <p className="text-muted-foreground">Edit templates, send custom emails, and view delivery log</p>
         </div>
 
         <Tabs defaultValue="templates" className="space-y-6">
@@ -222,18 +234,38 @@ const AdminEmails = () => {
           </TabsContent>
 
           <TabsContent value="log">
-            <div className="flex justify-end mb-3">
-              <Button variant="outline" size="sm" onClick={loadAll}>
-                <RefreshCw className="h-4 w-4 mr-2" /> Refresh
-              </Button>
-            </div>
+            {/* Toolbar — clearer grouping with primary and secondary actions */}
+            <Card className="mb-4">
+              <CardContent className="p-4 flex flex-wrap items-center gap-2">
+                <Button onClick={() => setSendOpen(true)}>
+                  <Mail className="h-4 w-4 mr-2" /> Compose email
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setConfirmTestReminders(true)}
+                  disabled={sendingTest}
+                >
+                  <Bell className={`h-4 w-4 mr-2 ${sendingTest ? "animate-pulse" : ""}`} />
+                  {sendingTest ? "Sending…" : "Send test reminders"}
+                </Button>
+                <div className="flex-1" />
+                <Button variant="ghost" size="sm" onClick={loadAll}>
+                  <RefreshCw className="h-4 w-4 mr-2" /> Refresh
+                </Button>
+              </CardContent>
+            </Card>
+
             <div className="border border-border rounded-lg divide-y divide-border">
               {log.length === 0 && (
                 <div className="p-6 text-center text-sm text-muted-foreground">No emails sent yet</div>
               )}
               {log.map((e) => (
-                <div key={e.id} className="p-3 flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 hover:bg-secondary/40">
-                  <Badge variant={e.status === "sent" ? "default" : "destructive"}>{e.status}</Badge>
+                <button
+                  key={e.id}
+                  onClick={() => setLogEntry(e)}
+                  className="w-full p-3 flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 hover:bg-secondary/40 text-left"
+                >
+                  <Badge variant={statusVariant(e.status)}>{e.status}</Badge>
                   <div className="flex-1 min-w-0 w-full sm:w-auto order-last sm:order-none">
                     <div className="text-sm truncate">{e.subject || "(no subject)"}</div>
                     <div className="text-xs text-muted-foreground truncate">
@@ -241,13 +273,8 @@ const AdminEmails = () => {
                       {format(parseISO(e.created_at), "MMM d, HH:mm")}
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => setLogEntry(e)}>
-                    Details
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => resendFromLog(e)}>
-                    Resend
-                  </Button>
-                </div>
+                  <span className="text-xs text-muted-foreground hidden sm:inline">View →</span>
+                </button>
               ))}
             </div>
           </TabsContent>
@@ -259,14 +286,12 @@ const AdminEmails = () => {
             <DialogHeader>
               <DialogTitle>Preview: {active?.subject}</DialogTitle>
             </DialogHeader>
-            {/* Render in a sandboxed iframe so admin-authored HTML can't execute scripts in the app */}
             <iframe
               title="Email preview"
               srcDoc={active?.body_html || ""}
               sandbox=""
               className="border border-border rounded-md w-full h-[60vh] bg-white"
             />
-
           </DialogContent>
         </Dialog>
 
@@ -274,7 +299,10 @@ const AdminEmails = () => {
         <Dialog open={sendOpen} onOpenChange={setSendOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Send custom email</DialogTitle>
+              <DialogTitle>Compose email</DialogTitle>
+              <DialogDescription>
+                Send a one-off email to any recipient. You'll be asked to confirm before sending.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -294,35 +322,147 @@ const AdminEmails = () => {
                   className="font-mono text-xs"
                 />
               </div>
-              <Button onClick={sendCustom} className="w-full">
-                <Send className="h-4 w-4 mr-2" /> Send
-              </Button>
             </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSendOpen(false)}>Cancel</Button>
+              <Button
+                onClick={() => {
+                  if (!sendTo) return toast.error("Recipient required");
+                  setConfirmSendCustom(true);
+                }}
+              >
+                <Send className="h-4 w-4 mr-2" /> Send…
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Log details */}
+        {/* Log details — shows the full rendered email body */}
         <Dialog open={!!logEntry} onOpenChange={() => setLogEntry(null)}>
-          <DialogContent className="max-w-xl">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Email details</DialogTitle>
             </DialogHeader>
             {logEntry && (
-              <div className="space-y-2 text-sm">
-                <div><span className="text-muted-foreground">To:</span> {logEntry.recipient}</div>
-                <div><span className="text-muted-foreground">Subject:</span> {logEntry.subject}</div>
-                <div><span className="text-muted-foreground">Template:</span> {logEntry.template_key}</div>
-                <div><span className="text-muted-foreground">Status:</span> {logEntry.status}</div>
-                <div><span className="text-muted-foreground">Sent:</span> {format(parseISO(logEntry.created_at), "PPp")}</div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-sm">
+                  <span className="text-muted-foreground">To</span>
+                  <span className="break-all">{logEntry.recipient}</span>
+                  <span className="text-muted-foreground">Subject</span>
+                  <span>{logEntry.subject || "(no subject)"}</span>
+                  <span className="text-muted-foreground">Template</span>
+                  <span className="font-mono text-xs">{logEntry.template_key || "custom"}</span>
+                  <span className="text-muted-foreground">Status</span>
+                  <span><Badge variant={statusVariant(logEntry.status)}>{logEntry.status}</Badge></span>
+                  <span className="text-muted-foreground">Sent</span>
+                  <span>{format(parseISO(logEntry.created_at), "PPp")}</span>
+                </div>
+
                 {logEntry.error_message && (
                   <div className="p-3 rounded bg-destructive/10 text-destructive text-xs whitespace-pre-wrap">
                     {logEntry.error_message}
                   </div>
                 )}
+
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Email body</Label>
+                  {logEntry.metadata?.body_html ? (
+                    <iframe
+                      title="Email body"
+                      srcDoc={logEntry.metadata.body_html}
+                      sandbox=""
+                      className="border border-border rounded-md w-full h-[55vh] bg-white"
+                    />
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      No body stored for this email (sent before full-body logging was enabled).
+                    </p>
+                  )}
+                </div>
+
+                <DialogFooter className="gap-2 sm:gap-2">
+                  <Button variant="outline" onClick={() => setLogEntry(null)}>Close</Button>
+                  <Button onClick={() => setConfirmResend(logEntry)}>
+                    <Send className="h-4 w-4 mr-2" /> Resend…
+                  </Button>
+                </DialogFooter>
               </div>
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Confirm: Resend from log */}
+        <AlertDialog open={!!confirmResend} onOpenChange={(o) => !o && setConfirmResend(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Resend this email?</AlertDialogTitle>
+              <AlertDialogDescription>
+                A new copy will be sent to <strong>{confirmResend?.recipient}</strong>
+                {confirmResend?.subject ? <> with the subject "<em>{confirmResend.subject}</em>"</> : null}.
+                The recipient will receive it again — make sure that's what you want.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  const entry = confirmResend;
+                  setConfirmResend(null);
+                  if (entry) await resendFromLog(entry);
+                }}
+              >
+                Yes, resend
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Confirm: Send custom email */}
+        <AlertDialog open={confirmSendCustom} onOpenChange={setConfirmSendCustom}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Send this email?</AlertDialogTitle>
+              <AlertDialogDescription>
+                The email will be sent to <strong>{sendTo}</strong>. This cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  setConfirmSendCustom(false);
+                  await sendCustom();
+                }}
+              >
+                Yes, send
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Confirm: Send test reminders */}
+        <AlertDialog open={confirmTestReminders} onOpenChange={setConfirmTestReminders}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Send test reminders now?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This sends real reminder emails to every client with an upcoming appointment in the reminder window.
+                Only use this for testing — clients will receive an extra reminder.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  setConfirmTestReminders(false);
+                  await sendTestReminders();
+                }}
+              >
+                Yes, send
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
