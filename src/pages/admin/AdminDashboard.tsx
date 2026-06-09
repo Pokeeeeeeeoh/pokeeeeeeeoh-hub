@@ -18,6 +18,10 @@ import { ImageLightbox } from "@/components/ImageLightbox";
 import { BookingImage } from "@/components/BookingImage";
 import { PullToRefreshPortal } from "@/components/PullToRefreshPortal";
 
+// Always use the live public site for client-facing links — never the
+// preview/lovable.app origin, which is gated by a login wall.
+const PUBLIC_SITE_ORIGIN = "https://pokeeeeeeeoh.com";
+
 interface Client {
   name: string;
   email: string;
