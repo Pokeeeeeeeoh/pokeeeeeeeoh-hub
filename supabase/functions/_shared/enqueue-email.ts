@@ -145,12 +145,14 @@ export async function enqueueTransactionalEmail(
   }
 
   // Mirror to project's email_log so admin AdminEmails page still works.
+  // Store the rendered HTML in metadata so admins can view the full email.
   await sb.from("email_log").insert({
     template_key: p.templateLabel,
     recipient: p.to,
     subject: p.subject,
     status: "sent",
     booking_request_id: p.bookingRequestId ?? null,
+    metadata: { body_html: p.html },
   });
 
   return { ok: true, status: "sent", messageId };
