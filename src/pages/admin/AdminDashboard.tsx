@@ -636,7 +636,7 @@ const AdminDashboard = () => {
                       Booking Link
                     </h3>
                     <Input
-                      value={`${window.location.origin}/select-slot?token=${selectedRequest.approval_token}`}
+                      value={`${PUBLIC_SITE_ORIGIN}/select-slot?token=${selectedRequest.approval_token}`}
                       readOnly
                       className="font-mono text-xs"
                     />
