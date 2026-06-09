@@ -171,7 +171,7 @@ const AdminDashboard = () => {
         .from("booking_requests")
         .update({ approval_token_expires_at: expiresAt })
         .eq("id", request.id);
-      const bookingUrl = `${window.location.origin}/select-slot?token=${request.approval_token}`;
+      const bookingUrl = `${PUBLIC_SITE_ORIGIN}/select-slot?token=${request.approval_token}`;
       const { error } = await supabase.functions.invoke("send-approval-email", {
         body: {
           to: request.clients.email,
