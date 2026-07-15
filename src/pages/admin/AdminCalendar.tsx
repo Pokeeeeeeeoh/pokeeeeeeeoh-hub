@@ -655,8 +655,9 @@ const AdminCalendar = () => {
       }
 
       if (apptRow?.id) {
-        supabase.functions.invoke("sync-gcal-event", { body: { appointmentId: apptRow.id } })
-          .catch((e) => console.warn("gcal sync failed", e));
+        const { error: syncErr } = await supabase.functions
+          .invoke("sync-gcal-event", { body: { appointmentId: apptRow.id } });
+        if (syncErr) console.warn("gcal sync failed", syncErr);
       }
 
       toast.success("Booking completed");
