@@ -222,18 +222,26 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fire-and-forget: push to Google Calendar (authenticated as service role)
+    // Push to Google Calendar. Must AWAIT — fire-and-forget dies when the edge
+    // function returns, causing missing calendar events.
     if (apptRow?.id) {
       const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      fetch(`${projectUrl}/functions/v1/sync-gcal-event`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: anonKey,
-          Authorization: `Bearer ${serviceRole}`,
-        },
-        body: JSON.stringify({ appointmentId: apptRow.id }),
-      }).catch((e) => console.warn("gcal sync invoke failed", e));
+      try {
+        const gcalResp = await fetch(`${projectUrl}/functions/v1/sync-gcal-event`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: anonKey,
+            Authorization: `Bearer ${serviceRole}`,
+          },
+          body: JSON.stringify({ appointmentId: apptRow.id }),
+        });
+        if (!gcalResp.ok) {
+          console.error("gcal sync failed", gcalResp.status, await gcalResp.text());
+        }
+      } catch (e) {
+        console.error("gcal sync invoke failed", e);
+      }
     }
 
     // Slot already locked above. Just update request status.
