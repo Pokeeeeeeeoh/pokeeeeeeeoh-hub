@@ -1244,6 +1244,40 @@ const AdminCalendar = () => {
             <Button
               variant="outline"
               size="sm"
+              onClick={async () => {
+                try {
+                  const { data: missing, error } = await supabase
+                    .from("appointments")
+                    .select("id")
+                    .is("google_event_id", null)
+                    .gte("start_time", new Date().toISOString());
+                  if (error) throw error;
+                  if (!missing || missing.length === 0) {
+                    toast.success("All bookings already synced");
+                    return;
+                  }
+                  toast.info(`Syncing ${missing.length} booking(s)…`);
+                  let ok = 0, fail = 0;
+                  for (const a of missing) {
+                    const { error: e } = await supabase.functions
+                      .invoke("sync-gcal-event", { body: { appointmentId: a.id } });
+                    if (e) fail++; else ok++;
+                  }
+                  if (fail === 0) toast.success(`Synced ${ok} booking(s) to Google`);
+                  else toast.error(`Synced ${ok}, failed ${fail}`);
+                  await fetchSlots();
+                } catch (e) {
+                  console.error(e);
+                  toast.error("Sync failed");
+                }
+              }}
+              title="Push any bookings missing from Google Calendar"
+            >
+              Sync to Google
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleUndo}
               disabled={undoStack.length === 0 || undoing}
               title={
