@@ -247,9 +247,9 @@ export const ManualBookingDialog = ({ open, onOpenChange, initialDate, onBooked 
       }
 
       if (appt?.id) {
-        supabase.functions
-          .invoke("sync-gcal-event", { body: { appointmentId: appt.id } })
-          .catch((e) => console.warn("gcal sync failed", e));
+        const { error: syncErr } = await supabase.functions
+          .invoke("sync-gcal-event", { body: { appointmentId: appt.id } });
+        if (syncErr) console.warn("gcal sync failed", syncErr);
       }
 
       toast.success("Booking added");
