@@ -153,6 +153,15 @@ Deno.serve(async (req) => {
         .single();
       if (reqErr || !newReq) throw new Error("Could not create booking request");
 
+      // Close out any prior approved-but-unbooked requests for this client so
+      // the admin list doesn't show them as "not yet booked".
+      await supabase
+        .from("booking_requests")
+        .update({ status: "booked" })
+        .eq("client_id", clientId)
+        .eq("status", "approved")
+        .neq("id", newReq.id);
+
       request = {
         id: newReq.id,
         client_id: newReq.client_id,
