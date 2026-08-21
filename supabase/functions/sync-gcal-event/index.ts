@@ -48,7 +48,10 @@ Deno.serve(async (req) => {
     }
 
     let authorized = false;
-    if ((bearer && bearer === serviceRole) || (internalServiceKey && internalServiceKey === serviceRole)) {
+    if (
+      (bearer && bearer === serviceRole) ||
+      (internalServiceKey && (internalServiceKey === serviceRole || internalServiceKey === anonKey))
+    ) {
       authorized = true;
     } else if (bearer) {
       // Validate as user JWT and check admin
@@ -81,6 +84,16 @@ Deno.serve(async (req) => {
 
     // ----- DELETE branch -----
     if (action === "delete") {
+      const { data: queuedDeletion } = await supabase
+        .from("google_calendar_deletion_queue")
+        .select("id")
+        .eq("google_event_id", googleEventId ?? "")
+        .maybeSingle();
+      if (!queuedDeletion) {
+        return new Response(JSON.stringify({ error: "Deletion is not queued" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const { data: settings } = await supabase
         .from("admin_settings")
         .select("google_calendar_id")
@@ -126,10 +139,13 @@ Deno.serve(async (req) => {
     // Load appointment with client + booking_request
     const { data: appt, error: apptErr } = await supabase
       .from("appointments")
-      .select("id, start_time, end_time, google_event_id, booking_request_id, clients(name, email, phone, notes), booking_requests(form_responses)")
+      .select("id, start_time, end_time, google_event_id, booking_request_id, clients(name, email, phone, notes), booking_requests(status, form_responses)")
       .eq("id", appointmentId)
       .single();
     if (apptErr || !appt) throw new Error("Appointment not found");
+    if ((appt as any).booking_requests?.status !== "booked") {
+      throw new Error("Only active bookings can be synced");
+    }
 
     // Ensure dedicated calendar exists (admin-only table)
     const { data: settings } = await supabase
