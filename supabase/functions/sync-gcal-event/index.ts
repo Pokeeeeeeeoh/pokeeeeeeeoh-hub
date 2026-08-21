@@ -33,19 +33,26 @@ async function gcalFetch(path: string, init: RequestInit = {}) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  let supabase: ReturnType<typeof createClient> | null = null;
+  let trackedAppointmentId: string | undefined;
   try {
     // Auth: allow internal callers (service role bearer) OR authenticated admins.
     const authHeader = req.headers.get("Authorization") ?? "";
     const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
-    const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const internalServiceKey = req.headers.get("X-Internal-Service-Key") ?? "";
+    const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!serviceRole || !supabaseUrl || !anonKey) {
+      throw new Error("Backend configuration missing");
+    }
 
     let authorized = false;
-    if (bearer && bearer === serviceRole) {
+    if ((bearer && bearer === serviceRole) || (internalServiceKey && internalServiceKey === serviceRole)) {
       authorized = true;
     } else if (bearer) {
       // Validate as user JWT and check admin
-      const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      const userClient = createClient(supabaseUrl, anonKey, {
         global: { headers: { Authorization: `Bearer ${bearer}` } },
       });
       const { data: userData } = await userClient.auth.getUser();
@@ -70,7 +77,7 @@ Deno.serve(async (req) => {
       googleEventId?: string;
     };
 
-    const supabase = createClient(supabaseUrl, serviceRole);
+    supabase = createClient(supabaseUrl, serviceRole);
 
     // ----- DELETE branch -----
     if (action === "delete") {
@@ -95,12 +102,26 @@ Deno.serve(async (req) => {
         const msg = (e as Error).message;
         if (!/\b(404|410)\b/.test(msg)) throw e;
       }
+      await supabase
+        .from("google_calendar_deletion_queue")
+        .delete()
+        .eq("google_event_id", googleEventId);
       return new Response(JSON.stringify({ success: true, deleted: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (!appointmentId) throw new Error("appointmentId required");
+    trackedAppointmentId = appointmentId;
+
+    await supabase
+      .from("appointments")
+      .update({
+        google_sync_status: "syncing",
+        google_sync_last_attempt_at: new Date().toISOString(),
+        google_sync_error: null,
+      })
+      .eq("id", appointmentId);
 
     // Load appointment with client + booking_request
     const { data: appt, error: apptErr } = await supabase
@@ -129,7 +150,7 @@ Deno.serve(async (req) => {
       });
       calendarId = created.id;
       try {
-        await gcalFetch(`/users/me/calendarList/${encodeURIComponent(calendarId!)}`, {
+        await gcalFetch(`/users/me/calendarList/${encodeURIComponent(calendarId)}`, {
           method: "PATCH",
           body: JSON.stringify({ colorId: "11" }),
         });
@@ -170,24 +191,50 @@ Deno.serve(async (req) => {
     let eventId = appt.google_event_id as string | null;
     let result;
     if (eventId) {
-      result = await gcalFetch(`/calendars/${encodeURIComponent(calendarId!)}/events/${encodeURIComponent(eventId)}`, {
-        method: "PATCH",
-        body: JSON.stringify(eventBody),
-      });
-    } else {
-      result = await gcalFetch(`/calendars/${encodeURIComponent(calendarId!)}/events`, {
+      try {
+        result = await gcalFetch(`/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`, {
+          method: "PATCH",
+          body: JSON.stringify(eventBody),
+        });
+      } catch (error) {
+        if (!/\b(404|410)\b/.test((error as Error).message)) throw error;
+        eventId = null;
+      }
+    }
+    if (!eventId) {
+      result = await gcalFetch(`/calendars/${encodeURIComponent(calendarId)}/events`, {
         method: "POST",
         body: JSON.stringify(eventBody),
       });
       eventId = result.id;
-      await supabase.from("appointments").update({ google_event_id: eventId }).eq("id", appt.id);
     }
+
+    const { error: statusError } = await supabase
+      .from("appointments")
+      .update({
+        google_event_id: eventId,
+        google_sync_status: "synced",
+        google_sync_last_success_at: new Date().toISOString(),
+        google_sync_error: null,
+      })
+      .eq("id", appt.id);
+    if (statusError) throw statusError;
 
     return new Response(JSON.stringify({ success: true, eventId, calendarId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("sync-gcal-event error", e);
+    if (supabase && trackedAppointmentId) {
+      await supabase
+        .from("appointments")
+        .update({
+          google_sync_status: "failed",
+          google_sync_error: (e as Error).message.slice(0, 2000),
+          google_sync_last_attempt_at: new Date().toISOString(),
+        })
+        .eq("id", trackedAppointmentId);
+    }
     return new Response(JSON.stringify({ error: (e as Error).message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
