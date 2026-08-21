@@ -63,6 +63,11 @@ export type Database = {
           created_at: string
           end_time: string
           google_event_id: string | null
+          google_sync_attempts: number
+          google_sync_error: string | null
+          google_sync_last_attempt_at: string | null
+          google_sync_last_success_at: string | null
+          google_sync_status: string
           id: string
           reminder_sent: boolean
           slot_id: string | null
@@ -74,6 +79,11 @@ export type Database = {
           created_at?: string
           end_time: string
           google_event_id?: string | null
+          google_sync_attempts?: number
+          google_sync_error?: string | null
+          google_sync_last_attempt_at?: string | null
+          google_sync_last_success_at?: string | null
+          google_sync_status?: string
           id?: string
           reminder_sent?: boolean
           slot_id?: string | null
@@ -85,6 +95,11 @@ export type Database = {
           created_at?: string
           end_time?: string
           google_event_id?: string | null
+          google_sync_attempts?: number
+          google_sync_error?: string | null
+          google_sync_last_attempt_at?: string | null
+          google_sync_last_success_at?: string | null
+          google_sync_status?: string
           id?: string
           reminder_sent?: boolean
           slot_id?: string | null
@@ -461,6 +476,33 @@ export type Database = {
         }
         Relationships: []
       }
+      google_calendar_deletion_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          google_event_id: string
+          id: string
+          last_attempt_at: string | null
+          last_error: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          google_event_id: string
+          id?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          google_event_id?: string
+          id?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           address: string
@@ -579,6 +621,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      retry_pending_google_calendar_sync: { Args: never; Returns: undefined }
       upsert_client_for_booking: {
         Args: { _email: string; _name: string; _phone: string }
         Returns: string

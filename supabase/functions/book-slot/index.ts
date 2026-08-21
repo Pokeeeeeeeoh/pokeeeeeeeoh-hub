@@ -246,7 +246,8 @@ Deno.serve(async (req) => {
           body: JSON.stringify({ appointmentId: apptRow.id }),
         });
         if (!gcalResp.ok) {
-          console.error("gcal sync failed", gcalResp.status, await gcalResp.text());
+          const details = await gcalResp.text();
+          console.error("gcal sync failed", gcalResp.status, details);
         }
       } catch (e) {
         console.error("gcal sync invoke failed", e);
