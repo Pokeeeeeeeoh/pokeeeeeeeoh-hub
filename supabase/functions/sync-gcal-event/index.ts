@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     let authorized = false;
     if (
       (bearer && bearer === serviceRole) ||
-      (internalServiceKey && (internalServiceKey === serviceRole || internalServiceKey === anonKey))
+      (internalServiceKey && internalServiceKey === bearer)
     ) {
       authorized = true;
     } else if (bearer) {
