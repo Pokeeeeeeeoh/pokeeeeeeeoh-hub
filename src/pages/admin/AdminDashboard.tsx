@@ -142,6 +142,22 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleSendRebooking = async (requestId: string) => {
+    if (!confirm("Free this client's current slot and email them a link to pick a new time?")) return;
+    setActionLoading(true);
+    try {
+      const { email } = await sendRebookingLink(requestId);
+      toast.success(`Rebooking link sent to ${email}`);
+      fetchRequests();
+      setSelectedRequest(null);
+    } catch (err) {
+      console.error("Rebooking failed", err);
+      toast.error("Could not send rebooking link");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const resendConfirmation = async (request: BookingRequest) => {
     setActionLoading(true);
     try {
