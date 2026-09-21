@@ -325,6 +325,26 @@ const AdminCalendar = () => {
     setLoadingAvailable(false);
   };
 
+  const [sendingRebookLink, setSendingRebookLink] = useState(false);
+
+  const handleSendRebookingLink = async () => {
+    const appt = selectedSlot?.appointments?.[0];
+    if (!appt?.booking_request_id) return;
+    if (!confirm("Free this slot and email the client a link to pick a new time?")) return;
+    setSendingRebookLink(true);
+    try {
+      const { email } = await sendRebookingLink(appt.booking_request_id);
+      toast.success(`Rebooking link sent to ${email}`);
+      setShowSlotDialog(false);
+      fetchSlots();
+    } catch (err) {
+      console.error("Rebooking failed", err);
+      toast.error("Could not send rebooking link");
+    } finally {
+      setSendingRebookLink(false);
+    }
+  };
+
   const handleCancelBooking = async () => {
     const appt = selectedSlot?.appointments?.[0];
     if (!selectedSlot || !appt) return;
