@@ -2244,6 +2244,16 @@ const AdminCalendar = () => {
                           )}
 
                           <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={handleSendRebookingLink}
+                            disabled={sendingRebookLink}
+                          >
+                            <CalendarIcon className="h-4 w-4 mr-2" />
+                            {sendingRebookLink ? "Sending…" : "Send rebooking link"}
+                          </Button>
+
+                          <Button
                             variant="destructive"
                             className="w-full"
                             onClick={handleCancelBooking}
