@@ -692,6 +692,28 @@ const AdminDashboard = () => {
                   </div>
                 )}
 
+                {/* Rebooking */}
+                {(selectedRequest.status === "booked" || appointments[selectedRequest.id]) && (
+                  <div className="pt-4 border-t border-border">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                      Rebooking
+                    </h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSendRebooking(selectedRequest.id)}
+                      disabled={actionLoading}
+                    >
+                      <Clock className="h-4 w-4 mr-2" />
+                      Send rebooking link
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Frees their current slot and emails them a link to pick a new time.
+                      All their details stay saved.
+                    </p>
+                  </div>
+                )}
+
                 {/* Resend Emails */}
                 <div className="pt-4 border-t border-border">
                   <h3 className="text-sm font-medium text-muted-foreground mb-2">
