@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { BookingImage } from "@/components/BookingImage";
 import { PullToRefreshPortal } from "@/components/PullToRefreshPortal";
+import { sendRebookingLink } from "@/lib/rebooking";
 
 // Always use the live public site for client-facing links — never the
 // preview/lovable.app origin, which is gated by a login wall.
@@ -137,6 +138,22 @@ const AdminDashboard = () => {
       setSelectedRequest(null);
     } catch (err) {
       toast.error("Failed to approve request");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSendRebooking = async (requestId: string) => {
+    if (!confirm("Free this client's current slot and email them a link to pick a new time?")) return;
+    setActionLoading(true);
+    try {
+      const { email } = await sendRebookingLink(requestId);
+      toast.success(`Rebooking link sent to ${email}`);
+      fetchRequests();
+      setSelectedRequest(null);
+    } catch (err) {
+      console.error("Rebooking failed", err);
+      toast.error("Could not send rebooking link");
     } finally {
       setActionLoading(false);
     }
@@ -689,6 +706,28 @@ const AdminDashboard = () => {
                     >
                       Approve Request
                     </Button>
+                  </div>
+                )}
+
+                {/* Rebooking */}
+                {(selectedRequest.status === "booked" || appointments[selectedRequest.id]) && (
+                  <div className="pt-4 border-t border-border">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                      Rebooking
+                    </h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSendRebooking(selectedRequest.id)}
+                      disabled={actionLoading}
+                    >
+                      <Clock className="h-4 w-4 mr-2" />
+                      Send rebooking link
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Frees their current slot and emails them a link to pick a new time.
+                      All their details stay saved.
+                    </p>
                   </div>
                 )}
 

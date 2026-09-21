@@ -75,6 +75,7 @@ import { ImageLightbox } from "@/components/ImageLightbox";
 import { BookingImage } from "@/components/BookingImage";
 import { PullToRefreshPortal } from "@/components/PullToRefreshPortal";
 import { ManualBookingDialog } from "@/components/admin/ManualBookingDialog";
+import { sendRebookingLink } from "@/lib/rebooking";
 
 interface BookingRequestLite {
   id: string;
@@ -323,6 +324,26 @@ const AdminCalendar = () => {
       .limit(200);
     setAvailableSlots(data || []);
     setLoadingAvailable(false);
+  };
+
+  const [sendingRebookLink, setSendingRebookLink] = useState(false);
+
+  const handleSendRebookingLink = async () => {
+    const appt = selectedSlot?.appointments?.[0];
+    if (!appt?.booking_request_id) return;
+    if (!confirm("Free this slot and email the client a link to pick a new time?")) return;
+    setSendingRebookLink(true);
+    try {
+      const { email } = await sendRebookingLink(appt.booking_request_id);
+      toast.success(`Rebooking link sent to ${email}`);
+      setShowSlotDialog(false);
+      fetchSlots();
+    } catch (err) {
+      console.error("Rebooking failed", err);
+      toast.error("Could not send rebooking link");
+    } finally {
+      setSendingRebookLink(false);
+    }
   };
 
   const handleCancelBooking = async () => {
@@ -2221,6 +2242,16 @@ const AdminCalendar = () => {
                               </div>
                             </>
                           )}
+
+                          <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={handleSendRebookingLink}
+                            disabled={sendingRebookLink}
+                          >
+                            <CalendarIcon className="h-4 w-4 mr-2" />
+                            {sendingRebookLink ? "Sending…" : "Send rebooking link"}
+                          </Button>
 
                           <Button
                             variant="destructive"
