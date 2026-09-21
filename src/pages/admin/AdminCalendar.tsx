@@ -75,6 +75,7 @@ import { ImageLightbox } from "@/components/ImageLightbox";
 import { BookingImage } from "@/components/BookingImage";
 import { PullToRefreshPortal } from "@/components/PullToRefreshPortal";
 import { ManualBookingDialog } from "@/components/admin/ManualBookingDialog";
+import { sendRebookingLink } from "@/lib/rebooking";
 
 interface BookingRequestLite {
   id: string;
