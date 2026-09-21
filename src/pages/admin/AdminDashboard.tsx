@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { BookingImage } from "@/components/BookingImage";
 import { PullToRefreshPortal } from "@/components/PullToRefreshPortal";
+import { sendRebookingLink } from "@/lib/rebooking";
 
 // Always use the live public site for client-facing links — never the
 // preview/lovable.app origin, which is gated by a login wall.
