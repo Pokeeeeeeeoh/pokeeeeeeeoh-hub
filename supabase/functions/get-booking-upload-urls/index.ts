@@ -92,9 +92,12 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("get-booking-upload-urls error", e);
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Could not prepare uploads. Please try again." }),
+      {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });
