@@ -117,10 +117,6 @@ Deno.serve(async (req) => {
     // Client confirmation email (sent server-side so the public email
     // endpoints stay closed to anonymous callers).
     try {
-      const { data: site } = await supabase
-        .from("site_settings")
-        .select("email")
-        .single();
       await fetch(`${Deno.env.get("SUPABASE_URL")!}/functions/v1/send-booking-confirmation`, {
         method: "POST",
         headers: {
