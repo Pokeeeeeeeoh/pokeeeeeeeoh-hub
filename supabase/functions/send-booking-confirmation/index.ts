@@ -2,6 +2,7 @@ import {
   enqueueTransactionalEmail,
   getSupabase,
 } from "../_shared/enqueue-email.ts";
+import { requireInternalOrAdmin } from "../_shared/caller-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,6 +18,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  const denied = await requireInternalOrAdmin(req, corsHeaders);
+  if (denied) return denied;
 
   try {
     const sb = getSupabase();

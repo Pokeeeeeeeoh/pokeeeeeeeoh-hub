@@ -276,7 +276,7 @@ Deno.serve(async (req) => {
         headers: {
           "Content-Type": "application/json",
           apikey: anonKey,
-          Authorization: `Bearer ${anonKey}`,
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
         },
         body: JSON.stringify({
           templateKey: "appointment_booked",
@@ -318,7 +318,7 @@ Deno.serve(async (req) => {
           headers: {
             "Content-Type": "application/json",
             apikey: anonKey,
-            Authorization: `Bearer ${anonKey}`,
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
           },
           body: JSON.stringify({
             to: adminEmail,
@@ -345,8 +345,12 @@ Deno.serve(async (req) => {
     );
   } catch (e) {
     console.error("book-slot error", e);
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Something went wrong. Please try again." }),
+      {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });

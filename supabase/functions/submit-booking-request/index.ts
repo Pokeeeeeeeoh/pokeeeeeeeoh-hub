@@ -112,6 +112,28 @@ Deno.serve(async (req) => {
       success: true,
     });
 
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Client confirmation email (sent server-side so the public email
+    // endpoints stay closed to anonymous callers).
+    try {
+      await fetch(`${Deno.env.get("SUPABASE_URL")!}/functions/v1/send-booking-confirmation`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
+          Authorization: `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({
+          to: cleanEmail,
+          name: cleanName,
+          bookingRequestId,
+        }),
+      });
+    } catch (e) {
+      console.warn("client confirmation email failed", e);
+    }
+
     // Fire-and-forget admin notification email
     try {
       const { data: site } = await supabase
@@ -143,7 +165,7 @@ Deno.serve(async (req) => {
           headers: {
             "Content-Type": "application/json",
             apikey: anonKey,
-            Authorization: `Bearer ${anonKey}`,
+            Authorization: `Bearer ${serviceKey}`,
           },
           body: JSON.stringify({
             to: adminEmail,
@@ -163,8 +185,9 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("submit-booking-request error", e);
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Could not submit your request. Please try again." }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 });
