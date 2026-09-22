@@ -112,6 +112,33 @@ Deno.serve(async (req) => {
       success: true,
     });
 
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Client confirmation email (sent server-side so the public email
+    // endpoints stay closed to anonymous callers).
+    try {
+      const { data: site } = await supabase
+        .from("site_settings")
+        .select("email")
+        .single();
+      await fetch(`${Deno.env.get("SUPABASE_URL")!}/functions/v1/send-booking-confirmation`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
+          Authorization: `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({
+          to: cleanEmail,
+          name: cleanName,
+          adminEmail: site?.email ?? null,
+          bookingRequestId,
+        }),
+      });
+    } catch (e) {
+      console.warn("client confirmation email failed", e);
+    }
+
     // Fire-and-forget admin notification email
     try {
       const { data: site } = await supabase
