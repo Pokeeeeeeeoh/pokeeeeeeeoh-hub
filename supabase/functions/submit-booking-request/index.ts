@@ -127,7 +127,6 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           to: cleanEmail,
           name: cleanName,
-          adminEmail: site?.email ?? null,
           bookingRequestId,
         }),
       });
@@ -166,7 +165,7 @@ Deno.serve(async (req) => {
           headers: {
             "Content-Type": "application/json",
             apikey: anonKey,
-            Authorization: `Bearer ${anonKey}`,
+            Authorization: `Bearer ${serviceKey}`,
           },
           body: JSON.stringify({
             to: adminEmail,
@@ -186,8 +185,9 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("submit-booking-request error", e);
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Could not submit your request. Please try again." }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 });
