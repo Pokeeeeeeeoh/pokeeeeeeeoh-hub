@@ -29,13 +29,16 @@ const AdminLogin = () => {
 
         const { session } = result.data;
         if (session) {
-          const { data: adminData } = await supabase
-            .from("admin_users")
-            .select("id")
-            .eq("user_id", session.user.id)
-            .single();
+          const adminResult = await Promise.race([
+            supabase
+              .from("admin_users")
+              .select("id")
+              .eq("user_id", session.user.id)
+              .single(),
+            new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 4000)),
+          ]);
 
-          if (active && adminData) {
+          if (active && adminResult?.data) {
             navigate("/admin/dashboard");
           }
         }

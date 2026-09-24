@@ -37,15 +37,17 @@ const AdminLayout = () => {
           return;
         }
 
-        const { data: adminData } = await supabase
-          .from("admin_users")
-          .select("id")
-          .eq("user_id", result.data.session.user.id)
-          .single();
+        const adminResult = await Promise.race([
+          supabase
+            .from("admin_users")
+            .select("id")
+            .eq("user_id", result.data.session.user.id)
+            .single(),
+          new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 4000)),
+        ]);
 
         if (!active) return;
-        if (!adminData) {
-          await supabase.auth.signOut();
+        if (!adminResult?.data) {
           navigate("/admin");
           toast.error("Admin access required.");
           return;
