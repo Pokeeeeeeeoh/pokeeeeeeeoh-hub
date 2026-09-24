@@ -16,42 +16,44 @@ const AdminLogin = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // Check if user is admin
-        const { data: adminData } = await supabase
-          .from("admin_users")
-          .select("id")
-          .eq("user_id", session.user.id)
-          .single();
+    let active = true;
 
-        if (adminData) {
-          navigate("/admin/dashboard");
+    const checkSession = async () => {
+      try {
+        const result = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 4000)),
+        ]);
+
+        if (!active || !result) return;
+
+        const { session } = result.data;
+        if (session) {
+          const adminResult = await Promise.race([
+            supabase
+              .from("admin_users")
+              .select("id")
+              .eq("user_id", session.user.id)
+              .single(),
+            new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 4000)),
+          ]);
+
+          if (active && adminResult?.data) {
+            navigate("/admin/dashboard");
+          }
         }
+      } catch (error) {
+        console.error("Admin session check failed", error);
+      } finally {
+        if (active) setCheckingAuth(false);
       }
-      setCheckingAuth(false);
     };
 
     checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session) {
-          const { data: adminData } = await supabase
-            .from("admin_users")
-            .select("id")
-            .eq("user_id", session.user.id)
-            .single();
-
-          if (adminData) {
-            navigate("/admin/dashboard");
-          }
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+    };
   }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
