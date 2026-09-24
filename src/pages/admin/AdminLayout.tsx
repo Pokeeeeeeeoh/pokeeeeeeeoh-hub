@@ -22,28 +22,40 @@ const AdminLayout = () => {
   const location = useLocation();
 
   useEffect(() => {
+    let active = true;
+
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        navigate("/admin");
-        return;
+      try {
+        const result = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 4000)),
+        ]);
+
+        if (!active) return;
+        if (!result?.data.session) {
+          navigate("/admin");
+          return;
+        }
+
+        const { data: adminData } = await supabase
+          .from("admin_users")
+          .select("id")
+          .eq("user_id", result.data.session.user.id)
+          .single();
+
+        if (!active) return;
+        if (!adminData) {
+          await supabase.auth.signOut();
+          navigate("/admin");
+          toast.error("Admin access required.");
+          return;
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error("Admin access check failed", error);
+        if (active) navigate("/admin");
       }
-
-      const { data: adminData } = await supabase
-        .from("admin_users")
-        .select("id")
-        .eq("user_id", session.user.id)
-        .single();
-
-      if (!adminData) {
-        await supabase.auth.signOut();
-        navigate("/admin");
-        toast.error("Admin access required.");
-        return;
-      }
-
-      setLoading(false);
     };
 
     checkAuth();
@@ -56,7 +68,10 @@ const AdminLayout = () => {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const handleLogout = async () => {
