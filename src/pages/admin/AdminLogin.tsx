@@ -51,25 +51,8 @@ const AdminLogin = () => {
 
     checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session) {
-          const { data: adminData } = await supabase
-            .from("admin_users")
-            .select("id")
-            .eq("user_id", session.user.id)
-            .single();
-
-          if (adminData) {
-            navigate("/admin/dashboard");
-          }
-        }
-      }
-    );
-
     return () => {
       active = false;
-      subscription.unsubscribe();
     };
   }, [navigate]);
 

@@ -62,17 +62,8 @@ const AdminLayout = () => {
 
     checkAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (!session) {
-          navigate("/admin");
-        }
-      }
-    );
-
     return () => {
       active = false;
-      subscription.unsubscribe();
     };
   }, [navigate]);
 
