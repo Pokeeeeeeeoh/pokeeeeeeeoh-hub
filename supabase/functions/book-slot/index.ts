@@ -284,9 +284,10 @@ Deno.serve(async (req) => {
           bookingRequestId: request.id,
           vars: { name: clientName, appointmentTime },
         }),
-      });
+        signal: AbortSignal.timeout(10000),
+      }).catch((e) => { console.error("confirmation email invoke failed", e); return null; });
 
-      if (!emailResp.ok) {
+      if (emailResp && !emailResp.ok) {
         console.error("book-slot confirmation email failed", await emailResp.text());
       }
     }
