@@ -222,6 +222,9 @@ Deno.serve(async (req) => {
       throw apptErr;
     }
 
+    // Mark request booked immediately so it never stays "approved" if later steps are slow.
+    await supabase.from("booking_requests").update({ status: "booked" }).eq("id", request.id);
+
     // Record successful attempt for rate limiting (open-link mode only)
     if (!token) {
       await supabase.from("booking_attempts").insert({
@@ -231,8 +234,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Push to Google Calendar. Must AWAIT — fire-and-forget dies when the edge
-    // function returns, causing missing calendar events.
+    // Push to Google Calendar (the minute-retry job also covers failures).
     if (apptRow?.id) {
       const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       try {
@@ -244,6 +246,7 @@ Deno.serve(async (req) => {
             Authorization: `Bearer ${serviceRole}`,
           },
           body: JSON.stringify({ appointmentId: apptRow.id }),
+          signal: AbortSignal.timeout(10000),
         });
         if (!gcalResp.ok) {
           const details = await gcalResp.text();
@@ -253,9 +256,6 @@ Deno.serve(async (req) => {
         console.error("gcal sync invoke failed", e);
       }
     }
-
-    // Slot already locked above. Just update request status.
-    await supabase.from("booking_requests").update({ status: "booked" }).eq("id", request.id);
 
     const clientEmail = request.clients?.email;
     const clientName = request.clients?.name ?? "";

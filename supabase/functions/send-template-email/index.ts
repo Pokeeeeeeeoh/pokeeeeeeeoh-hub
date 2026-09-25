@@ -70,8 +70,12 @@ Deno.serve(async (req) => {
       ...vars,
     };
 
-    subject = render(subject || "", mergedVars);
-    html = render(html || "", mergedVars);
+    if (!subject || !html) {
+      throw new Error(`Template '${templateKey}' could not be loaded`);
+    }
+
+    subject = render(subject, mergedVars);
+    html = render(html, mergedVars);
 
     const idempotencyKey = `${templateKey || "custom"}-${
       bookingRequestId ?? to
