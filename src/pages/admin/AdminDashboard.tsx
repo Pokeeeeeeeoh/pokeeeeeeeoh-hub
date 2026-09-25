@@ -179,6 +179,46 @@ const AdminDashboard = () => {
     }
   };
 
+  const resendAppointmentConfirmation = async (request: BookingRequest) => {
+    setActionLoading(true);
+    try {
+      const { data: appt, error: apptErr } = await supabase
+        .from("appointments")
+        .select("start_time")
+        .eq("booking_request_id", request.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (apptErr) throw apptErr;
+      if (!appt) {
+        toast.error("No appointment found for this request");
+        return;
+      }
+      const appointmentTime = new Date(appt.start_time)
+        .toLocaleString("en-GB", {
+          weekday: "long", day: "numeric", month: "long", year: "numeric",
+          hour: "2-digit", minute: "2-digit", hour12: false,
+          timeZone: "Europe/Stockholm",
+        })
+        .replace(",", " at");
+      const { error } = await supabase.functions.invoke("send-template-email", {
+        body: {
+          templateKey: "appointment_booked",
+          to: request.clients.email,
+          bookingRequestId: request.id,
+          vars: { name: request.clients.name, appointmentTime },
+        },
+      });
+      if (error) throw error;
+      toast.success("Appointment confirmation sent");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to send appointment confirmation");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const resendApproval = async (request: BookingRequest) => {
     setActionLoading(true);
     try {
@@ -737,13 +777,22 @@ const AdminDashboard = () => {
                     Resend Emails
                   </h3>
                   <div className="flex flex-wrap gap-2">
+                    {selectedRequest.status === "booked" && (
+                      <Button
+                        size="sm"
+                        onClick={() => resendAppointmentConfirmation(selectedRequest)}
+                        disabled={actionLoading}
+                      >
+                        Resend appointment confirmation
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => resendConfirmation(selectedRequest)}
                       disabled={actionLoading}
                     >
-                      Resend confirmation
+                      Resend "request received"
                     </Button>
                     {selectedRequest.status === "approved" && (
                       <Button
