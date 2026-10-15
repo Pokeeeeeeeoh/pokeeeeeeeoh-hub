@@ -479,16 +479,24 @@ const AdminCalendar = () => {
   };
 
   const fetchClients = async () => {
-    const { data, error } = await supabase
-      .from("clients")
-      .select("id, name, email, phone")
-      .order("name", { ascending: true });
-
-    if (error) {
-      console.error("Error fetching clients:", error);
-    } else {
-      setClients(data || []);
+    // Page through all clients (server caps each request at 1000 rows)
+    const PAGE = 1000;
+    const all: { id: string; name: string; email: string; phone: string | null }[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, name, email, phone")
+        .order("name", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error) {
+        console.error("Error fetching clients:", error);
+        break;
+      }
+      all.push(...(data || []));
+      if (!data || data.length < PAGE) break;
     }
+    setClients(all as typeof clients);
   };
 
   // Open day dialog when clicking on a day
