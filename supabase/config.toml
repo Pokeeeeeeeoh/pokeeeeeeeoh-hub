@@ -13,6 +13,14 @@ project_id = "wtrmrhfjrxdfkqpxteuq"
     verify_jwt = true
   [functions.send-appointment-reminders]
     verify_jwt = false
+  [functions.send-template-email]
+    verify_jwt = false
+  [functions.send-booking-confirmation]
+    verify_jwt = false
+  [functions.send-approval-email]
+    verify_jwt = false
+  [functions.sync-gcal-event]
+    verify_jwt = false
 
 [functions.send-transactional-email]
 verify_jwt = true
