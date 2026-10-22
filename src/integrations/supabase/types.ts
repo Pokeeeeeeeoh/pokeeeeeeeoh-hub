@@ -224,6 +224,8 @@ export type Database = {
           admin_notes: string | null
           approval_token: string | null
           approval_token_expires_at: string | null
+          archived_at: string | null
+          attention_note: string | null
           client_id: string
           created_at: string
           decline_reason: string | null
@@ -237,6 +239,8 @@ export type Database = {
           admin_notes?: string | null
           approval_token?: string | null
           approval_token_expires_at?: string | null
+          archived_at?: string | null
+          attention_note?: string | null
           client_id: string
           created_at?: string
           decline_reason?: string | null
@@ -250,6 +254,8 @@ export type Database = {
           admin_notes?: string | null
           approval_token?: string | null
           approval_token_expires_at?: string | null
+          archived_at?: string | null
+          attention_note?: string | null
           client_id?: string
           created_at?: string
           decline_reason?: string | null

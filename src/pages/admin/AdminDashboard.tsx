@@ -37,6 +37,8 @@ interface BookingRequest {
   images: string[];
   approval_token: string;
   admin_notes: string | null;
+  archived_at: string | null;
+  attention_note: string | null;
   decline_reason: string | null;
   created_at: string;
   clients: Client;
@@ -66,10 +68,63 @@ const AdminDashboard = () => {
   const [editResponses, setEditResponses] = useState<Record<string, unknown>>({});
   const [lightbox, setLightbox] = useState<{ open: boolean; index: number }>({ open: false, index: 0 });
   const [showAddBooking, setShowAddBooking] = useState(false);
+  const [attentionDraft, setAttentionDraft] = useState("");
 
   useEffect(() => {
     fetchRequests();
   }, []);
+
+  useEffect(() => {
+    setAttentionDraft(selectedRequest?.attention_note ?? "");
+  }, [selectedRequest?.id]);
+
+  const patchLocal = (id: string, patch: Partial<BookingRequest>) => {
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+    setSelectedRequest((prev) => (prev && prev.id === id ? { ...prev, ...patch } : prev));
+  };
+
+  const saveAttention = async (req: BookingRequest, note: string | null) => {
+    setActionLoading(true);
+    const { error } = await supabase.from("booking_requests").update({ attention_note: note }).eq("id", req.id);
+    setActionLoading(false);
+    if (error) return toast.error("Could not save note");
+    patchLocal(req.id, { attention_note: note });
+    if (!note) setAttentionDraft("");
+    toast.success(note ? "Note saved" : "Note cleared");
+  };
+
+  const toggleArchive = async (req: BookingRequest) => {
+    const archived_at = req.archived_at ? null : new Date().toISOString();
+    setActionLoading(true);
+    const { error } = await supabase.from("booking_requests").update({ archived_at }).eq("id", req.id);
+    setActionLoading(false);
+    if (error) return toast.error("Could not update request");
+    patchLocal(req.id, { archived_at });
+    toast.success(archived_at ? "Archived" : "Unarchived");
+    if (archived_at) setSelectedRequest(null);
+  };
+
+  const deleteRequest = async (req: BookingRequest) => {
+    if (!window.confirm(`Permanently delete ${req.clients?.name || "this"} request? Any booked appointment for it is removed and its slot freed. No email is sent.`)) return;
+    setActionLoading(true);
+    try {
+      const { data: appts } = await supabase.from("appointments").select("id, slot_id").eq("booking_request_id", req.id);
+      for (const a of appts || []) {
+        await supabase.from("appointments").delete().eq("id", a.id);
+        if (a.slot_id) await supabase.from("availability_slots").update({ is_booked: false }).eq("id", a.slot_id);
+      }
+      const { error } = await supabase.from("booking_requests").delete().eq("id", req.id);
+      if (error) throw error;
+      setRequests((prev) => prev.filter((r) => r.id !== req.id));
+      setSelectedRequest(null);
+      toast.success("Request deleted");
+    } catch (e) {
+      console.error(e);
+      toast.error("Could not delete request");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const fetchRequests = async () => {
     const { data, error } = await supabase
@@ -375,19 +430,25 @@ const AdminDashboard = () => {
     );
   };
 
-  const filteredRequests = requests.filter((request) => {
+  const visible = requests.filter((r) => (statusFilter === "archived" ? !!r.archived_at : !r.archived_at));
+  const filteredRequests = visible.filter((request) => {
     const matchesSearch =
       request.clients?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       request.clients?.email?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || request.status === statusFilter;
+    const matchesStatus =
+      statusFilter === "all" || statusFilter === "archived" ||
+      (statusFilter === "attention" ? !!request.attention_note : request.status === statusFilter);
     return matchesSearch && matchesStatus;
   });
 
+  const active = requests.filter((r) => !r.archived_at);
   const statusCounts = {
-    all: requests.length,
-    new: requests.filter((r) => r.status === "new").length,
-    approved: requests.filter((r) => r.status === "approved").length,
-    booked: requests.filter((r) => r.status === "booked").length,
+    all: active.length,
+    new: active.filter((r) => r.status === "new").length,
+    approved: active.filter((r) => r.status === "approved").length,
+    booked: active.filter((r) => r.status === "booked").length,
+    attention: active.filter((r) => !!r.attention_note).length,
+    archived: requests.filter((r) => !!r.archived_at).length,
   };
 
   return (
@@ -420,14 +481,14 @@ const AdminDashboard = () => {
             />
           </div>
           <div className="flex flex-wrap gap-2">
-            {["all", "new", "approved", "booked"].map((status) => (
+            {["all", "new", "approved", "booked", "attention", "archived"].map((status) => (
               <Button
                 key={status}
                 variant={statusFilter === status ? "default" : "outline"}
                 size="sm"
                 onClick={() => setStatusFilter(status)}
               >
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+                {status === "attention" ? "Needs attention" : status.charAt(0).toUpperCase() + status.slice(1)}
                 <span className="ml-2 text-xs opacity-70">
                   {statusCounts[status as keyof typeof statusCounts]}
                 </span>
@@ -474,7 +535,15 @@ const AdminDashboard = () => {
                           No slot picked · {differenceInDays(new Date(), parseISO(request.created_at))}d
                         </Badge>
                       )}
+                      {request.archived_at && (
+                        <Badge variant="outline">Archived</Badge>
+                      )}
                     </div>
+                    {request.attention_note && (
+                      <p className="text-xs mb-1 px-2 py-1 rounded border border-amber-500 text-amber-700 bg-amber-50 inline-block">
+                        ⚑ {request.attention_note}
+                      </p>
+                    )}
                     <p className="text-sm text-muted-foreground truncate">
                       {request.clients?.email}
                     </p>
@@ -770,6 +839,44 @@ const AdminDashboard = () => {
                     </p>
                   </div>
                 )}
+
+                {/* Needs attention note */}
+                <div className="pt-4 border-t border-border space-y-2">
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Needs attention later
+                  </h3>
+                  <Textarea
+                    value={attentionDraft}
+                    onChange={(e) => setAttentionDraft(e.target.value)}
+                    placeholder="e.g. Wants to book in March — follow up in January"
+                    rows={2}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" disabled={actionLoading} onClick={() => saveAttention(selectedRequest, attentionDraft.trim() || null)}>
+                      Save note
+                    </Button>
+                    {selectedRequest.attention_note && (
+                      <Button size="sm" variant="ghost" disabled={actionLoading} onClick={() => saveAttention(selectedRequest, null)}>
+                        Clear note
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Archive / delete (no emails sent) */}
+                <div className="pt-4 border-t border-border space-y-2">
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Archive or delete <span className="font-normal">(no email is sent)</span>
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" disabled={actionLoading} onClick={() => toggleArchive(selectedRequest)}>
+                      {selectedRequest.archived_at ? "Unarchive" : "Archive"}
+                    </Button>
+                    <Button size="sm" variant="destructive" disabled={actionLoading} onClick={() => deleteRequest(selectedRequest)}>
+                      Delete permanently
+                    </Button>
+                  </div>
+                </div>
 
                 {/* Resend Emails */}
                 <div className="pt-4 border-t border-border">
