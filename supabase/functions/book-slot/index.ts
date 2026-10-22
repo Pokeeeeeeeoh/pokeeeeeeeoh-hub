@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { enqueueTransactionalEmail, getSupabase } from "../_shared/enqueue-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -259,75 +260,67 @@ Deno.serve(async (req) => {
 
     const clientEmail = request.clients?.email;
     const clientName = request.clients?.name ?? "";
+    const sbMail = getSupabase();
+    const { data: site } = await supabase
+      .from("site_settings")
+      .select("email, site_name, address, tagline")
+      .single();
+    const appointmentTime = new Date(slot.start_time).toLocaleString("en-GB", {
+      weekday: "long", day: "numeric", month: "long", year: "numeric",
+      hour: "2-digit", minute: "2-digit", hour12: false,
+      timeZone: "Europe/Stockholm",
+    }).replace(",", " at");
+    const render = (tpl: string, vars: Record<string, string>) =>
+      tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? "");
+
     if (clientEmail) {
-      const appointmentTime = new Date(slot.start_time).toLocaleString("en-GB", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-        timeZone: "Europe/Stockholm",
-      }).replace(",", " at");
-
-      const emailResp = await fetch(`${projectUrl}/functions/v1/send-template-email`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: anonKey,
-          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
-        },
-        body: JSON.stringify({
-          templateKey: "appointment_booked",
+      try {
+        const { data: tpl } = await supabase
+          .from("email_templates")
+          .select("subject, body_html")
+          .eq("key", "appointment_booked")
+          .single();
+        if (!tpl) throw new Error("appointment_booked template missing");
+        const vars = {
+          name: clientName, appointmentTime,
+          address: site?.address ?? "", siteName: site?.site_name ?? "",
+          siteEmail: site?.email ?? "", tagline: site?.tagline ?? "",
+        };
+        const r = await enqueueTransactionalEmail(sbMail, {
           to: clientEmail,
+          subject: render(tpl.subject, vars),
+          html: render(tpl.body_html, vars),
+          templateLabel: "appointment_booked",
+          idempotencyKey: `appointment_booked-${apptRow?.id ?? request.id}`,
           bookingRequestId: request.id,
-          vars: { name: clientName, appointmentTime },
-        }),
-        signal: AbortSignal.timeout(10000),
-      }).catch((e) => { console.error("confirmation email invoke failed", e); return null; });
-
-      if (emailResp && !emailResp.ok) {
-        console.error("book-slot confirmation email failed", await emailResp.text());
+        });
+        if (!r.ok) console.error("confirmation enqueue failed", r.error);
+      } catch (e) {
+        console.error("confirmation email failed", e);
       }
     }
 
-    // Fire-and-forget admin notification email
     try {
-      const { data: site } = await supabase
-        .from("site_settings")
-        .select("email")
-        .single();
       const adminEmail = site?.email;
       if (adminEmail) {
-        const apptTimeAdmin = new Date(slot.start_time).toLocaleString("en-GB", {
-          weekday: "long", day: "numeric", month: "long", year: "numeric",
-          hour: "2-digit", minute: "2-digit", hour12: false,
-          timeZone: "Europe/Stockholm",
-        }).replace(",", " at");
         const safeName = (clientName || "").replace(/[<>&]/g, "");
         const safeEmail = (clientEmail || "").replace(/[<>&]/g, "");
         const html = `
           <h2>New slot booked</h2>
           <p><strong>Client:</strong> ${safeName}</p>
           <p><strong>Email:</strong> ${safeEmail}</p>
-          <p><strong>When:</strong> ${apptTimeAdmin}</p>
+          <p><strong>When:</strong> ${appointmentTime}</p>
           <p style="margin-top:24px;"><a href="https://pokeeeeeeeoh.com/admin/calendar">Open calendar →</a></p>
         `;
-        fetch(`${projectUrl}/functions/v1/send-template-email`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: anonKey,
-            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!}`,
-          },
-          body: JSON.stringify({
-            to: adminEmail,
-            subjectOverride: `New booking: ${safeName} · ${apptTimeAdmin}`,
-            htmlOverride: html,
-            bookingRequestId: request.id,
-          }),
-        }).catch((e) => console.warn("admin notify failed", e));
+        const r = await enqueueTransactionalEmail(sbMail, {
+          to: adminEmail,
+          subject: `New booking: ${safeName} · ${appointmentTime}`,
+          html,
+          templateLabel: "admin_new_booking",
+          idempotencyKey: `admin_new_booking-${apptRow?.id ?? request.id}`,
+          bookingRequestId: request.id,
+        });
+        if (!r.ok) console.error("admin notify enqueue failed", r.error);
       }
     } catch (e) {
       console.warn("admin notify error", e);
