@@ -15,6 +15,13 @@
       "when": 1792675602073,
       "tag": "0001_request_archive_attention",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792675828204,
+      "tag": "0002_auto_archive_past_bookings",
+      "breakpoints": true
     }
   ]
 }
