@@ -380,6 +380,7 @@ const AdminDashboard = () => {
         .from("booking_requests")
         .update({ 
           status: "declined",
+          archived_at: new Date().toISOString(),
           decline_reason: declineReason || null
         })
         .eq("id", selectedRequest.id);
