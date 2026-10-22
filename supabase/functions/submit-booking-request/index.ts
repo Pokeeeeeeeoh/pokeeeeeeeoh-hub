@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { enqueueTransactionalEmail, getSupabase } from "../_shared/enqueue-email.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -112,38 +113,43 @@ Deno.serve(async (req) => {
       success: true,
     });
 
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // Emails are enqueued directly here (no function-to-function hop).
+    const sb = getSupabase();
+    const { data: site } = await supabase
+      .from("site_settings")
+      .select("email, site_name, address, tagline")
+      .single();
+    const render = (tpl: string, vars: Record<string, string>) =>
+      tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? "");
 
-    // Client confirmation email (sent server-side so the public email
-    // endpoints stay closed to anonymous callers).
     try {
-      await fetch(`${Deno.env.get("SUPABASE_URL")!}/functions/v1/send-booking-confirmation`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
-          Authorization: `Bearer ${serviceKey}`,
-        },
-        body: JSON.stringify({
-          to: cleanEmail,
-          name: cleanName,
-          bookingRequestId,
-        }),
+      const { data: tpl } = await supabase
+        .from("email_templates")
+        .select("subject, body_html")
+        .eq("key", "booking_confirmation_client")
+        .single();
+      if (!tpl) throw new Error("client confirmation template missing");
+      const vars = {
+        name: cleanName, email: cleanEmail,
+        address: site?.address ?? "", siteName: site?.site_name ?? "",
+        siteEmail: site?.email ?? "", tagline: site?.tagline ?? "",
+      };
+      const r = await enqueueTransactionalEmail(sb, {
+        to: cleanEmail,
+        subject: render(tpl.subject, vars),
+        html: render(tpl.body_html, vars),
+        templateLabel: "booking_confirmation_client",
+        idempotencyKey: `booking_confirmation_client-${bookingRequestId}`,
+        bookingRequestId,
       });
+      if (!r.ok) console.error("client confirmation enqueue failed", r.error);
     } catch (e) {
-      console.warn("client confirmation email failed", e);
+      console.error("client confirmation email failed", e);
     }
 
-    // Fire-and-forget admin notification email
     try {
-      const { data: site } = await supabase
-        .from("site_settings")
-        .select("email, site_name")
-        .single();
       const adminEmail = site?.email;
       if (adminEmail) {
-        const projectUrl = Deno.env.get("SUPABASE_URL")!;
-        const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
         const safeName = cleanName.replace(/[<>&]/g, "");
         const safeEmail = cleanEmail.replace(/[<>&]/g, "");
         const safePhone = (cleanPhone ?? "").replace(/[<>&]/g, "");
@@ -160,23 +166,18 @@ Deno.serve(async (req) => {
           ${notes}
           <p style="margin-top:24px;"><a href="https://pokeeeeeeeoh.com/admin/dashboard">Review in admin →</a></p>
         `;
-        fetch(`${projectUrl}/functions/v1/send-template-email`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: anonKey,
-            Authorization: `Bearer ${serviceKey}`,
-          },
-          body: JSON.stringify({
-            to: adminEmail,
-            subjectOverride: `New booking request from ${cleanName}`,
-            htmlOverride: html,
-            bookingRequestId,
-          }),
-        }).catch((e) => console.warn("admin notify failed", e));
+        const r = await enqueueTransactionalEmail(sb, {
+          to: adminEmail,
+          subject: `New booking request from ${safeName}`,
+          html,
+          templateLabel: "admin_new_request",
+          idempotencyKey: `admin_new_request-${bookingRequestId}`,
+          bookingRequestId,
+        });
+        if (!r.ok) console.error("admin notify enqueue failed", r.error);
       }
     } catch (e) {
-      console.warn("admin notify error", e);
+      console.error("admin notify error", e);
     }
 
 
