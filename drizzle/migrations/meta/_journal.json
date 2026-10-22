@@ -8,6 +8,13 @@
       "when": 1792065485014,
       "tag": "0000_admin_insert_clients",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792675602073,
+      "tag": "0001_request_archive_attention",
+      "breakpoints": true
     }
   ]
 }
