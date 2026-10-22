@@ -1,0 +1,2 @@
+- [x] Fix missing request-received confirmation email
+- [x] Auto-archive booked requests after appointment date passes
