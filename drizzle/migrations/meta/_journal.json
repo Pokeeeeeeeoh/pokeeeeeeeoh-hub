@@ -29,6 +29,13 @@
       "when": 1792676120260,
       "tag": "0003_archive_declined",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792676230784,
+      "tag": "0004_archive_booked_without_appt",
+      "breakpoints": true
     }
   ]
 }
