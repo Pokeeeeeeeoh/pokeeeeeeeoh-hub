@@ -180,6 +180,7 @@ const AdminCalendar = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [clientSearchOpen, setClientSearchOpen] = useState(false);
+  const [clientQuery, setClientQuery] = useState("");
   const [newClient, setNewClient] = useState({ name: "", email: "", phone: "", tattooDescription: "" });
   const [bookingInProgress, setBookingInProgress] = useState(false);
 
@@ -2480,12 +2481,19 @@ const AdminCalendar = () => {
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-full p-0" align="start">
-                          <Command>
-                            <CommandInput placeholder="Search by name or email..." />
+                          <Command shouldFilter={false}>
+                            <CommandInput placeholder="Search by name or email..." value={clientQuery} onValueChange={setClientQuery} />
                             <CommandList>
                               <CommandEmpty>No clients found.</CommandEmpty>
                               <CommandGroup>
-                                {clients.map((client) => (
+                                {(() => {
+                                  const norm = (t: string) => (t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                                  const terms = norm(clientQuery).split(/\s+/).filter(Boolean);
+                                  return clients
+                                    .filter((c) => { const h = norm(`${c.name} ${c.email} ${c.phone ?? ""}`); return terms.every((t) => h.includes(t)); })
+                                    .sort((a, b) => Number(a.email.includes("no-email.local")) - Number(b.email.includes("no-email.local")))
+                                    .slice(0, 50);
+                                })().map((client) => (
                                   <CommandItem
                                     key={client.id}
                                     value={`${client.name} ${client.email}`}
