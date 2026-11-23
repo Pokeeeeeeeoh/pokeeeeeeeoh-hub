@@ -435,8 +435,11 @@ const AdminDashboard = () => {
   const visible = requests.filter((r) => (statusFilter === "archived" ? !!r.archived_at : !r.archived_at));
   const filteredRequests = visible.filter((request) => {
     const matchesSearch =
-      request.clients?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.clients?.email?.toLowerCase().includes(searchQuery.toLowerCase());
+      (() => {
+        const n = (t?: string | null) => (t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const h = n(`${request.clients?.name ?? ""} ${request.clients?.email ?? ""}`);
+        return n(searchQuery).split(/\s+/).filter(Boolean).every((t) => h.includes(t));
+      })();
     const matchesStatus =
       statusFilter === "all" || statusFilter === "archived" ||
       (statusFilter === "attention" ? !!request.attention_note : request.status === statusFilter);

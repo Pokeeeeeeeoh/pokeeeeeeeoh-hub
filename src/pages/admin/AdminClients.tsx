@@ -47,10 +47,21 @@ const AdminClients = () => {
   }, []);
 
   const fetchClients = async () => {
-    const { data, error } = await supabase
-      .from("clients")
-      .select("*")
-      .order("name", { ascending: true });
+    const PAGE = 1000;
+    const rows: any[] = [];
+    let error: any = null;
+    for (let from = 0; ; from += PAGE) {
+      const res = await supabase
+        .from("clients")
+        .select("*")
+        .order("name", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (res.error) { error = res.error; break; }
+      rows.push(...(res.data || []));
+      if (!res.data || res.data.length < PAGE) break;
+    }
+    const data = rows;
 
     if (error) {
       console.error("Error fetching clients:", error);
@@ -95,11 +106,12 @@ const AdminClients = () => {
     }
   };
 
-  const filteredClients = clients.filter(
-    (client) =>
-      client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const norm = (t: string | null | undefined) => (t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const searchTerms = norm(searchQuery).split(/\s+/).filter(Boolean);
+  const filteredClients = clients.filter((client) => {
+    const h = norm(`${client.name} ${client.email} ${client.phone ?? ""}`);
+    return searchTerms.every((t) => h.includes(t));
+  });
 
   return (
     <div className="p-4 lg:p-8">
