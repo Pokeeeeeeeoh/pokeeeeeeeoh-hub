@@ -1,3 +1,4 @@
+import { attachBookingRequest } from "@/lib/attachBookingRequest";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -656,15 +657,9 @@ const AdminCalendar = () => {
         return;
       }
 
-      const { data: bookingRequest, error: brError } = await supabase
-        .from("booking_requests")
-        .insert({
-          client_id: clientId,
-          status: "booked",
-          form_responses: { manual_booking: true },
-        })
-        .select()
-        .single();
+      let bookingRequest: { id: string } | null = null;
+      let brError: unknown = null;
+      try { bookingRequest = await attachBookingRequest(clientId, { manual_booking: true }); } catch (e) { brError = e; }
 
       if (brError) {
         // Roll back the slot lock
@@ -675,7 +670,7 @@ const AdminCalendar = () => {
       const { data: apptRow, error: apptError } = await supabase.from("appointments").insert({
         client_id: clientId,
         slot_id: selectedSlot.id,
-        booking_request_id: bookingRequest.id,
+        booking_request_id: bookingRequest!.id,
         start_time: selectedSlot.start_time,
         end_time: selectedSlot.end_time,
       }).select("id").single();

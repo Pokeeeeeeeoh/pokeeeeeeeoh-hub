@@ -1,3 +1,4 @@
+import { attachBookingRequest } from "@/lib/attachBookingRequest";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, isSameDay } from "date-fns";
@@ -208,15 +209,9 @@ export const ManualBookingDialog = ({ open, onOpenChange, initialDate, onBooked 
       const formResponses: Record<string, unknown> = { manual_booking: true };
       if (details.trim()) formResponses.tattoo_description = details.trim();
 
-      const { data: br, error: brErr } = await supabase
-        .from("booking_requests")
-        .insert({
-          client_id: clientId,
-          status: "booked",
-          form_responses: formResponses as never,
-        })
-        .select("id")
-        .single();
+      let br: { id: string } | null = null;
+      let brErr: unknown = null;
+      try { br = await attachBookingRequest(clientId, formResponses); } catch (e) { brErr = e; }
 
       if (brErr) {
         await supabase.from("availability_slots").update({ is_booked: false }).eq("id", slotId);
@@ -231,7 +226,7 @@ export const ManualBookingDialog = ({ open, onOpenChange, initialDate, onBooked 
         .insert({
           client_id: clientId,
           slot_id: slotId,
-          booking_request_id: br.id,
+          booking_request_id: br!.id,
           start_time: startISO,
           end_time: endISO,
         })
