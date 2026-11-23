@@ -1,3 +1,4 @@
+import { ClientRequestHistory } from "@/components/admin/ClientRequestHistory";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -223,6 +224,8 @@ const AdminClients = () => {
                     </div>
                   )}
                 </div>
+
+                <ClientRequestHistory clientId={selectedClient.id} />
 
                 {/* Notes */}
                 <div className="space-y-2">

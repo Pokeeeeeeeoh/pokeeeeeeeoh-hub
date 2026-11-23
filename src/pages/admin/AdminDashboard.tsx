@@ -1,3 +1,4 @@
+import { ClientRequestHistory } from "@/components/admin/ClientRequestHistory";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -754,6 +755,10 @@ const AdminDashboard = () => {
                       ))}
                     </div>
                   </div>
+                )}
+
+                {selectedRequest.client_id && (
+                  <ClientRequestHistory clientId={selectedRequest.client_id} excludeId={selectedRequest.id} />
                 )}
 
                 {/* Booking Link */}
