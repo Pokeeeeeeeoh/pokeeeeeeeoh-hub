@@ -142,20 +142,39 @@ Deno.serve(async (req) => {
         clientEmail = newClient.email;
       }
 
-      // Create a booking_request marked as approved/booked so appointment is linked
-      const { data: newReq, error: reqErr } = await supabase
+      // Prefer attaching to the client's latest open request (with their
+      // tattoo details/pictures) instead of creating an empty duplicate.
+      const { data: openReq } = await supabase
         .from("booking_requests")
-        .insert({
-          client_id: clientId,
-          status: "approved",
-          form_responses: { source: "open_calendar_link", notes: cleanNotes },
-        })
-        .select("id, client_id, status")
-        .single();
-      if (reqErr || !newReq) throw new Error("Could not create booking request");
+        .select("id, client_id, status, form_responses")
+        .eq("client_id", clientId)
+        .in("status", ["new", "approved"])
+        .is("archived_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      // Close out any prior approved-but-unbooked requests for this client so
-      // the admin list doesn't show them as "not yet booked".
+      let newReq: { id: string; client_id: string; status: string } | null = null;
+      if (openReq) {
+        const fr = (openReq.form_responses && typeof openReq.form_responses === "object") ? openReq.form_responses as Record<string, unknown> : {};
+        const merged = cleanNotes ? { ...fr, open_link_notes: cleanNotes } : fr;
+        await supabase.from("booking_requests").update({ form_responses: merged }).eq("id", openReq.id);
+        newReq = { id: openReq.id, client_id: openReq.client_id, status: openReq.status };
+      } else {
+        const { data: created, error: reqErr } = await supabase
+          .from("booking_requests")
+          .insert({
+            client_id: clientId,
+            status: "approved",
+            form_responses: { source: "open_calendar_link", notes: cleanNotes },
+          })
+          .select("id, client_id, status")
+          .single();
+        if (reqErr || !created) throw new Error("Could not create booking request");
+        newReq = created;
+      }
+
+      // Close out any other approved-but-unbooked requests for this client.
       await supabase
         .from("booking_requests")
         .update({ status: "booked" })
