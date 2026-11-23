@@ -1626,7 +1626,7 @@ const AdminCalendar = () => {
 
         {/* Day Bookings Dialog */}
         <Dialog open={showDayBookingsDialog} onOpenChange={setShowDayBookingsDialog}>
-          <DialogContent style={{ width: "min(calc(100vw - 24px), 28rem)", maxWidth: "calc(100vw - 24px)" }} className="left-1/2 grid max-h-[85vh] w-[calc(100vw-24px)] max-w-[calc(100vw-24px)] min-w-0 translate-x-[-50%] overflow-y-auto overflow-x-hidden p-4 sm:w-full sm:max-w-md sm:p-6">
+          <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} style={{ width: "min(calc(100vw - 24px), 28rem)", maxWidth: "calc(100vw - 24px)" }} className="left-1/2 grid max-h-[85vh] w-[calc(100vw-24px)] max-w-[calc(100vw-24px)] min-w-0 translate-x-[-50%] overflow-y-auto overflow-x-hidden p-4 sm:w-full sm:max-w-md sm:p-6">
             <DialogHeader>
               <DialogTitle>
                 {dayBookingsDate
@@ -1757,7 +1757,7 @@ const AdminCalendar = () => {
 
         {/* Add Slot Dialog (Day Click) */}
         <Dialog open={showDayDialog} onOpenChange={setShowDayDialog}>
-          <DialogContent style={{ width: "calc(100vw - 24px)", maxWidth: "28rem" }} className="max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+          <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} style={{ width: "calc(100vw - 24px)", maxWidth: "28rem" }} className="max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>Add Slot</DialogTitle>
             </DialogHeader>
@@ -1978,7 +1978,7 @@ const AdminCalendar = () => {
 
         {/* Slot Dialog (Slot Click) */}
         <Dialog open={showSlotDialog} onOpenChange={setShowSlotDialog}>
-          <DialogContent style={{ width: "min(calc(100vw - 24px), 28rem)", maxWidth: "calc(100vw - 24px)" }} className="left-1/2 grid max-h-[90vh] w-[calc(100vw-24px)] max-w-[calc(100vw-24px)] min-w-0 translate-x-[-50%] overflow-y-auto overflow-x-hidden overscroll-contain p-4 sm:w-full sm:max-w-md sm:p-6">
+          <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} style={{ width: "min(calc(100vw - 24px), 28rem)", maxWidth: "calc(100vw - 24px)" }} className="left-1/2 grid max-h-[90vh] w-[calc(100vw-24px)] max-w-[calc(100vw-24px)] min-w-0 translate-x-[-50%] overflow-y-auto overflow-x-hidden overscroll-contain p-4 sm:w-full sm:max-w-md sm:p-6">
             <DialogHeader>
               <DialogTitle>
                 {selectedSlot?.is_booked ? "Booked Slot" : "Manage Slot"}
@@ -2437,7 +2437,7 @@ const AdminCalendar = () => {
 
         {/* Manual Booking Dialog */}
         <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
-          <DialogContent style={{ width: "calc(100vw - 24px)", maxWidth: "28rem" }} className="max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+          <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} style={{ width: "calc(100vw - 24px)", maxWidth: "28rem" }} className="max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>Book Client</DialogTitle>
             </DialogHeader>
@@ -2594,7 +2594,7 @@ const AdminCalendar = () => {
 
         {/* Repeat Day Dialog */}
         <Dialog open={showRepeatDayDialog} onOpenChange={setShowRepeatDayDialog}>
-          <DialogContent style={{ width: "calc(100vw - 24px)", maxWidth: "28rem" }} className="max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+          <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} style={{ width: "calc(100vw - 24px)", maxWidth: "28rem" }} className="max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>Repeat Entire Day</DialogTitle>
             </DialogHeader>
