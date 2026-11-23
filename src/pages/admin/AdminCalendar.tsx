@@ -73,6 +73,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { BookingImage } from "@/components/BookingImage";
+import { ClientRequestHistory } from "@/components/admin/ClientRequestHistory";
 import { PullToRefreshPortal } from "@/components/PullToRefreshPortal";
 import { ManualBookingDialog } from "@/components/admin/ManualBookingDialog";
 import { sendRebookingLink } from "@/lib/rebooking";
@@ -2194,6 +2195,9 @@ const AdminCalendar = () => {
                               ))}
                             </div>
                           </div>
+                        )}
+                        {appt?.client_id && (
+                          <ClientRequestHistory clientId={appt.client_id} excludeId={appt.booking_request_id} />
                         )}
 
                         {/* BOTTOM: reschedule + manage */}
