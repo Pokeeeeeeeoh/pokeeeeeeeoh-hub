@@ -46,11 +46,33 @@ export async function isAdminCaller(req: Request): Promise<boolean> {
  * Returns a 403 Response when the caller is neither an internal service-role
  * caller nor a signed-in admin. Returns null when the call may proceed.
  */
+// Verifies a legacy service-role JWT (e.g. stored in the vault for cron jobs)
+// by asking the auth server to perform an admin-only call with it.
+async function isVerifiedServiceRoleJwt(req: Request): Promise<boolean> {
+  const candidates = [bearer(req), req.headers.get("x-internal-service-key")]
+    .filter((t): t is string => !!t && t.split(".").length === 3);
+  for (const token of candidates) {
+    try {
+      const payload = JSON.parse(
+        atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
+      );
+      if (payload?.role !== "service_role") continue;
+      const res = await fetch(
+        `${Deno.env.get("SUPABASE_URL")}/auth/v1/admin/users?per_page=1`,
+        { headers: { apikey: token, Authorization: `Bearer ${token}` } },
+      );
+      if (res.ok) return true;
+    } catch (_e) { /* ignore */ }
+  }
+  return false;
+}
+
 export async function requireInternalOrAdmin(
   req: Request,
   corsHeaders: Record<string, string>,
 ): Promise<Response | null> {
   if (isServiceRoleCaller(req)) return null;
+  if (await isVerifiedServiceRoleJwt(req)) return null;
   if (await isAdminCaller(req)) return null;
   return new Response(JSON.stringify({ error: "Forbidden" }), {
     status: 403,
